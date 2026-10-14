@@ -1,0 +1,1027 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>grid_process.timeseries &#8212; grid-process</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=e3fa712e"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/grid_process/timeseries';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = '../_static/switcher_config.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.0.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.0.0" />
+    <meta name="docbuild:last-update" content="14.10.2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">grid-process</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../changelog.html">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../autoapi/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../changelog.html">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../autoapi/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">grid_process.timeseries</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for grid_process.timeseries</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (c) 2026 MeteoSwiss, contributors listed in AUTHORS</span>
+<span class="c1">#</span>
+<span class="c1"># Distributed under the terms of the BSD 3-Clause License.</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: BSD-3-Clause</span>
+
+<span class="sd">"""</span>
+<span class="sd">Module for operations on timeseries data</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span><span class="p">,</span> <span class="n">reduce</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">get_args</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">xarray.core.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">InterpOptions</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_accessor</span><span class="p">,</span> <span class="n">keepattrs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.data_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_t_dim</span><span class="p">,</span>
+    <span class="n">get_temporal_coords</span><span class="p">,</span>
+    <span class="n">get_temporal_dims</span><span class="p">,</span>
+    <span class="n">get_latlon_coords</span><span class="p">,</span>
+    <span class="n">VALIDTIME</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.ds_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cast_dtype</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.sun</span><span class="w"> </span><span class="kn">import</span> <span class="n">daytime</span><span class="p">,</span> <span class="n">zenith</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="c1"># Register xarray accessor so module functions can also be called as methods</span>
+<span class="c1"># on xr.Dataset objects</span>
+<div class="viewcode-block" id="Timeseries">
+<a class="viewcode-back" href="../../autoapi/grid_process/timeseries/index.html#grid_process.timeseries.Timeseries">[docs]</a>
+<span class="nd">@xr</span><span class="o">.</span><span class="n">register_dataset_accessor</span><span class="p">(</span><span class="s2">"timeseries"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Timeseries</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Xarray accessors class for operations on timeseries</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">ds</span></div>
+
+
+
+<span class="n">dataset_accessor</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">make_accessor</span><span class="p">,</span> <span class="n">accessor_class</span><span class="o">=</span><span class="n">Timeseries</span><span class="p">)</span>
+
+
+<span class="n">SunInterpOptions</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"sundur"</span><span class="p">,</span> <span class="s2">"sunrad"</span><span class="p">]</span>
+<span class="n">ReindexOptions</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"nearest"</span><span class="p">,</span> <span class="s2">"bfill"</span><span class="p">,</span> <span class="s2">"ffill"</span><span class="p">]</span>
+<span class="n">InterpMethods</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"bcum"</span><span class="p">,</span> <span class="s2">"fillval"</span><span class="p">]</span> <span class="o">|</span> <span class="n">SunInterpOptions</span> <span class="o">|</span> <span class="n">ReindexOptions</span> <span class="o">|</span> <span class="n">InterpOptions</span>
+<span class="n">FillnaMethods</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"bfill"</span><span class="p">,</span> <span class="s2">"ffill"</span><span class="p">,</span> <span class="s2">"fillval"</span><span class="p">]</span> <span class="o">|</span> <span class="n">InterpOptions</span>
+<span class="n">XR_INTERP_METHODS</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">get_args</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="n">get_args</span><span class="p">(</span><span class="n">b</span><span class="p">),</span> <span class="n">get_args</span><span class="p">(</span><span class="n">InterpOptions</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="interptogranularity">
+<a class="viewcode-back" href="../../autoapi/grid_process/timeseries/index.html#grid_process.timeseries.interptogranularity">[docs]</a>
+<span class="nd">@dataset_accessor</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">interptogranularity</span><span class="p">(</span>
+    <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">granularity</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"1h"</span><span class="p">,</span>
+    <span class="n">method</span><span class="p">:</span> <span class="n">InterpMethods</span> <span class="o">=</span> <span class="s2">"linear"</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Interpolate the dataset to the specified time granularity. Where</span>
+<span class="sd">    the dataset granularity is smaller than the specified one, the dataset</span>
+<span class="sd">    granularity remains (no aggregation is performed).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ds : xarray.Dataset</span>
+<span class="sd">        Must have a temporal dimension expressed as numpy.datetime64 (valid time) or numpy.timedelta64 (lead time).</span>
+<span class="sd">        Typical temporal dimensions names are supported, and can be extended via environment variables:</span>
+
+<span class="sd">          - Valid time: export GRID_PROCESS__data_model__validtime (e.g., '["time", "valid_time", "dummy_time"]')</span>
+<span class="sd">          - Lead time: export GRID_PROCESS__data_model__leadtime (e.g., '["lead_time", "step", "dummy_leadtime"]')</span>
+<span class="sd">          - Forecast reference time: export GRID_PROCESS__data_model__reftime (e.g., '["forecast_reference_time",</span>
+<span class="sd">            "ref_time", "reftime", "dummy_reftime"]')</span>
+<span class="sd">          - When the temporal coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can</span>
+<span class="sd">            be used directly.</span>
+<span class="sd">    granularity : str, optional</span>
+<span class="sd">        (maximum) granularity of the resulting time series. Must be one of the</span>
+<span class="sd">        pandas.date_range ``freq`` options. Default is '1h'</span>
+<span class="sd">    method : str, optional</span>
+<span class="sd">        interpolation method for filling the time series. One of {'nearest', 'bfill',</span>
+<span class="sd">        'ffill', 'bcum', 'fillval', 'sundur', 'sunrad', 'linear', 'zero', 'slinear',</span>
+<span class="sd">        'quadratic', 'cubic', 'polynomial', 'barycentric', 'krogh', 'pchip', 'spline',</span>
+<span class="sd">        'akima'}. Default is 'linear'</span>
+<span class="sd">    **kwargs : any</span>
+<span class="sd">        keyword arguments passed to the respective interpolation sub-function defined</span>
+<span class="sd">        by the ``method``</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ds_out : xarray.Dataset</span>
+<span class="sd">        contains the full time series resulting from the time interpolation at</span>
+<span class="sd">        the specified granularity</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`fill_na`, xarray.Dataset.reindex, xarray.Dataset.interp</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    Consider using 'slinear' instead of 'linear' for similar results with possibly</span>
+<span class="sd">    faster computations and lower memory footprint.</span>
+<span class="sd">    """</span>
+
+    <span class="n">t_dim</span> <span class="o">=</span> <span class="n">get_t_dim</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ds</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"M"</span><span class="p">:</span>  <span class="c1"># t is datetime64</span>
+        <span class="n">start_t</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">))</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">granularity</span><span class="p">)</span>
+        <span class="n">stop_t</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
+        <span class="n">time_vec</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start_t</span><span class="p">,</span> <span class="n">stop_t</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">granularity</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">ds</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"m"</span><span class="p">:</span>  <span class="c1"># t is timedelta64</span>
+        <span class="n">start_t</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_timedelta</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">))</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">granularity</span><span class="p">)</span>
+        <span class="n">stop_t</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_timedelta</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
+        <span class="n">time_vec</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">timedelta_range</span><span class="p">(</span><span class="n">start_t</span><span class="p">,</span> <span class="n">stop_t</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">granularity</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Temporal dimension </span><span class="si">{</span><span class="n">t_dim</span><span class="si">}</span><span class="s2"> must be of numpy dtype datetime64 or timedelta64"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">time_vec</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>  <span class="c1"># nothing to interpolate</span>
+        <span class="k">return</span> <span class="n">ds</span>
+
+    <span class="n">time_vec</span> <span class="o">=</span> <span class="n">time_vec</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+    <span class="n">t_coords</span> <span class="o">=</span> <span class="n">get_temporal_coords</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+    <span class="n">ref_t</span><span class="p">,</span> <span class="n">lead_t</span><span class="p">,</span> <span class="n">valid_t</span> <span class="o">=</span> <span class="n">t_coords</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"bcum"</span><span class="p">:</span>
+        <span class="n">ds_out</span> <span class="o">=</span> <span class="n">_bcum</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">time_vec</span><span class="p">,</span> <span class="n">t_dim</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"fillval"</span><span class="p">:</span>
+        <span class="n">ds_out</span> <span class="o">=</span> <span class="n">_fillval</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">time_vec</span><span class="p">,</span> <span class="p">(</span><span class="n">t_dim</span><span class="p">,</span> <span class="n">ref_t</span><span class="p">,</span> <span class="n">valid_t</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">SunInterpOptions</span><span class="p">):</span>
+        <span class="n">ds_out</span> <span class="o">=</span> <span class="n">_interp_sun</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">time_vec</span><span class="p">,</span> <span class="n">t_dim</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+
+    <span class="k">elif</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">ReindexOptions</span><span class="p">):</span>
+        <span class="n">ds_out</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">reindex</span><span class="p">({</span><span class="n">t_dim</span><span class="p">:</span> <span class="n">time_vec</span><span class="p">},</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+
+    <span class="k">elif</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">XR_INTERP_METHODS</span><span class="p">:</span>
+        <span class="c1"># datetime-like variables along t_dim (e.g. reference time) are not interpolated: older xarray versions</span>
+        <span class="c1"># drop them, recent ones interpolate them. Drop them explicitly, the reference time is reindexed below.</span>
+        <span class="n">datetime_vars</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="n">t_dim</span> <span class="ow">and</span> <span class="n">t_dim</span> <span class="ow">in</span> <span class="n">var</span><span class="o">.</span><span class="n">dims</span> <span class="ow">and</span> <span class="n">var</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="s2">"Mm"</span>
+        <span class="p">]</span>
+        <span class="n">src</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span><span class="n">datetime_vars</span><span class="p">)</span>
+        <span class="n">ds_out</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">interp</span><span class="p">({</span><span class="n">t_dim</span><span class="p">:</span> <span class="n">time_vec</span><span class="p">},</span> <span class="n">method</span><span class="p">,</span> <span class="n">assume_sorted</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+        <span class="n">cast_dtype</span><span class="p">(</span><span class="n">ds_out</span><span class="p">,</span> <span class="n">ds</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Temporal interpolation method </span><span class="si">{</span><span class="n">method</span><span class="si">!r}</span><span class="s2"> not supported"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">t_dim</span> <span class="o">!=</span> <span class="n">valid_t</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="kc">None</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">t_coords</span><span class="p">):</span>
+        <span class="n">ds_out</span> <span class="o">=</span> <span class="n">ds_out</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="n">valid_t</span><span class="p">:</span> <span class="n">ds</span><span class="p">[</span><span class="n">ref_t</span><span class="p">]</span> <span class="o">+</span> <span class="n">ds_out</span><span class="p">[</span><span class="n">lead_t</span><span class="p">]})</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">ref_t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">valid_t</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">[</span><span class="n">ref_t</span><span class="p">]</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">ref_t</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds_out</span><span class="o">.</span><span class="n">coords</span><span class="p">):</span>
+        <span class="n">ds_out</span> <span class="o">=</span> <span class="n">ds_out</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="n">ref_t</span><span class="p">:</span> <span class="n">ds</span><span class="p">[</span><span class="n">ref_t</span><span class="p">]</span><span class="o">.</span><span class="n">reindex</span><span class="p">({</span><span class="n">valid_t</span><span class="p">:</span> <span class="n">time_vec</span><span class="p">})})</span>
+
+    <span class="k">return</span> <span class="n">ds_out</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_fillval</span><span class="p">(</span>
+    <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">time_vec</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">TimedeltaIndex</span><span class="p">,</span>
+    <span class="n">t_dim_coords</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="n">fill_value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">dict</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">reindex_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Temporal interpolation with specified fill value(s).</span>
+<span class="sd">    Wrapper to xarray.Dataset.reindex with method=None.</span>
+<span class="sd">    """</span>
+
+    <span class="n">dim</span><span class="p">,</span> <span class="n">ref_t</span><span class="p">,</span> <span class="n">valid_t</span> <span class="o">=</span> <span class="n">t_dim_coords</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">valid_t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">dim</span> <span class="o">!=</span> <span class="n">valid_t</span><span class="p">):</span>
+        <span class="n">to_drop</span> <span class="o">=</span> <span class="p">[</span><span class="n">valid_t</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">ref_t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">valid_t</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">[</span><span class="n">ref_t</span><span class="p">]</span><span class="o">.</span><span class="n">dims</span><span class="p">):</span>
+        <span class="n">to_drop</span> <span class="o">=</span> <span class="p">[</span><span class="n">ref_t</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">to_drop</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span><span class="n">to_drop</span><span class="p">)</span><span class="o">.</span><span class="n">reindex</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">time_vec</span><span class="p">},</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span> <span class="o">**</span><span class="n">reindex_kwargs</span><span class="p">)</span>
+
+
+<span class="nd">@keepattrs</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_bcum</span><span class="p">(</span>
+    <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">time_vec</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">TimedeltaIndex</span><span class="p">,</span>
+    <span class="n">dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">reindex_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Temporal interpolation for accumulated quantities (such as precipitation amount).</span>
+<span class="sd">    Values must represent the accumulated quantity since the last timestamp.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ds</span>
+
+    <span class="n">model_t</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span>
+    <span class="n">time_vec_array</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">time_vec</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="n">dim</span><span class="p">:</span> <span class="n">time_vec</span><span class="p">})</span>
+    <span class="n">intervals</span> <span class="o">=</span> <span class="n">model_t</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span> <span class="o">/</span> <span class="n">time_vec_array</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+    <span class="n">first</span> <span class="o">=</span> <span class="n">intervals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">model_t</span><span class="p">[</span><span class="mi">0</span><span class="p">]})</span>
+    <span class="n">intervals</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">concat</span><span class="p">((</span><span class="n">first</span><span class="p">,</span> <span class="n">intervals</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">ds</span> <span class="o">/</span> <span class="n">intervals</span><span class="p">)</span><span class="o">.</span><span class="n">reindex</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">time_vec</span><span class="p">},</span> <span class="n">method</span><span class="o">=</span><span class="s2">"backfill"</span><span class="p">,</span> <span class="o">**</span><span class="n">reindex_kwargs</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_interp_sun</span><span class="p">(</span>  <span class="c1"># pylint: disable=too-many-locals</span>
+    <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">time_vec</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">TimedeltaIndex</span><span class="p">,</span>
+    <span class="n">dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">method</span><span class="p">:</span> <span class="n">SunInterpOptions</span><span class="p">,</span>
+    <span class="n">lat</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lon</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">reindex_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Temporal interpolation for solar radiation and sunshine duration variables.</span>
+<span class="sd">    Values must represent the accumulated quantity since the last timestamp.</span>
+<span class="sd">    However, for solar radiation variables, it is assumed that values</span>
+<span class="sd">    were transformed into fluxes beforehand (i.e. divided by the time delta). This</span>
+<span class="sd">    is the convention used in MCH to have units of [W / m2] instead of [J / m2]</span>
+<span class="sd">    to follow CF standards. This method disagregates accumulated values only to</span>
+<span class="sd">    daytime timestamps and, for solar radiation, also rescale them according to</span>
+<span class="sd">    the cosine of the solar hour angle. Accumulation is preserved.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">ds</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="s2">"M"</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Temporal interpolation with </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2"> method requires a temporal"</span>
+            <span class="s2">" dimension with numpy.datetime64 (valid time) coordinates. Try to"</span>
+            <span class="s2">" call the function setindex_validtime() first."</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ds</span>
+
+    <span class="k">if</span> <span class="n">lat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">lon</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">latlon</span> <span class="o">=</span> <span class="n">get_latlon_coords</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">nondim</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">latlon</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lat</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">latlon</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="n">lon</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">latlon</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Could not find latitude and longitude coordinates in the dataset"</span><span class="p">)</span>
+
+    <span class="n">time_vec_array</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">time_vec</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="n">dim</span><span class="p">:</span> <span class="n">time_vec</span><span class="p">})</span>
+    <span class="n">first_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="o">~</span><span class="n">time_vec_array</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">dim</span><span class="p">])</span><span class="o">.</span><span class="n">values</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># cut ds in two parts. Only ds_end contains NaNs to be filled</span>
+    <span class="n">ds_start</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">time</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">first_interp</span><span class="p">))</span>
+    <span class="n">ds_end</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">time</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="n">first_interp</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+    <span class="n">time_vec_end</span> <span class="o">=</span> <span class="n">time_vec_array</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">time</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="n">first_interp</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+
+    <span class="c1"># compute middle timestamp</span>
+    <span class="n">delta_t</span> <span class="o">=</span> <span class="n">time_vec_end</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">delta_t</span> <span class="o">=</span> <span class="n">time_vec_end</span><span class="o">.</span><span class="n">values</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">delta_t</span><span class="p">[[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">delta_t</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">delta_t</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">delta_t</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="n">dim</span><span class="p">:</span> <span class="n">delta_t</span><span class="p">})</span>
+
+    <span class="c1"># check daytime for middle timestamp and initialise correction factors</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"sunrad"</span><span class="p">:</span>
+        <span class="n">cor_fact</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">zenith</span><span class="p">(</span><span class="n">delta_t</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">refrac_cor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">time_vec_end</span><span class="p">})</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">180.0</span><span class="p">))</span>
+            <span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">isday</span> <span class="o">=</span> <span class="n">cor_fact</span> <span class="o">&gt;</span> <span class="mf">0.0</span>
+        <span class="n">cor_stat</span> <span class="o">=</span> <span class="s2">"mean"</span>  <span class="c1"># as radiation vars are transformed to flux in the internal grid database</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># method is "sundur"</span>
+        <span class="n">isday</span> <span class="o">=</span> <span class="n">daytime</span><span class="p">(</span><span class="n">delta_t</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">refrac_cor</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span>  <span class="c1"># type: ignore[assignment]</span>
+            <span class="p">{</span><span class="n">dim</span><span class="p">:</span> <span class="n">time_vec_end</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">cor_fact</span> <span class="o">=</span> <span class="n">isday</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">cor_stat</span> <span class="o">=</span> <span class="s2">"sum"</span>
+
+    <span class="c1"># get model times for the end part</span>
+    <span class="n">model_t</span> <span class="o">=</span> <span class="p">[</span><span class="n">ds_start</span><span class="p">[</span><span class="n">dim</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">ds_end</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+    <span class="c1"># divide factors by the mean of daytime timestamps between two model_t</span>
+    <span class="n">cor_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model_t</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+        <span class="n">fact</span> <span class="o">=</span> <span class="n">cor_fact</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="n">time</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">time_vec_end</span> <span class="o">&gt;</span> <span class="n">model_t</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">time_vec_end</span> <span class="o">&lt;=</span> <span class="n">t</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">fact</span> <span class="o">/=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">fact</span><span class="p">,</span> <span class="n">cor_stat</span><span class="p">)(</span><span class="n">dim</span><span class="p">)</span>
+        <span class="n">cor_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fact</span><span class="p">)</span>
+
+    <span class="n">cor_fact</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">cor_list</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="s2">"minimal"</span><span class="p">,</span> <span class="n">compat</span><span class="o">=</span><span class="s2">"override"</span><span class="p">)</span>
+
+    <span class="c1"># multiply radiation data by the scale factor</span>
+    <span class="n">ds_end</span> <span class="o">=</span> <span class="n">ds_end</span><span class="o">.</span><span class="n">reindex</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">time_vec_end</span><span class="o">.</span><span class="n">values</span><span class="p">},</span> <span class="n">method</span><span class="o">=</span><span class="s2">"backfill"</span><span class="p">,</span> <span class="o">**</span><span class="n">reindex_kwargs</span><span class="p">)</span> <span class="o">*</span> <span class="n">cor_fact</span>
+    <span class="n">ds_end</span> <span class="o">=</span> <span class="n">ds_end</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">isday</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>  <span class="c1"># set night-time timestamps to zero</span>
+
+    <span class="k">return</span> <span class="n">xr</span><span class="o">.</span><span class="n">concat</span><span class="p">((</span><span class="n">ds_start</span><span class="p">,</span> <span class="n">ds_end</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="s2">"minimal"</span><span class="p">,</span> <span class="n">compat</span><span class="o">=</span><span class="s2">"override"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="fill_na">
+<a class="viewcode-back" href="../../autoapi/grid_process/timeseries/index.html#grid_process.timeseries.fill_na">[docs]</a>
+<span class="nd">@dataset_accessor</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fill_na</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="n">FillnaMethods</span> <span class="o">=</span> <span class="s2">"linear"</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Fill NaNs in the temporal dimension. Wrapper for different NaN</span>
+<span class="sd">    interpolation routines.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ds : xarray.Dataset</span>
+<span class="sd">        Must have a temporal dimension expressed as numpy.datetime64 (valid time) or numpy.timedelta64 (lead time).</span>
+<span class="sd">        Typical temporal dimensions names are supported, and can be extended via environment variables:</span>
+
+<span class="sd">          - Valid time: export GRID_PROCESS__data_model__validtime (e.g., '["time", "valid_time", "dummy_time"]')</span>
+<span class="sd">          - Lead time: export GRID_PROCESS__data_model__leadtime (e.g., '["lead_time", "step", "dummy_leadtime"]')</span>
+<span class="sd">          - When the temporal coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can</span>
+<span class="sd">            be used directly.</span>
+<span class="sd">    method : str</span>
+<span class="sd">        interpolation method for filling the time series. One of {'bfill', 'ffill',</span>
+<span class="sd">        'fillval', 'linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic',</span>
+<span class="sd">        'polynomial', 'barycentric', 'krogh', 'pchip', 'spline', 'akima'}.</span>
+<span class="sd">        Default is 'linear'</span>
+<span class="sd">    **kwargs : any</span>
+<span class="sd">        arguments passed to the respective NaN interpolation sub-function defined</span>
+<span class="sd">        by the ``method``</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ds_out : xarray.Dataset</span>
+<span class="sd">        with NaNs filled. No extrapolation is performed, so NaNs on the side of</span>
+<span class="sd">        the first and last real values remain NaNs</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`interptogranularity`, xarray.Dataset.interpolate_na, xarray.Dataset.bfill</span>
+<span class="sd">    xarray.Dataset.ffill, xarray.Dataset.fillna</span>
+<span class="sd">    """</span>
+
+    <span class="n">t_dim</span> <span class="o">=</span> <span class="n">get_t_dim</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+
+    <span class="n">custom_func</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"bfill"</span><span class="p">:</span> <span class="n">_bfill</span><span class="p">,</span>  <span class="c1"># type: ignore[dict-item]</span>
+        <span class="s2">"ffill"</span><span class="p">:</span> <span class="n">_ffill</span><span class="p">,</span>  <span class="c1"># type: ignore[dict-item]</span>
+        <span class="s2">"fillval"</span><span class="p">:</span> <span class="n">_fillna_val</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">custom_func</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">custom_func</span><span class="p">[</span><span class="n">method</span><span class="p">](</span><span class="n">ds</span><span class="p">,</span> <span class="n">t_dim</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">XR_INTERP_METHODS</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">interpolate_na</span><span class="p">(</span><span class="n">t_dim</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Temporal NaN interpolation method </span><span class="si">{</span><span class="n">method</span><span class="si">!r}</span><span class="s2"> not supported"</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_bfill</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">bfill_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Back fill NaNs in the temporal dimension. Wrapper to xarray.Dataset.bfill</span>
+<span class="sd">    that prevents extrapolation at the begining of the timeseries.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_nans</span><span class="p">(</span><span class="n">da_out</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+        <span class="n">first_notnan</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">da_out</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+        <span class="n">indexer</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">first_notnan</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">da_out</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">da_out</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">indexer</span><span class="p">)</span>
+
+    <span class="n">ds_out</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">bfill</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="o">**</span><span class="n">bfill_kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ds_out</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">_set_nans</span><span class="p">,</span> <span class="n">keep_attrs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ffill</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">ffill_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Forward fill NaNs in the temporal dimension. Wrapper to xarray.Dataset.ffill</span>
+<span class="sd">    that prevents extrapolation at the end of the timeseries.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_nans</span><span class="p">(</span><span class="n">da_out</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+        <span class="n">last_notnan</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">da_out</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)})</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+        <span class="n">last_notnan</span> <span class="o">=</span> <span class="n">da_out</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">-</span> <span class="n">last_notnan</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">indexer</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">last_notnan</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">da_out</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">da_out</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">indexer</span><span class="p">)</span>
+
+    <span class="n">ds_out</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">ffill</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="o">**</span><span class="n">ffill_kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ds_out</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">_set_nans</span><span class="p">,</span> <span class="n">keep_attrs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_fillna_val</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fill_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Fill NaNs in the temporal dimension with specified value(s).</span>
+<span class="sd">    Wrapper to xarray.Dataset.fillna that prevents extrapolation at the begining</span>
+<span class="sd">    and end of the timeseries.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_nans</span><span class="p">(</span><span class="n">da_out</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+        <span class="n">bool_da</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">da_out</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span>
+        <span class="n">first_notnan</span> <span class="o">=</span> <span class="n">bool_da</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+        <span class="n">indexer_first</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">first_notnan</span><span class="p">})</span>
+        <span class="n">size_t</span> <span class="o">=</span> <span class="n">bool_da</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span>
+        <span class="n">last_notnan</span> <span class="o">=</span> <span class="n">size_t</span> <span class="o">-</span> <span class="n">bool_da</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">size_t</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]})</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">indexer_last</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">last_notnan</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">da_out</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">da_out</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">indexer_first</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">da_out</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">indexer_last</span><span class="p">))</span>
+
+    <span class="n">ds_out</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">fill_value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ds_out</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">_set_nans</span><span class="p">,</span> <span class="n">keep_attrs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="setindex_validtime">
+<a class="viewcode-back" href="../../autoapi/grid_process/timeseries/index.html#grid_process.timeseries.setindex_validtime">[docs]</a>
+<span class="nd">@dataset_accessor</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">setindex_validtime</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">last_ref</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Assign valid time dimension and coordinates (i.e. numpy.datetime64). The dataset</span>
+<span class="sd">    can have zero, one or several forecast reference time and one or several</span>
+<span class="sd">    lead time. In case several ref time and lead time are present, the function</span>
+<span class="sd">    combines the different model runs by selecting from the most recent one where</span>
+<span class="sd">    timestamps overlap.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ds : xarray.Dataset</span>
+<span class="sd">        Must have a forecast reference time dimension and/or a lead time one</span>
+<span class="sd">        Typical temporal dimensions names are supported, and can be extended via environment variables:</span>
+
+<span class="sd">          - Lead time: export GRID_PROCESS__data_model__leadtime (e.g., '["lead_time", "step", "dummy_leadtime"]')</span>
+<span class="sd">          - Forecast reference time: export GRID_PROCESS__data_model__reftime (e.g., '["forecast_reference_time",</span>
+<span class="sd">            "ref_time", "reftime", "dummy_reftime"]')</span>
+<span class="sd">          - When the temporal coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can</span>
+<span class="sd">            be used directly.</span>
+<span class="sd">    last_ref : bool</span>
+<span class="sd">        whether to add the last forecast reference time. Used only if dimensions</span>
+<span class="sd">        forecast reference time and lead time both exists and have length greater</span>
+<span class="sd">        than 1. Default is True.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ds_out : xarray.Dataset</span>
+<span class="sd">        with a valid time dimension labelled as numpy.datetime64.</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    This function can be used to combine many runs of the same model into a</span>
+<span class="sd">    continuous timeseries</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_slice_next_t</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">,</span> <span class="n">next_t</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Slice lead time up to the first timestamp of the next forecast reference time.</span>
+<span class="sd">        """</span>
+
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="n">ref_dim</span><span class="p">:</span> <span class="n">ref</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="n">lead_dim</span><span class="p">:</span> <span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">valid_coord</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">&lt;</span> <span class="n">next_t</span><span class="p">)})</span>
+
+    <span class="n">t_coords</span> <span class="o">=</span> <span class="n">get_temporal_coords</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+    <span class="n">ref_coord</span><span class="p">,</span> <span class="n">lead_coord</span><span class="p">,</span> <span class="n">valid_coord</span> <span class="o">=</span> <span class="n">t_coords</span>
+    <span class="n">ref_dim</span><span class="p">,</span> <span class="n">lead_dim</span><span class="p">,</span> <span class="n">valid_dim</span> <span class="o">=</span> <span class="n">get_temporal_dims</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">valid_dim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ds</span>
+
+    <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">t</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">t_coords</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"The dataset needs at least two out of the 3 following temporal"</span>
+            <span class="s2">" coordinates: valid time, ref time and lead time"</span>
+        <span class="p">)</span>
+
+    <span class="c1"># single dim (lead_time or ref_time)</span>
+    <span class="k">if</span> <span class="n">ref_dim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_validtime_from_single_dim</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">lead_dim</span><span class="p">,</span> <span class="p">(</span><span class="n">valid_coord</span><span class="p">,</span> <span class="n">ref_coord</span><span class="p">))</span>  <span class="c1"># type: ignore[arg-type]</span>
+    <span class="k">if</span> <span class="n">lead_dim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_validtime_from_single_dim</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">ref_dim</span><span class="p">,</span> <span class="p">(</span><span class="n">valid_coord</span><span class="p">,</span> <span class="n">lead_coord</span><span class="p">),</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># single dim with size greater than one (lead_time or ref_time)</span>
+    <span class="k">if</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">ref_dim</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">lead_dim</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">ref_dim</span><span class="p">)</span><span class="o">.</span><span class="n">timeseries</span><span class="o">.</span><span class="n">setindex_validtime</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">ref_dim</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">lead_dim</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">lead_dim</span><span class="p">)</span><span class="o">.</span><span class="n">timeseries</span><span class="o">.</span><span class="n">setindex_validtime</span><span class="p">()</span>
+
+    <span class="c1"># both lead_time and ref_time dims have size greater than one</span>
+    <span class="k">if</span> <span class="n">valid_coord</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">valid_coord</span> <span class="o">=</span> <span class="n">VALIDTIME</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="n">valid_coord</span><span class="p">:</span> <span class="n">ds</span><span class="p">[</span><span class="n">ref_dim</span><span class="p">]</span> <span class="o">+</span> <span class="n">ds</span><span class="p">[</span><span class="n">lead_dim</span><span class="p">]})</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">_slice_next_t</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">next_t</span><span class="p">)</span><span class="o">.</span><span class="n">timeseries</span><span class="o">.</span><span class="n">setindex_validtime</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">ref</span><span class="p">,</span> <span class="n">next_t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">ref_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">ds</span><span class="p">[</span><span class="n">valid_coord</span><span class="p">]</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">lead_dim</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+    <span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">last_ref</span><span class="p">:</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">ref_dim</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">})</span><span class="o">.</span><span class="n">timeseries</span><span class="o">.</span><span class="n">setindex_validtime</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="n">xr</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">valid_coord</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="p">[</span><span class="n">ref_dim</span><span class="p">],</span> <span class="n">compat</span><span class="o">=</span><span class="s2">"override"</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_validtime_from_single_dim</span><span class="p">(</span>
+    <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">coords</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="n">drop_coord</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">dim_as_coord</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Assign valid time dimension and coordinates for cases when only a lead time or reftime dimension is present.</span>
+<span class="sd">    """</span>
+
+    <span class="n">valid_coord</span><span class="p">,</span> <span class="n">other_coord</span> <span class="o">=</span> <span class="n">coords</span>
+    <span class="k">if</span> <span class="n">valid_coord</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">+</span> <span class="n">ds</span><span class="p">[</span><span class="n">other_coord</span><span class="p">])</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">valid_coord</span> <span class="o">=</span> <span class="n">VALIDTIME</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">valid_coord</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span><span class="n">valid_coord</span><span class="p">)</span>
+
+    <span class="n">ds_out</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">valid_coord</span><span class="p">})</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="n">valid_coord</span><span class="p">:</span> <span class="n">times</span><span class="p">})</span>
+    <span class="k">if</span> <span class="n">dim_as_coord</span><span class="p">:</span>
+        <span class="n">ds_out</span> <span class="o">=</span> <span class="n">ds_out</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="p">(</span><span class="n">valid_coord</span><span class="p">,</span> <span class="n">ds</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)})</span>
+
+    <span class="k">if</span> <span class="n">other_coord</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ds_out</span>
+
+    <span class="k">if</span> <span class="n">drop_coord</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ds_out</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span><span class="n">other_coord</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ds_out</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="n">other_coord</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">valid_coord</span><span class="p">,</span>
+                <span class="p">[</span><span class="n">ds</span><span class="p">[</span><span class="n">other_coord</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="smoothing">
+<a class="viewcode-back" href="../../autoapi/grid_process/timeseries/index.html#grid_process.timeseries.smoothing">[docs]</a>
+<span class="nd">@dataset_accessor</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">smoothing</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">w</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Smooth timeseries by applying a moving weighted average.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ds : xarray.Dataset</span>
+<span class="sd">        Must have a valid time or lead time dimension</span>
+<span class="sd">    w : sequence of floats</span>
+<span class="sd">        weights of the moving window</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ds : xarray.Dataset</span>
+<span class="sd">        contains the smoothed timeseries</span>
+<span class="sd">    """</span>
+
+    <span class="n">dim</span> <span class="o">=</span> <span class="n">get_t_dim</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+    <span class="n">w_da</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">w</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">w</span><span class="p">),</span> <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="s2">"window"</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">w_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">w_da</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">rolling</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">w_len</span><span class="p">},</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">construct</span><span class="p">(</span><span class="s2">"window"</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">w_da</span><span class="p">),</span> <span class="n">keep_attrs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item"><!-- This will display the version of the docs -->
+grid-process, version: 1.0.0-4b9cffb</div>
+      
+        <div class="footer-item"><p class="last-updated">
+  Last updated on 14.10.2026.
+  <br/>
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, MeteoSwiss.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

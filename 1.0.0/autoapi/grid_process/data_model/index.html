@@ -1,0 +1,971 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>grid_process.data_model &#8212; grid-process</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../_static/documentation_options.js?v=e3fa712e"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/data_model/index';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = '../_static/switcher_config.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.0.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="grid_process.ds_utils" href="../ds_utils/index.html" />
+    <link rel="prev" title="grid_process.da_utils" href="../da_utils/index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.0.0" />
+    <meta name="docbuild:last-update" content="14.10.2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-light" alt=""/>
+    <img src="../../../_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">grid-process</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../changelog.html">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../changelog.html">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../index.html">grid_process</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../aggreg/index.html">grid_process.aggreg</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../blending/index.html">grid_process.blending</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../config/index.html">grid_process.config</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../config/library_settings/index.html">grid_process.config.library_settings</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../da_utils/index.html">grid_process.da_utils</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">grid_process.data_model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ds_utils/index.html">grid_process.ds_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ens_stats/index.html">grid_process.ens_stats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../grid_interp/index.html">grid_process.grid_interp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../grid_interp_utils/index.html">grid_process.grid_interp_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../helpers/index.html">grid_process.helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optimization/index.html">grid_process.optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sun/index.html">grid_process.sun</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../time_utils/index.html">grid_process.time_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../timeseries/index.html">grid_process.timeseries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../units_conv/index.html">grid_process.units_conv</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">API Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">grid_process</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">grid_process.data_model</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-grid_process.data_model">
+<span id="grid-process-data-model"></span><h1>grid_process.data_model<a class="headerlink" href="#module-grid_process.data_model" title="Link to this heading">#</a></h1>
+<p>Module with utility functions to deal with the numerous supported data models</p>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.logger" title="grid_process.data_model.logger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">logger</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.F" title="grid_process.data_model.F"><code class="xref py py-obj docutils literal notranslate"><span class="pre">F</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.DATA_MODEL" title="grid_process.data_model.DATA_MODEL"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DATA_MODEL</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.FLAT_DIM" title="grid_process.data_model.FLAT_DIM"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FLAT_DIM</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.YX" title="grid_process.data_model.YX"><code class="xref py py-obj docutils literal notranslate"><span class="pre">YX</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.LATLON" title="grid_process.data_model.LATLON"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LATLON</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.SURF_ALT" title="grid_process.data_model.SURF_ALT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SURF_ALT</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.REFTIME" title="grid_process.data_model.REFTIME"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REFTIME</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.VALIDTIME" title="grid_process.data_model.VALIDTIME"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VALIDTIME</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.LEADTIME" title="grid_process.data_model.LEADTIME"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LEADTIME</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.ENS_DIM" title="grid_process.data_model.ENS_DIM"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ENS_DIM</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.POI_ALT_COL" title="grid_process.data_model.POI_ALT_COL"><code class="xref py py-obj docutils literal notranslate"><span class="pre">POI_ALT_COL</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_t_dim" title="grid_process.data_model.get_t_dim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_t_dim</span></code></a>(→ str)</p></td>
+<td><p>Returns name of temporal dimension according to the possible options defined</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_temporal_dims" title="grid_process.data_model.get_temporal_dims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_temporal_dims</span></code></a>(→ tuple[str | None, str | None, ...)</p></td>
+<td><p>Returns names of temporal dimensions according to the possible options defined</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_temporal_coords" title="grid_process.data_model.get_temporal_coords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_temporal_coords</span></code></a>(→ tuple[str | None, str | None, ...)</p></td>
+<td><p>Returns names of temporal coordinates according to the possible options defined</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_reftime" title="grid_process.data_model.get_reftime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reftime</span></code></a>(→ str | None)</p></td>
+<td><p>Returns name of forecast reference time dimension or coordinate according to</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_validtime" title="grid_process.data_model.get_validtime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_validtime</span></code></a>(…)</p></td>
+<td><p>Returns name of valid time dimension or coordinate according to the possible</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_leadtime" title="grid_process.data_model.get_leadtime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_leadtime</span></code></a>(→ str | None)</p></td>
+<td><p>Returns name of lead time dimension or coordinate according to the possible</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_ensemble_dim" title="grid_process.data_model.get_ensemble_dim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_ensemble_dim</span></code></a>(→ str)</p></td>
+<td><p>Returns name of ensemble members dimension according to the possible options</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.set_grid_mapping" title="grid_process.data_model.set_grid_mapping"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_grid_mapping</span></code></a>(→ xarray.Dataset)</p></td>
+<td><p>Set grid_mapping attribute according to internal conventions when the input</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_spatial_dims" title="grid_process.data_model.get_spatial_dims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_spatial_dims</span></code></a>(→ tuple[str, ...])</p></td>
+<td><p>Returns names of spatial dimensions according to the possible options defined</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_spatial_coords" title="grid_process.data_model.get_spatial_coords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_spatial_coords</span></code></a>(→ tuple[str, str])</p></td>
+<td><p>Returns names of non-dimension spatial coordinates according to the</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_flat_dim" title="grid_process.data_model.get_flat_dim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_flat_dim</span></code></a>(→ str | None)</p></td>
+<td><p>Returns spatial dimension name for an unstructured grid according to the</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_latlon_coords" title="grid_process.data_model.get_latlon_coords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_latlon_coords</span></code></a>(→ tuple[str, str] | None)</p></td>
+<td><p>Returns names of latitude and longitude coordinates if they exist according</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_latlon_dims" title="grid_process.data_model.get_latlon_dims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_latlon_dims</span></code></a>(→ tuple[str, str] | None)</p></td>
+<td><p>Returns names of latitude and longitude dimensions if they exist according</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_surf_alt" title="grid_process.data_model.get_surf_alt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_surf_alt</span></code></a>(→ str)</p></td>
+<td><p>Returns name of the surface altitude coordinate variable according to the</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_poi_alt" title="grid_process.data_model.get_poi_alt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_poi_alt</span></code></a>(→ numpy.typing.NDArray[numpy.float32])</p></td>
+<td><p>Returns POIs altitudes from <code class="docutils literal notranslate"><span class="pre">poi_info</span></code> according to the column names defined</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_grid_crs" title="grid_process.data_model.get_grid_crs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_grid_crs</span></code></a>(→ pyproj.CRS)</p></td>
+<td><p>Get correct CRS according to supported conventions.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.parse_grid_mapping" title="grid_process.data_model.parse_grid_mapping"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_grid_mapping</span></code></a>(→ pyproj.CRS)</p></td>
+<td><p>Parse internal grid database style &quot;grid_mapping&quot; attribute and decode it with Pyproj.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_coords_name_crs" title="grid_process.data_model.get_coords_name_crs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_coords_name_crs</span></code></a>(→ tuple[str, str, pyproj.CRS])</p></td>
+<td><p>Get correct coordinate names and CRS according to supported conventions. When</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.is_decreasing1d" title="grid_process.data_model.is_decreasing1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_decreasing1d</span></code></a>(→ bool)</p></td>
+<td><p>Whether 1 dimensional <code class="docutils literal notranslate"><span class="pre">coords</span></code> are in decreasing order.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.is_decreasing" title="grid_process.data_model.is_decreasing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_decreasing</span></code></a>(→ bool)</p></td>
+<td><p>Checks whether <code class="docutils literal notranslate"><span class="pre">coords</span></code> are in decreasing order along dimension <code class="docutils literal notranslate"><span class="pre">dim</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.data_model.logger">
+<span class="sig-name descname"><span class="pre">logger</span></span><a class="headerlink" href="#grid_process.data_model.logger" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.data_model.F">
+<span class="sig-name descname"><span class="pre">F</span></span><a class="headerlink" href="#grid_process.data_model.F" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.data_model.DATA_MODEL">
+<span class="sig-name descname"><span class="pre">DATA_MODEL</span></span><a class="headerlink" href="#grid_process.data_model.DATA_MODEL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.data_model.FLAT_DIM">
+<span class="sig-name descname"><span class="pre">FLAT_DIM</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#grid_process.data_model.FLAT_DIM" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.data_model.YX">
+<span class="sig-name descname"><span class="pre">YX</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#grid_process.data_model.YX" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.data_model.LATLON">
+<span class="sig-name descname"><span class="pre">LATLON</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#grid_process.data_model.LATLON" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.data_model.SURF_ALT">
+<span class="sig-name descname"><span class="pre">SURF_ALT</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#grid_process.data_model.SURF_ALT" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.data_model.REFTIME">
+<span class="sig-name descname"><span class="pre">REFTIME</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#grid_process.data_model.REFTIME" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.data_model.VALIDTIME">
+<span class="sig-name descname"><span class="pre">VALIDTIME</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#grid_process.data_model.VALIDTIME" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.data_model.LEADTIME">
+<span class="sig-name descname"><span class="pre">LEADTIME</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#grid_process.data_model.LEADTIME" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.data_model.ENS_DIM">
+<span class="sig-name descname"><span class="pre">ENS_DIM</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#grid_process.data_model.ENS_DIM" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.data_model.POI_ALT_COL">
+<span class="sig-name descname"><span class="pre">POI_ALT_COL</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#grid_process.data_model.POI_ALT_COL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_t_dim">
+<span class="sig-name descname"><span class="pre">get_t_dim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_t_dim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_t_dim" title="Link to this definition">#</a></dt>
+<dd><p>Returns name of temporal dimension according to the possible options defined
+in the config (could be overwritten by setting appropriate env variable).
+Temporal dimension could be expressed as valid time or lead time.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_temporal_dims">
+<span class="sig-name descname"><span class="pre">get_temporal_dims</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_temporal_dims"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_temporal_dims" title="Link to this definition">#</a></dt>
+<dd><p>Returns names of temporal dimensions according to the possible options defined
+in the config (could be overwritten by setting appropriate env variable) or
+according to CF standard name. The returned tuple contains dimension names in
+the following order: (reftime, leadtime, validtime).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_temporal_coords">
+<span class="sig-name descname"><span class="pre">get_temporal_coords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_temporal_coords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_temporal_coords" title="Link to this definition">#</a></dt>
+<dd><p>Returns names of temporal coordinates according to the possible options defined
+in the config (could be overwritten by setting appropriate env variable) or
+according to CF standard name. The returned tuple contains coordinate names in
+the following order: (reftime, leadtime, validtime).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_reftime">
+<span class="sig-name descname"><span class="pre">get_reftime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'dim'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'coord'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'dim'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_reftime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_reftime" title="Link to this definition">#</a></dt>
+<dd><p>Returns name of forecast reference time dimension or coordinate according to
+the possible options defined in the config (could be overwritten by setting
+appropriate env variable) or according to CF standard name.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_validtime">
+<span class="sig-name descname"><span class="pre">get_validtime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'dim'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'coord'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'dim'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_notfound</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="k"><span class="pre">True</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_validtime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_validtime" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">get_validtime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'dim'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'coord'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'dim'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_notfound</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="k"><span class="pre">False</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span></dt>
+<dd><p>Returns name of valid time dimension or coordinate according to the possible
+options defined in the config (could be overwritten by setting appropriate
+env variable) or according to CF standard name. When raise_notfound is set
+to True, raise a ValueError if a valid time dimension/coordinate can not be
+found.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_leadtime">
+<span class="sig-name descname"><span class="pre">get_leadtime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'dim'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'coord'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'dim'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_leadtime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_leadtime" title="Link to this definition">#</a></dt>
+<dd><p>Returns name of lead time dimension or coordinate according to the possible
+options defined in the config (could be overwritten by setting appropriate
+env variable) or according to CF standard name.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_ensemble_dim">
+<span class="sig-name descname"><span class="pre">get_ensemble_dim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_ensemble_dim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_ensemble_dim" title="Link to this definition">#</a></dt>
+<dd><p>Returns name of ensemble members dimension according to the possible options
+defined in the config (could be overwritten by setting appropriate env variable)
+or according to CF standard name.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.set_grid_mapping">
+<span class="sig-name descname"><span class="pre">set_grid_mapping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">xarray.Dataset</span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#set_grid_mapping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.set_grid_mapping" title="Link to this definition">#</a></dt>
+<dd><p>Set grid_mapping attribute according to internal conventions when the input
+grid follow CF conventions (grid mapping encoded as a data variable). The
+data variable encoding the grid mapping is removed.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_spatial_dims">
+<span class="sig-name descname"><span class="pre">get_spatial_dims</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_spatial_dims"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_spatial_dims" title="Link to this definition">#</a></dt>
+<dd><p>Returns names of spatial dimensions according to the possible options defined
+in the config (could be overwritten by setting appropriate env variable)
+or according to CF conventions. The returned tuple has size one in case of
+unstructured grid otherwise contains dimension names in the order (y, x).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_spatial_coords">
+<span class="sig-name descname"><span class="pre">get_spatial_coords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_spatial_coords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_spatial_coords" title="Link to this definition">#</a></dt>
+<dd><p>Returns names of non-dimension spatial coordinates according to the
+possible options defined in the config (could be overwritten by setting
+appropriate env variable) or according to CF conventions. The returned
+tuple contains coordinate names in the order (y, x).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_flat_dim">
+<span class="sig-name descname"><span class="pre">get_flat_dim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_flat_dim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_flat_dim" title="Link to this definition">#</a></dt>
+<dd><p>Returns spatial dimension name for an unstructured grid according to the
+possible options defined in the config (could be overwritten by setting
+appropriate env variable).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_latlon_coords">
+<span class="sig-name descname"><span class="pre">get_latlon_coords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nondim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_latlon_coords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_latlon_coords" title="Link to this definition">#</a></dt>
+<dd><p>Returns names of latitude and longitude coordinates if they exist according
+to the possible options defined in the config (could be overwritten by setting
+appropriate env variable) or according to CF conventions. The returned tuple
+contains coordinate names in the order (latitude, longitude). When <code class="docutils literal notranslate"><span class="pre">nondim</span></code>
+is True (default), only checks coordinates that are non-dimensional.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_latlon_dims">
+<span class="sig-name descname"><span class="pre">get_latlon_dims</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_latlon_dims"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_latlon_dims" title="Link to this definition">#</a></dt>
+<dd><p>Returns names of latitude and longitude dimensions if they exist according
+to the possible options defined in the config (could be overwritten by setting
+appropriate env variable) or according to CF conventions. The returned tuple
+contains coordinate names in the order (latitude, longitude).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_surf_alt">
+<span class="sig-name descname"><span class="pre">get_surf_alt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_surf_alt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_surf_alt" title="Link to this definition">#</a></dt>
+<dd><p>Returns name of the surface altitude coordinate variable according to the
+possible options defined in the config (could be overwritten by setting
+appropriate env variable).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_poi_alt">
+<span class="sig-name descname"><span class="pre">get_poi_alt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">poi_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">geopandas.GeoDataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.typing.NDArray</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.float32</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_poi_alt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_poi_alt" title="Link to this definition">#</a></dt>
+<dd><p>Returns POIs altitudes from <code class="docutils literal notranslate"><span class="pre">poi_info</span></code> according to the column names defined
+in the config (could be overwritten by setting appropriate env variable) or
+from a “z” geometry. Altitude data is expected to be in meters above sea level.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_grid_crs">
+<span class="sig-name descname"><span class="pre">get_grid_crs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pyproj.CRS</span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_grid_crs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_grid_crs" title="Link to this definition">#</a></dt>
+<dd><p>Get correct CRS according to supported conventions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>grid</strong> (<em>xarray Dataset or DataArray</em>) – contains spatial horizontal coordinates. Must have a “grid_mapping” or “crs”
+attribute referencing the spatial dimensions unless <cite>longitude</cite> and
+<cite>latitude</cite> (or configured equivalents) are dimensions.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>pyproj representation of input grid coordinate reference system</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pyproj CRS</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="xref py py-func docutils literal notranslate"><span class="pre">set_grid_mapping()</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.parse_grid_mapping">
+<span class="sig-name descname"><span class="pre">parse_grid_mapping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid_mapping</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pyproj.CRS</span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#parse_grid_mapping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.parse_grid_mapping" title="Link to this definition">#</a></dt>
+<dd><p>Parse internal grid database style “grid_mapping” attribute and decode it with Pyproj.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>grid_mapping</strong> (<em>dict or dict encapsulated in a string</em>) – contains CF conventions attributes parsable by pyproj.CRS.from_cf() or
+the key “epsg_code” with value being an authority string (e.g. EPSG:4326)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>pyproj representation of input grid_mapping</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pyproj CRS</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#grid_process.data_model.get_grid_crs" title="grid_process.data_model.get_grid_crs"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_grid_crs()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.get_coords_name_crs">
+<span class="sig-name descname"><span class="pre">get_coords_name_crs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spatial_dims</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pyproj.CRS</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#get_coords_name_crs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.get_coords_name_crs" title="Link to this definition">#</a></dt>
+<dd><p>Get correct coordinate names and CRS according to supported conventions. When
+non-dimensional longitude and latitude coordinates arrays are present, these
+are used instead of the native spatial dimension coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>grid</strong> (<em>xarray Dataset or DataArray</em>) – contains spatial horizontal coordinates. Must have a “grid_mapping” or “crs”
+attribute referencing the spatial dimensions unless longitude and
+latitude coordinates are present.</p></li>
+<li><p><strong>spatial_dims</strong> (<em>tuple of string(s), optional</em>) – name of the <code class="docutils literal notranslate"><span class="pre">grid</span></code> spatial dimension(s). Has size one in case of
+unstructured grid otherwise contains dimension names in the order (y, x).
+If not provided, calls <code class="xref py py-func docutils literal notranslate"><span class="pre">get_spatial_dims()</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>grid_y</strong> (<em>str</em>) – name of the northward coordinate. Usually ‘x’ or ‘longitude’</p></li>
+<li><p><strong>grid_x</strong> (<em>str</em>) – name of the eastward coordinate. Usually ‘y’ or ‘latitude’’</p></li>
+<li><p><strong>grid_crs</strong> (<em>pyproj CRS</em>) – pyproj representation of input grid coordinate reference system</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.is_decreasing1d">
+<span class="sig-name descname"><span class="pre">is_decreasing1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.DataArray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#is_decreasing1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.is_decreasing1d" title="Link to this definition">#</a></dt>
+<dd><p>Whether 1 dimensional <code class="docutils literal notranslate"><span class="pre">coords</span></code> are in decreasing order.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.data_model.is_decreasing">
+<span class="sig-name descname"><span class="pre">is_decreasing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.DataArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../../../_modules/grid_process/data_model.html#is_decreasing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.data_model.is_decreasing" title="Link to this definition">#</a></dt>
+<dd><p>Checks whether <code class="docutils literal notranslate"><span class="pre">coords</span></code> are in decreasing order along dimension <code class="docutils literal notranslate"><span class="pre">dim</span></code>.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../da_utils/index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">grid_process.da_utils</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../ds_utils/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">grid_process.ds_utils</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attributes">Attributes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.logger"><code class="docutils literal notranslate"><span class="pre">logger</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.F"><code class="docutils literal notranslate"><span class="pre">F</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.DATA_MODEL"><code class="docutils literal notranslate"><span class="pre">DATA_MODEL</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.FLAT_DIM"><code class="docutils literal notranslate"><span class="pre">FLAT_DIM</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.YX"><code class="docutils literal notranslate"><span class="pre">YX</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.LATLON"><code class="docutils literal notranslate"><span class="pre">LATLON</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.SURF_ALT"><code class="docutils literal notranslate"><span class="pre">SURF_ALT</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.REFTIME"><code class="docutils literal notranslate"><span class="pre">REFTIME</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.VALIDTIME"><code class="docutils literal notranslate"><span class="pre">VALIDTIME</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.LEADTIME"><code class="docutils literal notranslate"><span class="pre">LEADTIME</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.ENS_DIM"><code class="docutils literal notranslate"><span class="pre">ENS_DIM</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.POI_ALT_COL"><code class="docutils literal notranslate"><span class="pre">POI_ALT_COL</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_t_dim"><code class="docutils literal notranslate"><span class="pre">get_t_dim()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_temporal_dims"><code class="docutils literal notranslate"><span class="pre">get_temporal_dims()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_temporal_coords"><code class="docutils literal notranslate"><span class="pre">get_temporal_coords()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_reftime"><code class="docutils literal notranslate"><span class="pre">get_reftime()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_validtime"><code class="docutils literal notranslate"><span class="pre">get_validtime()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_leadtime"><code class="docutils literal notranslate"><span class="pre">get_leadtime()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_ensemble_dim"><code class="docutils literal notranslate"><span class="pre">get_ensemble_dim()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.set_grid_mapping"><code class="docutils literal notranslate"><span class="pre">set_grid_mapping()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_spatial_dims"><code class="docutils literal notranslate"><span class="pre">get_spatial_dims()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_spatial_coords"><code class="docutils literal notranslate"><span class="pre">get_spatial_coords()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_flat_dim"><code class="docutils literal notranslate"><span class="pre">get_flat_dim()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_latlon_coords"><code class="docutils literal notranslate"><span class="pre">get_latlon_coords()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_latlon_dims"><code class="docutils literal notranslate"><span class="pre">get_latlon_dims()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_surf_alt"><code class="docutils literal notranslate"><span class="pre">get_surf_alt()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_poi_alt"><code class="docutils literal notranslate"><span class="pre">get_poi_alt()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_grid_crs"><code class="docutils literal notranslate"><span class="pre">get_grid_crs()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.parse_grid_mapping"><code class="docutils literal notranslate"><span class="pre">parse_grid_mapping()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.get_coords_name_crs"><code class="docutils literal notranslate"><span class="pre">get_coords_name_crs()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.is_decreasing1d"><code class="docutils literal notranslate"><span class="pre">is_decreasing1d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.data_model.is_decreasing"><code class="docutils literal notranslate"><span class="pre">is_decreasing()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item"><!-- This will display the version of the docs -->
+grid-process, version: 1.0.0-4b9cffb</div>
+      
+        <div class="footer-item"><p class="last-updated">
+  Last updated on 14.10.2026.
+  <br/>
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, MeteoSwiss.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

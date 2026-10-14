@@ -1,0 +1,997 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>grid_process.sun &#8212; grid-process</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=e3fa712e"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/grid_process/sun';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = '../_static/switcher_config.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.0.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.0.0" />
+    <meta name="docbuild:last-update" content="14.10.2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">grid-process</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../changelog.html">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../autoapi/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../changelog.html">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../autoapi/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">grid_process.sun</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for grid_process.sun</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (c) 2026 MeteoSwiss, contributors listed in AUTHORS</span>
+<span class="c1">#</span>
+<span class="c1"># Distributed under the terms of the BSD 3-Clause License.</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: BSD-3-Clause</span>
+
+<span class="sd">"""</span>
+<span class="sd">Module to wrap some sun position utility functions</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">cast</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">date_range</span><span class="p">,</span> <span class="n">Timedelta</span><span class="p">,</span> <span class="n">offsets</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.data_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_validtime</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="zenith">
+<a class="viewcode-back" href="../../autoapi/grid_process/sun/index.html#grid_process.sun.zenith">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zenith</span><span class="p">(</span><span class="n">times</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">refrac_cor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Analytical expression of solar zenith angle based on spherical</span>
+<span class="sd">    trigonometry.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    times: xarray.DataArray, 1D</span>
+<span class="sd">        contains timestamps to be checked in UTC</span>
+<span class="sd">    lat: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains latitudes of the points to be checked</span>
+<span class="sd">    lon: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains longitudes of the points to be checked</span>
+<span class="sd">    refrac_cor: bool</span>
+<span class="sd">        whether to account for atmospheric refraction. It is significant only when</span>
+<span class="sd">        the sun is close to horizon, in which case atmospheric refraction correction</span>
+<span class="sd">        is about 0.6 [degrees]. Default is True</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    zen : xarray.DataArray 2D or 3D</span>
+<span class="sd">        zenith in [degrees] for each time/point couple</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    * J. A. Duffie and W. A. Beckman,  "Solar Engineering of Thermal</span>
+<span class="sd">      Processes, 3rd Edition" pp. 14, J. Wiley and Sons, New York (2006)</span>
+
+<span class="sd">    * J. H. Seinfeld and S. N. Pandis, "Atmospheric Chemistry and</span>
+<span class="sd">      Physics" p. 132, J. Wiley (1998)</span>
+
+<span class="sd">    * Daryl R. Myers, "Solar Radiation: Practical Modeling for</span>
+<span class="sd">      Renewable Energy Applications", p. 5 CRC Press (2013)</span>
+
+<span class="sd">    * `Wikipedia: Solar Zenith Angle</span>
+<span class="sd">      &lt;https://en.wikipedia.org/wiki/Solar_zenith_angle&gt;`_</span>
+
+<span class="sd">    * `PVCDROM: Sun's Position</span>
+<span class="sd">      &lt;http://www.pveducation.org/pvcdrom/2-properties-sunlight/</span>
+<span class="sd">      suns-position&gt;`_</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`azim_elev`, :func:`elevation`</span>
+<span class="sd">    """</span>
+
+    <span class="n">zen</span> <span class="o">=</span> <span class="n">_zenith</span><span class="p">(</span><span class="o">*</span><span class="n">params_zenith</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="mf">180.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">refrac_cor</span><span class="p">:</span>
+        <span class="n">zen</span> <span class="o">-=</span> <span class="n">_atmo_refraction_corr</span><span class="p">(</span><span class="mi">90</span> <span class="o">-</span> <span class="n">zen</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">zen</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_zenith</span><span class="p">(</span><span class="n">decl</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lat_rad</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">h_angle</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compute the formula for the solar zenith angle. The returned angle is in radians</span>
+<span class="sd">    """</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">decl</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat_rad</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">h_angle</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">decl</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat_rad</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="cos_zenith">
+<a class="viewcode-back" href="../../autoapi/grid_process/sun/index.html#grid_process.sun.cos_zenith">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cos_zenith</span><span class="p">(</span><span class="n">times</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compute the cosine of the solar zenith angle. Atmospheric refraction is NOT</span>
+<span class="sd">    considered</span>
+<span class="sd">    """</span>
+
+    <span class="n">decl</span><span class="p">,</span> <span class="n">lat_rad</span><span class="p">,</span> <span class="n">h_angle</span> <span class="o">=</span> <span class="n">params_zenith</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">decl</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat_rad</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">h_angle</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">decl</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat_rad</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="params_zenith">
+<a class="viewcode-back" href="../../autoapi/grid_process/sun/index.html#grid_process.sun.params_zenith">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">params_zenith</span><span class="p">(</span>
+    <span class="n">times</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    get the different parameters to compute zenith angle</span>
+<span class="sd">    """</span>
+
+    <span class="n">decl</span> <span class="o">=</span> <span class="n">_declination</span><span class="p">(</span><span class="n">times</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofyear</span><span class="p">)</span>
+    <span class="n">h_angle</span> <span class="o">=</span> <span class="n">hour_angle</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">lon</span><span class="p">)</span>
+    <span class="n">lat_rad</span> <span class="o">=</span> <span class="n">lat</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">180.0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">decl</span><span class="p">,</span> <span class="n">lat_rad</span><span class="p">,</span> <span class="n">h_angle</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_declination</span><span class="p">(</span><span class="n">dayofyear</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Solar declination from Duffie &amp; Beckman and attributed to Spencer (1971)</span>
+<span class="sd">    and Iqbal (1983).</span>
+<span class="sd">    """</span>
+
+    <span class="n">day_angle</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">365.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">dayofyear</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="mf">0.006918</span>  <span class="c1"># type: ignore[return-value]</span>
+        <span class="o">-</span> <span class="mf">0.399912</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">day_angle</span><span class="p">)</span>
+        <span class="o">+</span> <span class="mf">0.070257</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">day_angle</span><span class="p">)</span>
+        <span class="o">-</span> <span class="mf">0.006758</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">day_angle</span><span class="p">)</span>
+        <span class="o">+</span> <span class="mf">0.000907</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">day_angle</span><span class="p">)</span>
+        <span class="o">-</span> <span class="mf">0.002697</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mf">3.0</span> <span class="o">*</span> <span class="n">day_angle</span><span class="p">)</span>
+        <span class="o">+</span> <span class="mf">0.00148</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mf">3.0</span> <span class="o">*</span> <span class="n">day_angle</span><span class="p">)</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_equation_of_time</span><span class="p">(</span><span class="n">dayofyear</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Difference in time between solar time and mean solar time in minutes. From</span>
+<span class="sd">    .. _PVCDROM: http://www.pveducation.org/pvcdrom/2-properties-sunlight/solar-time</span>
+<span class="sd">    """</span>
+
+    <span class="n">bday</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">365.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">dayofyear</span> <span class="o">-</span> <span class="mi">81</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mf">9.87</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">bday</span><span class="p">)</span> <span class="o">-</span> <span class="mf">7.53</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">bday</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">bday</span><span class="p">)</span>  <span class="c1"># type: ignore[return-value]</span>
+
+
+<div class="viewcode-block" id="hour_angle">
+<a class="viewcode-back" href="../../autoapi/grid_process/sun/index.html#grid_process.sun.hour_angle">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">hour_angle</span><span class="p">(</span><span class="n">times</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Hour angle [radians] in local solar time. Zero at local solar noon.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    times: xarray.DataArray, 1D</span>
+<span class="sd">        contains timestamps in UTC for which to calculate the hour angle</span>
+<span class="sd">    lon: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains longitudes of the points to be checked</span>
+<span class="sd">    """</span>
+
+    <span class="n">hour</span> <span class="o">=</span> <span class="p">(</span><span class="n">times</span> <span class="o">-</span> <span class="n">times</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="s2">"D"</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"h"</span><span class="p">)</span>
+    <span class="n">eot</span> <span class="o">=</span> <span class="n">_equation_of_time</span><span class="p">(</span><span class="n">times</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofyear</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="mf">15.0</span> <span class="o">*</span> <span class="n">hour</span> <span class="o">+</span> <span class="n">eot</span> <span class="o">/</span> <span class="mf">4.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">lon</span> <span class="o">-</span> <span class="mf">180.0</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">180.0</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_atmo_refraction_corr</span><span class="p">(</span>
+    <span class="n">elev</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""atmospheric refraction correction [degrees]"""</span>
+
+    <span class="n">elev</span> <span class="o">=</span> <span class="n">elev</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="mf">1.02</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">((</span><span class="n">elev</span> <span class="o">+</span> <span class="mf">10.3</span> <span class="o">/</span> <span class="p">(</span><span class="n">elev</span> <span class="o">+</span> <span class="mf">5.11</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">180.0</span><span class="p">))</span> <span class="o">+</span> <span class="mf">0.0019279</span><span class="p">)</span> <span class="o">/</span> <span class="mi">60</span>
+
+
+<div class="viewcode-block" id="elevation">
+<a class="viewcode-back" href="../../autoapi/grid_process/sun/index.html#grid_process.sun.elevation">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">elevation</span><span class="p">(</span><span class="n">times</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">refrac_cor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Analytical expression of solar elevation angle based on spherical</span>
+<span class="sd">    trigonometry</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    times: xarray.DataArray, 1D</span>
+<span class="sd">        contains timestamps to be checked in UTC</span>
+<span class="sd">    lat: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains latitudes of the points to be checked</span>
+<span class="sd">    lon: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains longitudes of the points to be checked</span>
+<span class="sd">    refrac_cor: bool</span>
+<span class="sd">        whether to account for atmospheric refraction. It is significant only when</span>
+<span class="sd">        the sun is close to horizon, in which case atmospheric refraction correction</span>
+<span class="sd">        is about 0.6 [degrees]. Default is True</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    elev : xarray.DataArray 2D or 3D</span>
+<span class="sd">        elevation in [degrees] for each time/point couple</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`azim_elev`, :func:`zenith`</span>
+<span class="sd">    """</span>
+
+    <span class="n">elev</span> <span class="o">=</span> <span class="mf">90.0</span> <span class="o">-</span> <span class="n">zenith</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">refrac_cor</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">refrac_cor</span><span class="p">:</span>
+        <span class="n">elev</span> <span class="o">+=</span> <span class="n">_atmo_refraction_corr</span><span class="p">(</span><span class="n">elev</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">elev</span></div>
+
+
+
+<div class="viewcode-block" id="azim_elev">
+<a class="viewcode-back" href="../../autoapi/grid_process/sun/index.html#grid_process.sun.azim_elev">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">azim_elev</span><span class="p">(</span>
+    <span class="n">times</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">refrac_cor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Analytical expression of solar azimuth and elevation angles based on spherical</span>
+<span class="sd">    trigonometry</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    times: xarray.DataArray, 1D</span>
+<span class="sd">        contains timestamps to be checked in UTC</span>
+<span class="sd">    lat: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains latitudes of the points to be checked</span>
+<span class="sd">    lon: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains longitudes of the points to be checked</span>
+<span class="sd">    refrac_cor: bool</span>
+<span class="sd">        whether to account for atmospheric refraction. It is significant only when</span>
+<span class="sd">        the sun is close to horizon, in which case atmospheric refraction correction</span>
+<span class="sd">        is about 0.6 [degrees]. Default is True</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    azim : xarray.DataArray 2D or 3D</span>
+<span class="sd">        azimuth in [degrees] for each time/point couple</span>
+<span class="sd">    elev : xarray.DataArray 2D or 3D</span>
+<span class="sd">        elevation in [degrees] for each time/point couple</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    * J. A. Duffie and W. A. Beckman,  "Solar Engineering of Thermal</span>
+<span class="sd">      Processes, 3rd Edition" pp. 14, J. Wiley and Sons, New York (2006)</span>
+
+<span class="sd">    * J. H. Seinfeld and S. N. Pandis, "Atmospheric Chemistry and Physics"</span>
+<span class="sd">      p. 132, J. Wiley (1998)</span>
+
+<span class="sd">    * `Wikipedia: Solar Azimuth Angle</span>
+<span class="sd">      &lt;https://en.wikipedia.org/wiki/Solar_azimuth_angle&gt;`_</span>
+
+<span class="sd">    * `PVCDROM: Azimuth Angle &lt;http://www.pveducation.org/pvcdrom/2-</span>
+<span class="sd">      properties-sunlight/azimuth-angle&gt;`_</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`elevation`, :func:`zenith`</span>
+<span class="sd">    """</span>
+
+    <span class="n">decl</span><span class="p">,</span> <span class="n">lat_rad</span><span class="p">,</span> <span class="n">h_angle</span> <span class="o">=</span> <span class="n">params_zenith</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">)</span>
+    <span class="n">zen</span> <span class="o">=</span> <span class="n">_zenith</span><span class="p">(</span><span class="n">decl</span><span class="p">,</span> <span class="n">lat_rad</span><span class="p">,</span> <span class="n">h_angle</span><span class="p">)</span>
+
+    <span class="n">numer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">zen</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat_rad</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">decl</span><span class="p">)</span>
+    <span class="n">denom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">zen</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat_rad</span><span class="p">)</span>
+
+    <span class="c1"># cases that would generate new NaN values are safely ignored here</span>
+    <span class="c1"># since they are dealt with further below</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">):</span>
+        <span class="n">cos_azi</span> <span class="o">=</span> <span class="n">numer</span> <span class="o">/</span> <span class="n">denom</span>
+
+    <span class="c1"># when zero division occurs, use the limit value of the analytical</span>
+    <span class="c1"># expression</span>
+    <span class="n">cos_azi</span> <span class="o">=</span> <span class="n">cos_azi</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">denom</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">cos_azi</span> <span class="o">=</span> <span class="n">cos_azi</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+    <span class="n">azim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">h_angle</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">cos_azi</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">180.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">+</span> <span class="mf">180.0</span>
+    <span class="n">elev</span> <span class="o">=</span> <span class="mi">90</span> <span class="o">-</span> <span class="n">zen</span> <span class="o">*</span> <span class="p">(</span><span class="mf">180.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">refrac_cor</span><span class="p">:</span>
+        <span class="n">elev</span> <span class="o">+=</span> <span class="n">_atmo_refraction_corr</span><span class="p">(</span><span class="n">elev</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">azim</span><span class="p">,</span> <span class="n">elev</span></div>
+
+
+
+<div class="viewcode-block" id="rise_set">
+<a class="viewcode-back" href="../../autoapi/grid_process/sun/index.html#grid_process.sun.rise_set">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rise_set</span><span class="p">(</span>
+    <span class="n">times</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">refrac_cor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Geometric calculation of solar sunrise and sunset times</span>
+
+<span class="sd">    .. warning:: The geometric calculation assumes a circular earth orbit with</span>
+<span class="sd">        the sun as a point source at its center, and neglects the effect of</span>
+<span class="sd">        atmospheric refraction on zenith. The error depends on location and</span>
+<span class="sd">        time of year but is of order 10 minutes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    times: xarray.DataArray, 1D</span>
+<span class="sd">        contains timestamps to be checked in UTC</span>
+<span class="sd">    lat: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains latitudes of the points to be checked</span>
+<span class="sd">    lon: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains longitudes of the points to be checked</span>
+<span class="sd">    refrac_cor: bool</span>
+<span class="sd">        whether to account for atmospheric refraction. When true, the sunrise / sunset</span>
+<span class="sd">        occurs about 4 minutes earlier / later. Default is True</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    sunrise : xarray.DataArray 2D or 3D</span>
+<span class="sd">        sunrise times for each time/point couple in UTC</span>
+<span class="sd">    sunset : xarray.DataArray 2D or 3D</span>
+<span class="sd">        sunset times for each time/point couple in UTC</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    * J. A. Duffie and W. A. Beckman,  "Solar Engineering of Thermal</span>
+<span class="sd">      Processes, 3rd Edition," J. Wiley and Sons, New York (2006)</span>
+
+<span class="sd">    * Frank Vignola et al., "Solar And Infrared Radiation Measurements,"</span>
+<span class="sd">      CRC Press (2012)</span>
+<span class="sd">    """</span>
+
+    <span class="n">times_floor</span><span class="p">,</span> <span class="n">ind_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">times</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="s2">"D"</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">times_floor</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">times_floor</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s2">"dayofyear"</span><span class="p">,))</span>
+    <span class="n">ind_inv</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">ind_inv</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="n">times</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+    <span class="n">dayofyear</span> <span class="o">=</span> <span class="n">times_floor</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofyear</span>
+
+    <span class="n">lat_rad</span> <span class="o">=</span> <span class="n">lat</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">180.0</span><span class="p">)</span>
+    <span class="n">decl</span> <span class="o">=</span> <span class="n">_declination</span><span class="p">(</span><span class="n">dayofyear</span><span class="p">)</span>
+    <span class="n">eot</span> <span class="o">=</span> <span class="n">_equation_of_time</span><span class="p">(</span><span class="n">dayofyear</span><span class="p">)</span>
+
+    <span class="n">cos_angle</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="n">decl</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="n">lat_rad</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">refrac_cor</span><span class="p">:</span>
+        <span class="n">zen_cor</span> <span class="o">=</span> <span class="mf">90.574</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">180.0</span><span class="p">)</span>  <span class="c1"># true zenith when apparent zenith = 0</span>
+        <span class="n">cos_angle</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">zen_cor</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">decl</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat_rad</span><span class="p">))</span>
+
+    <span class="c1"># numpy ufuncs applied to a DataArray return a DataArray, which numpy type stubs do not know</span>
+    <span class="n">sunset_angle</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">cos_angle</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="mf">180.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+    <span class="n">sunrise</span> <span class="o">=</span> <span class="n">_angle_to_timedelta</span><span class="p">(</span><span class="o">-</span><span class="n">sunset_angle</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">eot</span><span class="p">)</span> <span class="o">+</span> <span class="n">times_floor</span>
+    <span class="n">sunset</span> <span class="o">=</span> <span class="n">_angle_to_timedelta</span><span class="p">(</span><span class="n">sunset_angle</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">eot</span><span class="p">)</span> <span class="o">+</span> <span class="n">times_floor</span>
+
+    <span class="k">return</span> <span class="n">sunrise</span><span class="p">[{</span><span class="s2">"dayofyear"</span><span class="p">:</span> <span class="n">ind_inv</span><span class="p">}],</span> <span class="n">sunset</span><span class="p">[{</span><span class="s2">"dayofyear"</span><span class="p">:</span> <span class="n">ind_inv</span><span class="p">}]</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_angle_to_timedelta</span><span class="p">(</span><span class="n">angle</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">eot</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""converts angles in [degrees] to np.timedelta64"""</span>
+
+    <span class="k">return</span> <span class="p">((</span><span class="n">angle</span> <span class="o">-</span> <span class="p">(</span><span class="n">lon</span> <span class="o">-</span> <span class="mf">180.0</span><span class="p">)</span> <span class="o">-</span> <span class="n">eot</span> <span class="o">/</span> <span class="mf">4.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">3.6e12</span> <span class="o">/</span> <span class="mf">15.0</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="s2">"timedelta64[ns]"</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="daytime">
+<a class="viewcode-back" href="../../autoapi/grid_process/sun/index.html#grid_process.sun.daytime">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">daytime</span><span class="p">(</span><span class="n">times</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">refrac_cor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Return a boolean xarray.DataArray specifying whether times are daytime for</span>
+<span class="sd">    each point defined by the lat and lon arrays. Daytime is defined here as the</span>
+<span class="sd">    center of the sun being above the non-topographic flat horizon (i.e. sun elevation &gt; 0)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    times: xarray.DataArray, 1D</span>
+<span class="sd">        contains timestamps to be checked in UTC</span>
+<span class="sd">    lat: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains latitudes of the points to be checked</span>
+<span class="sd">    lon: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains longitudes of the points to be checked</span>
+<span class="sd">    refrac_cor: bool</span>
+<span class="sd">        whether to account for atmospheric refraction. When true, the sunrise / sunset</span>
+<span class="sd">        occurs about 4 minutes earlier / later. Default is True</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    da_out : xarray.DataArray of bool</span>
+<span class="sd">        indicates for each time/point couple whether it is daytime</span>
+
+<span class="sd">    See also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`rise_set`</span>
+<span class="sd">    """</span>
+
+    <span class="n">day</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">times</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="s2">"D"</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">),</span> <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s2">"dayofyear"</span><span class="p">,))</span>
+    <span class="n">sunrise</span><span class="p">,</span> <span class="n">sunset</span> <span class="o">=</span> <span class="n">rise_set</span><span class="p">(</span><span class="n">day</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="s2">"dayofyear"</span><span class="p">:</span> <span class="n">day</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofyear</span><span class="o">.</span><span class="n">values</span><span class="p">}),</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">refrac_cor</span><span class="p">)</span>
+
+    <span class="n">isday</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">apply_ufunc</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">r</span><span class="p">,</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">s</span><span class="p">),</span>
+        <span class="n">times</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">times</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofyear</span><span class="p">),</span>
+        <span class="n">sunrise</span><span class="p">,</span>
+        <span class="n">sunset</span><span class="p">,</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span><span class="s2">"dayofyear"</span><span class="p">)</span>
+    <span class="n">isday</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># recent xarray versions keep the name of `times`</span>
+    <span class="k">return</span> <span class="n">isday</span></div>
+
+
+
+<div class="viewcode-block" id="topo_rise_set">
+<a class="viewcode-back" href="../../autoapi/grid_process/sun/index.html#grid_process.sun.topo_rise_set">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">topo_rise_set</span><span class="p">(</span><span class="n">times</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Computes topographic sunrise and sunset based on horizon data. Sunrise / sunset</span>
+<span class="sd">    is defined as the first / last time the sun path cross the horizon line</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    times: xarray.DataArray, 1D</span>
+<span class="sd">        contains timestamps to be checked in UTC. Must be regularly sampled and</span>
+<span class="sd">        cover full daytime periods</span>
+<span class="sd">    lat: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains latitudes of the points to be checked</span>
+<span class="sd">    lon: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains longitudes of the points to be checked</span>
+<span class="sd">    horizon : xarray.DataArray 2D or 3D</span>
+<span class="sd">        topographic horizon in [degrees] of the points to be checked, regularly</span>
+<span class="sd">        sampled along a dimension `azimuth`</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ds : xarray.Dataset 2D or 3D</span>
+<span class="sd">        contains topographic sunrise and sunset in UTC for each point and day of</span>
+<span class="sd">        year in input ``times``</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`azim_elev`, :func:`rise_set`, :func:`daytime`</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    The higher is the time frequency of ``times``, the more accurate will be the</span>
+<span class="sd">    sunrise and sunset times as it is interpolated between the two time points</span>
+<span class="sd">    when the sun cross the topographic horizon.</span>
+<span class="sd">    """</span>
+
+    <span class="n">horizon</span> <span class="o">=</span> <span class="n">horizon</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="s2">"azimuth"</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+    <span class="n">azim</span><span class="p">,</span> <span class="n">elev</span> <span class="o">=</span> <span class="n">azim_elev</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">refrac_cor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">horizon</span> <span class="o">=</span> <span class="n">horizon</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">azimuth</span><span class="o">=</span><span class="n">azim</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"nearest"</span><span class="p">)</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span><span class="s2">"azimuth"</span><span class="p">)</span>
+    <span class="n">shadow_mask</span> <span class="o">=</span> <span class="n">elev</span> <span class="o">&gt;</span> <span class="n">horizon</span>  <span class="c1"># False when shadow, True when sun</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">({</span><span class="s2">"elev"</span><span class="p">:</span> <span class="n">elev</span><span class="p">,</span> <span class="s2">"hori"</span><span class="p">:</span> <span class="n">horizon</span><span class="p">,</span> <span class="s2">"shadow"</span><span class="p">:</span> <span class="n">shadow_mask</span><span class="p">})</span>
+
+    <span class="n">t_dim</span> <span class="o">=</span> <span class="n">get_validtime</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">raise_notfound</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">t_dim</span><span class="si">}</span><span class="s2">.dayofyear"</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">_topo_suntimes</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">t_dim</span><span class="p">,))</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_topo_suntimes</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">t_dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Return a dataset with topographic sunrise and sunset given a input dataset</span>
+<span class="sd">    with sun elevation, topographic horizon and shadow mask data variables.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_suntime</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return topographic sunrise/sunset if mode is "rise"/"set" respectively.</span>
+<span class="sd">        """</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"rise"</span><span class="p">:</span>
+            <span class="n">first_after</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">shadow</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">t_dim</span><span class="p">)</span>
+            <span class="n">first_after</span> <span class="o">=</span> <span class="n">first_after</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">has_sun</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># sunset</span>
+            <span class="n">n_t</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span>
+            <span class="n">first_after</span> <span class="o">=</span> <span class="n">n_t</span> <span class="o">-</span> <span class="n">ds</span><span class="o">.</span><span class="n">shadow</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">t_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)})</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">t_dim</span><span class="p">)</span>
+            <span class="n">first_after</span> <span class="o">=</span> <span class="n">first_after</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">has_sun</span><span class="p">,</span> <span class="n">n_t</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">indexer</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">first_after</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">first_after</span><span class="p">],</span> <span class="n">t_dim</span><span class="p">)</span>
+        <span class="n">switch</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[[</span><span class="s2">"elev"</span><span class="p">,</span> <span class="s2">"hori"</span><span class="p">]]</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">t_dim</span><span class="p">:</span> <span class="n">indexer</span><span class="p">})</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="n">switch</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">t_dim</span><span class="p">)</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">t_dim</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">switch</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">t_dim</span><span class="p">)</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">t_dim</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+        <span class="n">switch</span> <span class="o">=</span> <span class="n">switch</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">t_dim</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">switch</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="p">(</span><span class="n">switch</span><span class="o">.</span><span class="n">hori</span> <span class="o">-</span> <span class="n">switch</span><span class="o">.</span><span class="n">elev</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">elev</span> <span class="o">-</span> <span class="n">diff</span><span class="o">.</span><span class="n">hori</span><span class="p">)</span>
+
+    <span class="n">has_sun</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">shadow</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">t_dim</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">({</span><span class="s2">"sunrise"</span><span class="p">:</span> <span class="n">_suntime</span><span class="p">(</span><span class="s2">"rise"</span><span class="p">),</span> <span class="s2">"sunset"</span><span class="p">:</span> <span class="n">_suntime</span><span class="p">(</span><span class="s2">"set"</span><span class="p">)})</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">has_sun</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="topo_shading_cor">
+<a class="viewcode-back" href="../../autoapi/grid_process/sun/index.html#grid_process.sun.topo_shading_cor">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">topo_shading_cor</span><span class="p">(</span>
+    <span class="n">times</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span>
+    <span class="n">lat</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span>
+    <span class="n">lon</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span>
+    <span class="n">horizon</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span>
+    <span class="n">sampling_freq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"10min"</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Computes topographic shading correction factor for variables</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    times: xarray.DataArray, 1D</span>
+<span class="sd">        contains timestamps for which correction factor are computed. Must have</span>
+<span class="sd">        constant time granularity and be in UTC</span>
+<span class="sd">    lat: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains latitudes of the points to be checked</span>
+<span class="sd">    lon: xarray.DataArray 1D or 2D</span>
+<span class="sd">        contains longitudes of the points to be checked</span>
+<span class="sd">    horizon : xarray.DataArray 2D or 3D</span>
+<span class="sd">        topographic horizon in [degrees] of the points to be checked, regularly</span>
+<span class="sd">        sampled along a dimension `azimuth`</span>
+<span class="sd">    sampling_freq : frequency string as accepted by pandas date functionalities</span>
+<span class="sd">        time frequency to compare sun elevation with topographic horizon. The</span>
+<span class="sd">        higher the more precise will be the correction factors but at the cost</span>
+<span class="sd">        of longer computation time. Should be at least higher than the frequency</span>
+<span class="sd">        of the input ``times`` array</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    da_out : xarray.DataArray 2D or 3D</span>
+<span class="sd">        contains topographic correction factors for each timestamps in input arg</span>
+<span class="sd">        ``times``</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`azim_elev`, :func:`topo_rise_set`, :func:`daytime`</span>
+<span class="sd">    """</span>
+
+    <span class="n">t_dim</span> <span class="o">=</span> <span class="n">get_validtime</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">raise_notfound</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">out_freq</span> <span class="o">=</span> <span class="n">offsets</span><span class="o">.</span><span class="n">Second</span><span class="p">(</span><span class="n">times</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">t_dim</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">Timedelta</span><span class="p">(</span><span class="s2">"1s"</span><span class="p">))</span><span class="o">.</span><span class="n">freqstr</span>
+    <span class="n">sample_t</span> <span class="o">=</span> <span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">times</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">sampling_freq</span><span class="p">)</span>
+    <span class="n">sample_t</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">sample_t</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="n">t_dim</span><span class="p">:</span> <span class="n">sample_t</span><span class="p">})</span>
+    <span class="n">azim</span><span class="p">,</span> <span class="n">elev</span> <span class="o">=</span> <span class="n">azim_elev</span><span class="p">(</span><span class="n">sample_t</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">refrac_cor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">horizon</span> <span class="o">=</span> <span class="n">horizon</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">azimuth</span><span class="o">=</span><span class="n">azim</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"nearest"</span><span class="p">)</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span><span class="s2">"azimuth"</span><span class="p">)</span>
+    <span class="n">shadow_mask</span> <span class="o">=</span> <span class="n">elev</span> <span class="o">&gt;</span> <span class="n">horizon</span>  <span class="c1"># False when shadow, True when sun</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">shadow_mask</span><span class="o">.</span><span class="n">resample</span><span class="p">({</span><span class="n">t_dim</span><span class="p">:</span> <span class="n">out_freq</span><span class="p">},</span> <span class="n">label</span><span class="o">=</span><span class="s2">"right"</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="s2">"right"</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">skipna</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="o">*</span> <span class="p">(</span><span class="n">Timedelta</span><span class="p">(</span><span class="n">sampling_freq</span><span class="p">)</span> <span class="o">/</span> <span class="n">Timedelta</span><span class="p">(</span><span class="n">out_freq</span><span class="p">))</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item"><!-- This will display the version of the docs -->
+grid-process, version: 1.0.0-4b9cffb</div>
+      
+        <div class="footer-item"><p class="last-updated">
+  Last updated on 14.10.2026.
+  <br/>
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, MeteoSwiss.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

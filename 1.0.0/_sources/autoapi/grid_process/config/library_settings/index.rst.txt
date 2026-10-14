@@ -1,0 +1,540 @@
+grid_process.config.library_settings
+====================================
+
+.. py:module:: grid_process.config.library_settings
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   grid_process.config.library_settings.DataModelOptions
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   grid_process.config.library_settings.CacheSizeSettings
+   grid_process.config.library_settings.GridSettings
+   grid_process.config.library_settings.PoiSettings
+   grid_process.config.library_settings.DataModelSettings
+   grid_process.config.library_settings.LibrarySettings
+
+
+Module Contents
+---------------
+
+.. py:data:: DataModelOptions
+
+.. py:class:: CacheSizeSettings(/, **data: Any)
+
+   Bases: :py:obj:`pydantic.BaseModel`
+
+
+   !!! abstract "Usage Documentation"
+       [Models](../concepts/models.md)
+
+   A base class for creating Pydantic models.
+
+   .. attribute:: __class_vars__
+
+      The names of the class variables defined on the model.
+
+   .. attribute:: __private_attributes__
+
+      Metadata about the private attributes of the model.
+
+   .. attribute:: __signature__
+
+      The synthesized `__init__` [`Signature`][inspect.Signature] of the model.
+
+   .. attribute:: __pydantic_complete__
+
+      Whether model building is completed, or if there are still undefined fields.
+
+   .. attribute:: __pydantic_core_schema__
+
+      The core schema of the model.
+
+   .. attribute:: __pydantic_custom_init__
+
+      Whether the model has a custom `__init__` function.
+
+   .. attribute:: __pydantic_decorators__
+
+      Metadata containing the decorators defined on the model.
+      This replaces `Model.__validators__` and `Model.__root_validators__` from Pydantic V1.
+
+   .. attribute:: __pydantic_generic_metadata__
+
+      A dictionary containing metadata about generic Pydantic models.
+      The `origin` and `args` items map to the [`__origin__`][genericalias.__origin__]
+      and [`__args__`][genericalias.__args__] attributes of [generic aliases][types-genericalias],
+      and the `parameter` item maps to the `__parameter__` attribute of generic classes.
+
+   .. attribute:: __pydantic_parent_namespace__
+
+      Parent namespace of the model, used for automatic rebuilding of models.
+
+   .. attribute:: __pydantic_post_init__
+
+      The name of the post-init method for the model, if defined.
+
+   .. attribute:: __pydantic_root_model__
+
+      Whether the model is a [`RootModel`][pydantic.root_model.RootModel].
+
+   .. attribute:: __pydantic_serializer__
+
+      The `pydantic-core` `SchemaSerializer` used to dump instances of the model.
+
+   .. attribute:: __pydantic_validator__
+
+      The `pydantic-core` `SchemaValidator` used to validate instances of the model.
+
+   .. attribute:: __pydantic_fields__
+
+      A dictionary of field names and their corresponding [`FieldInfo`][pydantic.fields.FieldInfo] objects.
+
+   .. attribute:: __pydantic_computed_fields__
+
+      A dictionary of computed field names and their corresponding [`ComputedFieldInfo`][pydantic.fields.ComputedFieldInfo] objects.
+
+   .. attribute:: __pydantic_extra__
+
+      A dictionary containing extra values, if [`extra`][pydantic.config.ConfigDict.extra]
+      is set to `'allow'`.
+
+   .. attribute:: __pydantic_fields_set__
+
+      The names of fields explicitly set during instantiation.
+
+   .. attribute:: __pydantic_private__
+
+      Values of private attributes set on the model instance.
+
+
+   .. py:attribute:: nn_lookup
+      :type:  int
+
+
+   .. py:attribute:: nn_lookup_regular
+      :type:  int
+
+
+   .. py:attribute:: reproject_poi
+      :type:  int
+
+
+   .. py:attribute:: reproject_grid
+      :type:  int
+
+
+.. py:class:: GridSettings(/, **data: Any)
+
+   Bases: :py:obj:`pydantic.BaseModel`
+
+
+   !!! abstract "Usage Documentation"
+       [Models](../concepts/models.md)
+
+   A base class for creating Pydantic models.
+
+   .. attribute:: __class_vars__
+
+      The names of the class variables defined on the model.
+
+   .. attribute:: __private_attributes__
+
+      Metadata about the private attributes of the model.
+
+   .. attribute:: __signature__
+
+      The synthesized `__init__` [`Signature`][inspect.Signature] of the model.
+
+   .. attribute:: __pydantic_complete__
+
+      Whether model building is completed, or if there are still undefined fields.
+
+   .. attribute:: __pydantic_core_schema__
+
+      The core schema of the model.
+
+   .. attribute:: __pydantic_custom_init__
+
+      Whether the model has a custom `__init__` function.
+
+   .. attribute:: __pydantic_decorators__
+
+      Metadata containing the decorators defined on the model.
+      This replaces `Model.__validators__` and `Model.__root_validators__` from Pydantic V1.
+
+   .. attribute:: __pydantic_generic_metadata__
+
+      A dictionary containing metadata about generic Pydantic models.
+      The `origin` and `args` items map to the [`__origin__`][genericalias.__origin__]
+      and [`__args__`][genericalias.__args__] attributes of [generic aliases][types-genericalias],
+      and the `parameter` item maps to the `__parameter__` attribute of generic classes.
+
+   .. attribute:: __pydantic_parent_namespace__
+
+      Parent namespace of the model, used for automatic rebuilding of models.
+
+   .. attribute:: __pydantic_post_init__
+
+      The name of the post-init method for the model, if defined.
+
+   .. attribute:: __pydantic_root_model__
+
+      Whether the model is a [`RootModel`][pydantic.root_model.RootModel].
+
+   .. attribute:: __pydantic_serializer__
+
+      The `pydantic-core` `SchemaSerializer` used to dump instances of the model.
+
+   .. attribute:: __pydantic_validator__
+
+      The `pydantic-core` `SchemaValidator` used to validate instances of the model.
+
+   .. attribute:: __pydantic_fields__
+
+      A dictionary of field names and their corresponding [`FieldInfo`][pydantic.fields.FieldInfo] objects.
+
+   .. attribute:: __pydantic_computed_fields__
+
+      A dictionary of computed field names and their corresponding [`ComputedFieldInfo`][pydantic.fields.ComputedFieldInfo] objects.
+
+   .. attribute:: __pydantic_extra__
+
+      A dictionary containing extra values, if [`extra`][pydantic.config.ConfigDict.extra]
+      is set to `'allow'`.
+
+   .. attribute:: __pydantic_fields_set__
+
+      The names of fields explicitly set during instantiation.
+
+   .. attribute:: __pydantic_private__
+
+      Values of private attributes set on the model instance.
+
+
+   .. py:attribute:: unstructured_dim
+      :type:  DataModelOptions
+
+
+   .. py:attribute:: y
+      :type:  DataModelOptions
+
+
+   .. py:attribute:: x
+      :type:  DataModelOptions
+
+
+   .. py:attribute:: surf_alt
+      :type:  DataModelOptions
+
+
+.. py:class:: PoiSettings(/, **data: Any)
+
+   Bases: :py:obj:`pydantic.BaseModel`
+
+
+   !!! abstract "Usage Documentation"
+       [Models](../concepts/models.md)
+
+   A base class for creating Pydantic models.
+
+   .. attribute:: __class_vars__
+
+      The names of the class variables defined on the model.
+
+   .. attribute:: __private_attributes__
+
+      Metadata about the private attributes of the model.
+
+   .. attribute:: __signature__
+
+      The synthesized `__init__` [`Signature`][inspect.Signature] of the model.
+
+   .. attribute:: __pydantic_complete__
+
+      Whether model building is completed, or if there are still undefined fields.
+
+   .. attribute:: __pydantic_core_schema__
+
+      The core schema of the model.
+
+   .. attribute:: __pydantic_custom_init__
+
+      Whether the model has a custom `__init__` function.
+
+   .. attribute:: __pydantic_decorators__
+
+      Metadata containing the decorators defined on the model.
+      This replaces `Model.__validators__` and `Model.__root_validators__` from Pydantic V1.
+
+   .. attribute:: __pydantic_generic_metadata__
+
+      A dictionary containing metadata about generic Pydantic models.
+      The `origin` and `args` items map to the [`__origin__`][genericalias.__origin__]
+      and [`__args__`][genericalias.__args__] attributes of [generic aliases][types-genericalias],
+      and the `parameter` item maps to the `__parameter__` attribute of generic classes.
+
+   .. attribute:: __pydantic_parent_namespace__
+
+      Parent namespace of the model, used for automatic rebuilding of models.
+
+   .. attribute:: __pydantic_post_init__
+
+      The name of the post-init method for the model, if defined.
+
+   .. attribute:: __pydantic_root_model__
+
+      Whether the model is a [`RootModel`][pydantic.root_model.RootModel].
+
+   .. attribute:: __pydantic_serializer__
+
+      The `pydantic-core` `SchemaSerializer` used to dump instances of the model.
+
+   .. attribute:: __pydantic_validator__
+
+      The `pydantic-core` `SchemaValidator` used to validate instances of the model.
+
+   .. attribute:: __pydantic_fields__
+
+      A dictionary of field names and their corresponding [`FieldInfo`][pydantic.fields.FieldInfo] objects.
+
+   .. attribute:: __pydantic_computed_fields__
+
+      A dictionary of computed field names and their corresponding [`ComputedFieldInfo`][pydantic.fields.ComputedFieldInfo] objects.
+
+   .. attribute:: __pydantic_extra__
+
+      A dictionary containing extra values, if [`extra`][pydantic.config.ConfigDict.extra]
+      is set to `'allow'`.
+
+   .. attribute:: __pydantic_fields_set__
+
+      The names of fields explicitly set during instantiation.
+
+   .. attribute:: __pydantic_private__
+
+      Values of private attributes set on the model instance.
+
+
+   .. py:attribute:: dim
+      :type:  str
+
+
+   .. py:attribute:: coord_from
+      :type:  str
+
+
+   .. py:attribute:: alt_from
+      :type:  DataModelOptions
+
+
+.. py:class:: DataModelSettings(/, **data: Any)
+
+   Bases: :py:obj:`pydantic.BaseModel`
+
+
+   !!! abstract "Usage Documentation"
+       [Models](../concepts/models.md)
+
+   A base class for creating Pydantic models.
+
+   .. attribute:: __class_vars__
+
+      The names of the class variables defined on the model.
+
+   .. attribute:: __private_attributes__
+
+      Metadata about the private attributes of the model.
+
+   .. attribute:: __signature__
+
+      The synthesized `__init__` [`Signature`][inspect.Signature] of the model.
+
+   .. attribute:: __pydantic_complete__
+
+      Whether model building is completed, or if there are still undefined fields.
+
+   .. attribute:: __pydantic_core_schema__
+
+      The core schema of the model.
+
+   .. attribute:: __pydantic_custom_init__
+
+      Whether the model has a custom `__init__` function.
+
+   .. attribute:: __pydantic_decorators__
+
+      Metadata containing the decorators defined on the model.
+      This replaces `Model.__validators__` and `Model.__root_validators__` from Pydantic V1.
+
+   .. attribute:: __pydantic_generic_metadata__
+
+      A dictionary containing metadata about generic Pydantic models.
+      The `origin` and `args` items map to the [`__origin__`][genericalias.__origin__]
+      and [`__args__`][genericalias.__args__] attributes of [generic aliases][types-genericalias],
+      and the `parameter` item maps to the `__parameter__` attribute of generic classes.
+
+   .. attribute:: __pydantic_parent_namespace__
+
+      Parent namespace of the model, used for automatic rebuilding of models.
+
+   .. attribute:: __pydantic_post_init__
+
+      The name of the post-init method for the model, if defined.
+
+   .. attribute:: __pydantic_root_model__
+
+      Whether the model is a [`RootModel`][pydantic.root_model.RootModel].
+
+   .. attribute:: __pydantic_serializer__
+
+      The `pydantic-core` `SchemaSerializer` used to dump instances of the model.
+
+   .. attribute:: __pydantic_validator__
+
+      The `pydantic-core` `SchemaValidator` used to validate instances of the model.
+
+   .. attribute:: __pydantic_fields__
+
+      A dictionary of field names and their corresponding [`FieldInfo`][pydantic.fields.FieldInfo] objects.
+
+   .. attribute:: __pydantic_computed_fields__
+
+      A dictionary of computed field names and their corresponding [`ComputedFieldInfo`][pydantic.fields.ComputedFieldInfo] objects.
+
+   .. attribute:: __pydantic_extra__
+
+      A dictionary containing extra values, if [`extra`][pydantic.config.ConfigDict.extra]
+      is set to `'allow'`.
+
+   .. attribute:: __pydantic_fields_set__
+
+      The names of fields explicitly set during instantiation.
+
+   .. attribute:: __pydantic_private__
+
+      Values of private attributes set on the model instance.
+
+
+   .. py:attribute:: grid
+      :type:  GridSettings
+
+
+   .. py:attribute:: poi
+      :type:  PoiSettings
+
+
+   .. py:attribute:: validtime
+      :type:  DataModelOptions
+
+
+   .. py:attribute:: leadtime
+      :type:  DataModelOptions
+
+
+   .. py:attribute:: reftime
+      :type:  DataModelOptions
+
+
+   .. py:attribute:: ens_dim
+      :type:  DataModelOptions
+
+
+.. py:class:: LibrarySettings(_case_sensitive: bool | None = None, _nested_model_default_partial_update: bool | None = None, _env_prefix: str | None = None, _env_prefix_target: pydantic_settings.sources.EnvPrefixTarget | None = None, _env_file: pydantic_settings.sources.DotenvType | None = ENV_FILE_SENTINEL, _env_file_encoding: str | None = None, _env_ignore_empty: bool | None = None, _env_nested_delimiter: str | None = None, _env_nested_max_split: int | None = None, _env_parse_none_str: str | None = None, _env_parse_enums: bool | None = None, _cli_prog_name: str | None = None, _cli_parse_args: bool | list[str] | tuple[str, ...] | None = None, _cli_settings_source: pydantic_settings.sources.CliSettingsSource[Any] | None = None, _cli_parse_none_str: str | None = None, _cli_hide_none_type: bool | None = None, _cli_avoid_json: bool | None = None, _cli_enforce_required: bool | None = None, _cli_use_class_docs_for_groups: bool | None = None, _cli_show_env_vars: bool | None = None, _cli_exit_on_error: bool | None = None, _cli_prefix: str | None = None, _cli_flag_prefix_char: str | None = None, _cli_implicit_flags: bool | Literal['dual', 'toggle'] | None = None, _cli_ignore_unknown_args: bool | None = None, _cli_kebab_case: bool | Literal['all', 'no_enums'] | None = None, _cli_shortcuts: collections.abc.Mapping[str, str | list[str]] | None = None, _secrets_dir: pydantic_settings.sources.PathType | None = None, _build_sources: tuple[tuple[pydantic_settings.sources.PydanticBaseSettingsSource, ...], dict[str, Any]] | None = None, **values: Any)
+
+   Bases: :py:obj:`pydantic_settings.BaseSettings`
+
+
+   Base class for settings, allowing values to be overridden by environment variables.
+
+   This is useful in production for secrets you do not wish to save in code, it plays nicely with docker(-compose),
+   Heroku and any 12 factor app design.
+
+   All the below attributes can be set via `model_config`.
+
+   :Parameters: * **_case_sensitive** -- Whether environment and CLI variable names should be read with case-sensitivity.
+                  Defaults to `None`.
+                * **_nested_model_default_partial_update** -- Whether to allow partial updates on nested model default object fields.
+                  Defaults to `False`.
+                * **_env_prefix** -- Prefix for all environment variables. Defaults to `None`.
+                * **_env_prefix_target** -- Targets to which `_env_prefix` is applied. Default: `variable`.
+                * **_env_file** -- The env file(s) to load settings values from. Defaults to `Path('')`, which
+                  means that the value from `model_config['env_file']` should be used. You can also pass
+                  `None` to indicate that environment variables should not be loaded from an env file.
+                * **_env_file_encoding** -- The env file encoding, e.g. `'latin-1'`. Defaults to `None`.
+                * **_env_ignore_empty** -- Ignore environment variables where the value is an empty string. Default to `False`.
+                * **_env_nested_delimiter** -- The nested env values delimiter. Defaults to `None`.
+                * **_env_nested_max_split** -- The nested env values maximum nesting. Defaults to `None`, which means no limit.
+                * **_env_parse_none_str** -- The env string value that should be parsed (e.g. "null", "void", "None", etc.)
+                  into `None` type(None). Defaults to `None` type(None), which means no parsing should occur.
+                * **_env_parse_enums** -- Parse enum field names to values. Defaults to `None.`, which means no parsing should occur.
+                * **_cli_prog_name** -- The CLI program name to display in help text. Defaults to `None` if _cli_parse_args is `None`.
+                  Otherwise, defaults to sys.argv[0].
+                * **_cli_parse_args** -- The list of CLI arguments to parse. Defaults to None.
+                  If set to `True`, defaults to sys.argv[1:].
+                * **_cli_settings_source** -- Override the default CLI settings source with a user defined instance. Defaults to None.
+                * **_cli_parse_none_str** -- The CLI string value that should be parsed (e.g. "null", "void", "None", etc.) into
+                  `None` type(None). Defaults to _env_parse_none_str value if set. Otherwise, defaults to "null" if
+                  _cli_avoid_json is `False`, and "None" if _cli_avoid_json is `True`.
+                * **_cli_hide_none_type** -- Hide `None` values in CLI help text. Defaults to `False`.
+                * **_cli_avoid_json** -- Avoid complex JSON objects in CLI help text. Defaults to `False`.
+                * **_cli_enforce_required** -- Enforce required fields at the CLI. Defaults to `False`.
+                * **_cli_use_class_docs_for_groups** -- Use class docstrings in CLI group help text instead of field descriptions.
+                  Defaults to `False`.
+                * **_cli_show_env_vars** -- Show resolved environment variable names in CLI help text. Defaults to `False`.
+                * **_cli_exit_on_error** -- Determines whether or not the internal parser exits with error info when an error occurs.
+                  Defaults to `True`.
+                * **_cli_prefix** -- The root parser command line arguments prefix. Defaults to "".
+                * **_cli_flag_prefix_char** -- The flag prefix character to use for CLI optional arguments. Defaults to '-'.
+                * **_cli_implicit_flags** -- Controls how `bool` fields are exposed as CLI flags.
+
+                  - False (default): no implicit flags are generated; booleans must be set explicitly (e.g. --flag=true).
+                  - True / 'dual': optional boolean fields generate both positive and negative forms (--flag and --no-flag).
+                  - 'toggle': required boolean fields remain in 'dual' mode, while optional boolean fields generate a single
+                    flag aligned with the default value (if default=False, expose --flag; if default=True, expose --no-flag).
+                * **_cli_ignore_unknown_args** -- Whether to ignore unknown CLI args and parse only known ones. Defaults to `False`.
+                * **_cli_kebab_case** -- CLI args use kebab case. Defaults to `False`.
+                * **_cli_shortcuts** -- Mapping of target field name to alias names. Defaults to `None`.
+                * **_secrets_dir** -- The secret files directory or a sequence of directories. Defaults to `None`.
+                * **_build_sources** -- Pre-initialized sources and init kwargs to use for building instantiation values.
+                  Defaults to `None`.
+
+
+   .. py:attribute:: model_config
+
+      Configuration for the model, should be a dictionary conforming to [`ConfigDict`][pydantic.config.ConfigDict].
+
+
+   .. py:attribute:: cache_size
+      :type:  CacheSizeSettings
+
+
+   .. py:attribute:: data_model
+      :type:  DataModelSettings
+
+
+   .. py:method:: settings_customise_sources(settings_cls: type[pydantic_settings.BaseSettings], init_settings: pydantic_settings.PydanticBaseSettingsSource, env_settings: pydantic_settings.PydanticBaseSettingsSource, dotenv_settings: pydantic_settings.PydanticBaseSettingsSource, file_secret_settings: pydantic_settings.PydanticBaseSettingsSource) -> tuple[pydantic_settings.PydanticBaseSettingsSource, ...]
+      :classmethod:
+
+
+      Define the sources and their order for loading the settings values.
+
+      :Parameters: * **settings_cls** -- The Settings class.
+                   * **init_settings** -- The `InitSettingsSource` instance.
+                   * **env_settings** -- The `EnvSettingsSource` instance.
+                   * **dotenv_settings** -- The `DotEnvSettingsSource` instance.
+                   * **file_secret_settings** -- The `SecretsSettingsSource` instance.
+
+      :returns: A tuple containing the sources and their order for loading the settings values.
+
+
+

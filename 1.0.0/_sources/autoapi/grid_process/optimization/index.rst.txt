@@ -1,0 +1,41 @@
+grid_process.optimization
+=========================
+
+.. py:module:: grid_process.optimization
+
+.. autoapi-nested-parse::
+
+   Module for optimization of computations
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   grid_process.optimization.logger
+   grid_process.optimization.F
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   grid_process.optimization.memoize
+
+
+Module Contents
+---------------
+
+.. py:data:: logger
+
+.. py:data:: F
+
+.. py:function:: memoize(maxsize: int = 10) -> collections.abc.Callable[[F], F]
+
+   LRU cache decorator implementation for any arbitrary input since the
+   caching is purely based on the optional keyword argument ``hkey``.
+
+

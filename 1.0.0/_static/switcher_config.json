@@ -1,0 +1,12 @@
+[
+  {
+    "name": "dev (unstable)",
+    "version": "dev",
+    "url": "/grid-process/"
+  },
+  {
+    "name": "1.0.0 (stable)",
+    "version": "1.0.0",
+    "url": "/grid-process/1.0.0/"
+  }
+]

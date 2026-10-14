@@ -1,0 +1,94 @@
+grid_process.helpers
+====================
+
+.. py:module:: grid_process.helpers
+
+.. autoapi-nested-parse::
+
+   Module for general helper functions and decorators
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   grid_process.helpers.logger
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   grid_process.helpers.timefn
+   grid_process.helpers.make_accessor
+   grid_process.helpers.keepattrs
+   grid_process.helpers.update_vars_attrs
+   grid_process.helpers.replace_vars_attrs
+   grid_process.helpers.reproject
+
+
+Module Contents
+---------------
+
+.. py:data:: logger
+
+.. py:function:: timefn(func: collections.abc.Callable[..., Any]) -> collections.abc.Callable[..., Any]
+
+   Generic decorator to log function processing times
+
+
+.. py:function:: make_accessor(func: collections.abc.Callable[..., xarray.Dataset], accessor_class: type) -> collections.abc.Callable[..., xarray.Dataset]
+                 make_accessor(func: collections.abc.Callable[..., xarray.DataArray], accessor_class: type) -> collections.abc.Callable[..., xarray.DataArray]
+
+   Generic decorator to turn functions operating on xarray objects into
+   accessors based on a registered dataset or dataarray ``accessor_class``
+
+
+.. py:function:: keepattrs(func: collections.abc.Callable[..., xarray.Dataset]) -> collections.abc.Callable[..., xarray.Dataset]
+
+   Decorator to keep dataset and data variables attributes for functions
+   operating on xarray.Datasets
+
+
+.. py:function:: update_vars_attrs(ds: xarray.Dataset, vars_attrs: dict[collections.abc.Hashable, dict[collections.abc.Hashable, Any]]) -> None
+
+   Updates data variables attributes in a xarray.Dataset. The operation is
+   done "in-place".
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- can contain one or several data variables
+                * **vars_attrs** (*dict*) -- contains the attributes of each data variables in the input dataset
+
+
+.. py:function:: replace_vars_attrs(ds: xarray.Dataset, vars_attrs: dict[str, dict]) -> None
+
+   Replaces data variables attributes in a xarray.Dataset. The operation is
+   done "in-place".
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- can contain one or several data variables
+                * **vars_attrs** (*dict*) -- contains the new attributes of each data variables in the input dataset
+                  to be replaced
+
+
+.. py:function:: reproject(x_coords: numpy.typing.NDArray[numpy.floating], y_coords: numpy.typing.NDArray[numpy.floating], src_crs: pyproj.CRS | str, dst_crs: pyproj.CRS | str) -> tuple[numpy.typing.NDArray[numpy.float64], numpy.typing.NDArray[numpy.float64]]
+                 reproject(x_coords: list[float], y_coords: list[float], src_crs: pyproj.CRS | str, dst_crs: pyproj.CRS | str) -> tuple[list[float], list[float]]
+                 reproject(x_coords: tuple[float, ...], y_coords: tuple[float, ...], src_crs: pyproj.CRS | str, dst_crs: pyproj.CRS | str) -> tuple[tuple[float, ...], tuple[float, ...]]
+
+   Reprojects `x` and `y` coordinates from a source CRS to a new specified
+   one.
+
+   :Parameters: * **x_coords** (*numpy.ndarray, list or tuple*) -- contains `x` coordinates.
+                * **y_coords** (*numpy.ndarray, list or tuple*) -- contains `y` coordinates
+                * **src_crs** (*pyproj.CRS of the source or equivalent string*) -- The value can be anything accepted by
+                  pyproj.CRS.from_user_input, such as an authority string
+                  (e.g. "EPSG:4326") or a WKT string
+                * **dst_crs** (*pyproj.CRS of the destination or equivalent string*) -- The value can be anything accepted by
+                  pyproj.CRS.from_user_input, such as an authority string
+                  (eg "EPSG:4326") or a WKT string
+
+   :returns: * **x_coords_new** (*numpy.ndarray, list or tuple of float64*) -- same as input ``x_coords`` in the new CRS and cast as float64
+             * **y_coords_new** (*numpy.ndarray, list or tuple of float64*) -- same as input ``y_coords`` in the new CRS and cast as float64
+
+

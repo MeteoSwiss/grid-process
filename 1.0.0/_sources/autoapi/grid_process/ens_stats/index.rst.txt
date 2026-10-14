@@ -1,0 +1,221 @@
+grid_process.ens_stats
+======================
+
+.. py:module:: grid_process.ens_stats
+
+.. autoapi-nested-parse::
+
+   Module to compute ensemble statistics
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   grid_process.ens_stats.logger
+   grid_process.ens_stats.dataset_accessor
+   grid_process.ens_stats.NeighborStatMethods
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   grid_process.ens_stats.EnsStats
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   grid_process.ens_stats.agg_prob
+   grid_process.ens_stats.ens_prob
+   grid_process.ens_stats.neighbor_stat
+   grid_process.ens_stats.upscaled_prob
+   grid_process.ens_stats.circular_mean
+   grid_process.ens_stats.circular_quantile
+
+
+Module Contents
+---------------
+
+.. py:data:: logger
+
+.. py:class:: EnsStats(ds: xarray.Dataset)
+
+   Xarray accessors class for extracting probabilities from ensemble models
+
+
+.. py:data:: dataset_accessor
+
+.. py:data:: NeighborStatMethods
+
+.. py:function:: agg_prob(ds: xarray.Dataset, dict_prob: dict, agg_func: collections.abc.Callable, lt_duplicates: bool = True, sign: str = 'above') -> xarray.Dataset
+
+   Compute aggregated probabilities of exceedance. Temporal aggregation is
+   done with :func:`~grid_process.aggreg.interval_stat`.
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- Must have valid time and ensemble dimensions and contain a single data variable.
+                  Typical dimensions names are supported, and can be extended via environment variables:
+
+                    - Valid time: export GRID_PROCESS__data_model__validtime (e.g., '["time", "valid_time", "dummy_time"]')
+                    - Ensemble: export GRID_PROCESS__data_model__ens_dim (e.g., '["realization", "eps", "epsd_1", "number",
+                      "dummy_ens_dim"]')
+                    - When the coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can be
+                      used directly.
+                * **dict_prob** (*dict*) -- holds the keys 'prob_names', 'thresholds', 'granularity', 'interval',
+                  'offset' giving the specificities for the aggregated probabilities. If
+                  'prob_names' and 'thresholds' contain a list, the probabilites for
+                  several thresholds but same granularity, interval and offset are
+                  computed and stored in the same dataset as different variables.
+
+                      - dict_prob['prob_names']: str or list of str. Name(s) given to
+                        resulting data variable(s)
+                      - dict_prob['thresholds']: float or list of floats. Threshold to
+                        compute each probability
+                      - dict_prob['granularity']: int. Granularity in hours for the
+                        temporal aggregation
+                      - dict_prob['interval']: int. Interval in hours for the temporal
+                        aggregation
+                      - dict_prob['offset']: int. Offset in hours from 00:00 for the
+                        temporal aggregation
+                * **agg_func** (*callable*) -- specify temporal aggregation function to use. The function must operate
+                  on `window` dimension. E.g. ``agg_func`` = lambda x: x.mean('window')
+                * **lt_duplicates** (*bool, optional*) -- if True, aggregations are done in the DWH compliant style, which means
+                  intervals are calculated with respect to both UTC+1 and UTC+2. Default
+                  is True
+                * **sign** (*{'above', 'below'}*) -- specify if we are looking for the probability to be above or below the
+                  thresholds. Default is 'above'
+
+   :returns: **ds_out** -- dataset with ensemble members dimension reduced and containing the
+             aggregated probabilities of exceedance for each given threshold as data
+             variables
+   :rtype: xarray.Dataset
+
+   .. seealso:: :func:`~grid_process.aggreg.interval_stat`, :func:`ens_prob`
+
+
+.. py:function:: ens_prob(ds: xarray.Dataset, thresholds: float | list[float], prob_names: str | list[str], sign: str = 'above') -> xarray.Dataset
+
+   Compute probabilities of exceedance based on raw members.
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- Must have an ensemble dimension and contain a single data variable.
+                  Typical ensemble dimension names are supported, and can be extended via environment variables:
+
+                    - Ensemble: export GRID_PROCESS__data_model__ens_dim (e.g., '["realization", "eps", "epsd_1", "number",
+                      "dummy_ens_dim"]')
+                    - When the coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can be
+                      used directly.
+                * **thresholds** (*float or list of floats*) -- the threshold(s) to compute the exceedence probabilities. Must be in
+                  the same units as the data.
+                * **prob_names** (*str or list of str*) -- new variable name for each probability threshold
+                * **sign** (*{'above', 'below'}*) -- specify if we are looking for the probability to be above or below the
+                  thresholds. Default is 'above'
+
+   :returns: **ds_out** -- dataset with the ensemble members dimension reduced and containing the
+             probabilities of exceedance for each given threshold as a new data
+             variable
+   :rtype: xarray.Dataset
+
+
+.. py:function:: neighbor_stat(ds: xarray.Dataset, method: NeighborStatMethods, w_size_xy: int | None = None, w_size_t: int | None = None) -> xarray.Dataset
+
+   Compute a space x time neighborhood statistic.
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- Must have spatial and/or temporal dimensions.
+                  Typical dimensions names are supported, and can be extended via environment variables:
+
+                    - Valid time: export GRID_PROCESS__data_model__validtime (e.g., '["time", "valid_time", "dummy_time"]')
+                    - Lead time: export GRID_PROCESS__data_model__leadtime (e.g., '["lead_time", "step", "dummy_leadtime"]')
+                    - Y coordinate: export GRID_PROCESS__data_model__grid__y (e.g., '["y", "latitude", "lat", "dummy_y"]')
+                    - X coordinate: export GRID_PROCESS__data_model__grid__x (e.g., '["x", "longitude", "lon", "dummy_x"]')
+                    - When the coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can be
+                      used directly.
+                * **method** (*{'mean', 'sum', 'min', 'max'}*) -- statistic applied over the moving window/volume
+                * **w_size_xy** (*int, optional*) -- window size in the spatial dimensions
+                * **w_size_t** (*int, optional*) -- window size in the temporal dimension
+
+   :returns: **ds_out** -- each value is the result of the neighborhood statistic
+   :rtype: xarray.Dataset
+
+   .. note::
+
+      For a large gain in performence, the function performs separate rolling window
+      operations on each of the spatial and temporal dimensions sequentially. Therefore,
+      only methods for which this is equivalent than applying the statistic over the
+      rolling volume are accepted. Methods such as 'median' or 'std' are thus not accepted.
+
+
+.. py:function:: upscaled_prob(ds: xarray.Dataset, thresholds: float | list[float], prob_names: str | list[str], w_size_xy: int | None = None, w_size_t: int | None = None) -> xarray.Dataset
+
+   Compute upscaled probabilities of exceedance. Upscaling is done in the
+   space and/or time dimensions.
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- Must have an ensemble member dimension as well as a spatial and/or time one.
+                  Typical dimensions names are supported, and can be extended via environment variables:
+
+                    - Ensemble: export GRID_PROCESS__data_model__ens_dim (e.g., '["realization", "eps", "epsd_1", "number",
+                      "dummy_ens_dim"]')
+                    - Valid time: export GRID_PROCESS__data_model__validtime (e.g., '["time", "valid_time", "dummy_time"]')
+                    - Lead time: export GRID_PROCESS__data_model__leadtime (e.g., '["lead_time", "step", "dummy_leadtime"]')
+                    - Y coordinate: export GRID_PROCESS__data_model__grid__y (e.g., '["y", "latitude", "lat", "dummy_y"]')
+                    - X coordinate: export GRID_PROCESS__data_model__grid__x (e.g., '["x", "longitude", "lon", "dummy_x"]')
+                    - When the coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can be
+                      used directly.
+                * **thresholds** (*float or list of floats*) -- the threshold(s) to compute the exceedence probabilities. Must be in
+                  the same units as the data
+                * **prob_names** (*str or list of str*) -- new variable name for each probability threshold
+                * **w_size_xy** (*int, optional*) -- window size for upscaling in the spatial dimensions
+                * **w_size_t** (*int, optional*) -- window size for upscaling in the time dimension
+
+   :returns: **ds_out** -- dataset with ensemble members dimension reduced and containing the
+             upscaled probabilities of exceedance for each given threshold as a new
+             data variable
+   :rtype: xarray.Dataset
+
+
+.. py:function:: circular_mean(ds: xarray.Dataset, dim: str | collections.abc.Sequence[str] | None = None) -> xarray.Dataset
+
+   Compute the mean of circular data between 0 and 360 degrees along the
+   specified dimension(s).
+
+   :Parameters: * **ds** (*xarray.Dataset*)
+                * **dim** (*str or sequence of str, optional*) -- dimension(s) on which to compute the circular mean. If None (default)
+                  look for the ensemble members dimension
+
+   :returns: **ds_out**
+   :rtype: xarray.Dataset
+
+
+.. py:function:: circular_quantile(ds: xarray.Dataset, q: float | collections.abc.Sequence[float] | numpy.ndarray, method: str = 'linear', dim: str | None = None, wrap_around: bool = True) -> xarray.Dataset
+
+   Compute the qth quantile(s) of circular data (0 to 360 degrees) along the
+   specified dimension.
+
+   :Parameters: * **ds** (*xarray.Dataset*)
+                * **q** (*float in range of [0,1] or sequence of floats or ndarray of float*) -- quantile(s) to compute, which must be between 0 and 1 inclusive.
+                * **method** (*str*) -- this parameter specifies the interpolation method to use when the desired
+                  quantile lies between two data points. See numpy.quantile for possible
+                  options. Default is 'linear'
+                * **dim** (*str, optional*) -- dimension on which to compute the quantiles. If None (default) look for
+                  the ensemble members dimension
+                * **wrap_around** (*bool*) -- whether to wrap around the results to the 0 to 360 interval. Default is
+                  True
+
+   :returns: **ds_out** -- a `quantile` dimension replaces the dimension being reduced
+   :rtype: xarray.Dataset
+
+   .. seealso:: :py:obj:`numpy.quantile`
+
+   .. note::
+
+      This approach was inspired by this answer on stackoverflow:
+      https://stackoverflow.com/a/46453706. The simple intuition is that the
+      opposite angle to the mean of the circular samples provides the reference
+      point for their ranking.
+
+
