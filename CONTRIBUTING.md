@@ -6,6 +6,8 @@ Thank you for your interest in contributing to **grid-process**! We welcome cont
 This library is developed primarily to support the operational, scientific, and research needs of MeteoSwiss.
 While the project is open source and welcomes external contributions, it is intended to be released, maintained, and distributed under the MeteoSwiss name. Contributions should align with this mission and the long‑term goals of the organization.
 
+As equivalent functionality becomes available in the [ECMWF earthkit ecosystem](https://earthkit.ecmwf.int/), parts of this library, potentially all of it, will be gradually deprecated in favour of earthkit. Before starting work on a larger new feature, please open an issue to discuss it first, as functionality that overlaps with earthkit may be better contributed there.
+
 ## Code of Conduct
 
 This project adheres to the Contributor Covenant Code of Conduct. By participating, you are expected to uphold this code. Please read the full [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
