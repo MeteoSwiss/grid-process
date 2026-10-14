@@ -1,0 +1,95 @@
+[project]
+dynamic = ["version"]
+name = "grid-process"
+description = "Weather forecast oriented Python library to process xarray Datasets"
+license = "BSD-3-Clause"
+readme = "README.rst"
+authors = [{ name = "Mathieu Schaer", email = "mathieu.schaer@meteoswiss.ch" }]
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "bottleneck (>=1.4.0)",
+    "dask (>=2023.6.1)",
+    "geopandas (>=1.0.0)",
+    "numpy (>=1.26.0)",
+    "pandas (>=2.1.2)",
+    "pint (>=0.24.4)",
+    "pydantic (>=2.7.0)",
+    "pydantic-settings (>=2.2.0)",
+    "pyproj (>=3.6.0)",
+    "pyyaml (>=6.0)",
+    "scipy (>=1.10.1)",
+    "xarray (>=2024.6.0)",
+]
+
+[project.urls]
+Homepage = "https://github.com/MeteoSwiss/grid-process"
+Repository = "https://github.com/MeteoSwiss/grid-process"
+Documentation = "https://meteoswiss.github.io/grid-process/"
+Changelog = "https://github.com/MeteoSwiss/grid-process/blob/main/CHANGELOG.rst"
+
+[dependency-groups]
+test = [
+    "astral",
+    "pytest (>=8.4.2,<9.0.0)",
+    "pytest-cov (>=7.0.0,<8.0.0)",
+    "pytz",
+]
+lint = [
+    "mypy (>=1.18.1,<2.0.0)",
+    "pylint (>=3.3.8,<4.0.0)",
+    "ruff (>=0.15.15,<0.16.0)",
+]
+doc = [
+    "pydata-sphinx-theme (>=0.16.1,<0.17.0)",
+    "sphinx (>=8.2.3,<9.0.0)",
+    "sphinx-autoapi (>=3.6.0,<4.0.0)"
+]
+dev = [
+    { include-group = "test" },
+    { include-group = "lint" },
+    { include-group = "doc" }
+]
+
+[tool.poetry]
+requires-poetry = ">=2.0,<3.0"
+version = "0.0.0"  # DO NOT SET. The version of the package is always set by the CI/CD pipeline.
+include = ["CHANGELOG.rst"]
+
+[tool.pylint.master]
+disable = [
+    'C0114', # missing-module-docstring
+    'C0115', # missing-class-docstring
+    'C0116', # missing-function-docstring
+    'R0801', # code duplication checks are too noisy for this code base
+    'W0511', # fix me or to-do comments are tracked in issues
+]
+
+[tool.pylint.basic]
+argument-naming-style = 'any'
+attr-naming-style = 'any'
+max-args = 8
+max-positional-arguments = 8
+
+[tool.pylint.format]
+# Maximum number of lines in a module.
+max-line-length = 120
+
+[tool.pylint.design]
+# Minimum number of public methods for a class (see R0903).
+min-public-methods = 0
+
+[tool.mypy]
+ignore_missing_imports = true
+disallow_untyped_defs = true
+allow_redefinition = true
+plugins = ["pydantic.mypy"]
+
+[tool.coverage.run]
+omit = ["test/**", "doc/**"]
+
+[tool.ruff]
+line-length = 120
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

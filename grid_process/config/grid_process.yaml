@@ -1,0 +1,20 @@
+cache_size:
+  nn_lookup: 10
+  nn_lookup_regular: 10
+  reproject_poi: 6
+  reproject_grid: 6
+
+data_model: # supported names
+  grid:
+    unstructured_dim: ["cell", "points"]
+    y: ["y", "latitude", "lat"]
+    x: ["x", "longitude", "lon"]
+    surf_alt: ["surface_altitude", "HSURF", "altitude"]
+  poi:
+    dim: "poi" # dimension name given to point of interests after interpolation
+    coord_from: "name" # geodataframe column to become coordinate labels
+    alt_from: ["height_masl", "height", "altitude", "elevation"] # geodataframe column that represents altitude in meters
+  validtime: ["time", "valid_time"]
+  leadtime: ["lead_time", "step"]
+  reftime: ["forecast_reference_time", "ref_time", "reftime"]
+  ens_dim: ["realization", "eps", "epsd_1", "epsm", "number"]
