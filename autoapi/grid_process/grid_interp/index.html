@@ -1,0 +1,1249 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>grid_process.grid_interp &#8212; grid-process</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../_static/documentation_options.js?v=f9b577db"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/grid_interp/index';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = '_static/switcher_config.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="grid_process.grid_interp_utils" href="../grid_interp_utils/index.html" />
+    <link rel="prev" title="grid_process.ens_stats" href="../ens_stats/index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="dev" />
+    <meta name="docbuild:last-update" content="14.10.2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-light" alt=""/>
+    <img src="../../../_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">grid-process</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../changelog.html">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../changelog.html">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../index.html">grid_process</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../aggreg/index.html">grid_process.aggreg</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../blending/index.html">grid_process.blending</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../config/index.html">grid_process.config</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../config/library_settings/index.html">grid_process.config.library_settings</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../da_utils/index.html">grid_process.da_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data_model/index.html">grid_process.data_model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ds_utils/index.html">grid_process.ds_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ens_stats/index.html">grid_process.ens_stats</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">grid_process.grid_interp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../grid_interp_utils/index.html">grid_process.grid_interp_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../helpers/index.html">grid_process.helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optimization/index.html">grid_process.optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sun/index.html">grid_process.sun</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../time_utils/index.html">grid_process.time_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../timeseries/index.html">grid_process.timeseries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../units_conv/index.html">grid_process.units_conv</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">API Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">grid_process</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">grid_process.grid_interp</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-grid_process.grid_interp">
+<span id="grid-process-grid-interp"></span><h1>grid_process.grid_interp<a class="headerlink" href="#module-grid_process.grid_interp" title="Link to this heading">#</a></h1>
+<p>Module for spatial interpolation of gridded datasets</p>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.logger" title="grid_process.grid_interp.logger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">logger</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.dataset_accessor" title="grid_process.grid_interp.dataset_accessor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dataset_accessor</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.POI_MODEL" title="grid_process.grid_interp.POI_MODEL"><code class="xref py py-obj docutils literal notranslate"><span class="pre">POI_MODEL</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.POI_DIM" title="grid_process.grid_interp.POI_DIM"><code class="xref py py-obj docutils literal notranslate"><span class="pre">POI_DIM</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.POI_COORD_COL" title="grid_process.grid_interp.POI_COORD_COL"><code class="xref py py-obj docutils literal notranslate"><span class="pre">POI_COORD_COL</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.SRC_ATTRS_KEEP" title="grid_process.grid_interp.SRC_ATTRS_KEEP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SRC_ATTRS_KEEP</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.SWISS_CRS" title="grid_process.grid_interp.SWISS_CRS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SWISS_CRS</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.InterpMethods" title="grid_process.grid_interp.InterpMethods"><code class="xref py py-obj docutils literal notranslate"><span class="pre">InterpMethods</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.HEIGHT_METHODS" title="grid_process.grid_interp.HEIGHT_METHODS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HEIGHT_METHODS</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.INTERP_FUNC" title="grid_process.grid_interp.INTERP_FUNC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">INTERP_FUNC</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.GridInterp" title="grid_process.grid_interp.GridInterp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridInterp</span></code></a></p></td>
+<td><p>Xarray accessors class for spatial interpolation of gridded data</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_temp" title="grid_process.grid_interp.interp_temp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_temp</span></code></a>(→ numpy.ndarray)</p></td>
+<td><p>Interpolation from grid to POIs for temperature data, based on local</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_temp_fixgrad" title="grid_process.grid_interp.interp_temp_fixgrad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_temp_fixgrad</span></code></a>(→ numpy.ndarray)</p></td>
+<td><p>Interpolation from grid to POIs for temperature data by taking the</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_nearest_alt" title="grid_process.grid_interp.interp_nearest_alt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_nearest_alt</span></code></a>(→ numpy.ndarray)</p></td>
+<td><p>Interpolation from grid to POIs for elevation dependent data. The method finds</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_idw" title="grid_process.grid_interp.interp_idw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_idw</span></code></a>(→ numpy.ndarray)</p></td>
+<td><p>Performs interpolations from grid to POIs using inverse distance</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_upscaled" title="grid_process.grid_interp.interp_upscaled"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_upscaled</span></code></a>(→ numpy.ndarray)</p></td>
+<td><p>Perform interpolations from grid to POIs by computing a group statistic</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_nearest" title="grid_process.grid_interp.interp_nearest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_nearest</span></code></a>(→ numpy.ndarray)</p></td>
+<td><p>Performs nearest neighbor interpolation from grid to POIs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_snowlim" title="grid_process.grid_interp.interp_snowlim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_snowlim</span></code></a>(→ numpy.ndarray)</p></td>
+<td><p>Special interpolation routine for snow limit. Snow limits below model</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp2poi" title="grid_process.grid_interp.interp2poi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp2poi</span></code></a>(→ xarray.Dataset)</p></td>
+<td><p>Interpolates gridded spatial data to a set of Points of Interest (POIs).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.nn_lookup" title="grid_process.grid_interp.nn_lookup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nn_lookup</span></code></a>(→ tuple[numpy.ndarray, numpy.ndarray])</p></td>
+<td><p>Find the k nearest grid points and corresponding distances for a set of</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.nn_lookup_cached" title="grid_process.grid_interp.nn_lookup_cached"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nn_lookup_cached</span></code></a>(→ tuple[numpy.ndarray, numpy.ndarray])</p></td>
+<td><p>Wrapper to <a class="reference internal" href="#grid_process.grid_interp.nn_lookup" title="grid_process.grid_interp.nn_lookup"><code class="xref py py-func docutils literal notranslate"><span class="pre">nn_lookup()</span></code></a> function to use it with a cache</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.nn_lookup_regular" title="grid_process.grid_interp.nn_lookup_regular"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nn_lookup_regular</span></code></a>(→ list[numpy.ndarray | xarray.DataArray])</p></td>
+<td><p>Find the nearest grid point for a set of POIs when the source</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp2grid" title="grid_process.grid_interp.interp2grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp2grid</span></code></a>(→ xarray.Dataset)</p></td>
+<td><p>Interpolates data from a source grid to a destination grid, supporting regular and unstructured grids.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.slice_boundingbox" title="grid_process.grid_interp.slice_boundingbox"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_boundingbox</span></code></a>(→ xarray.Dataset)</p></td>
+<td><p>Slice input dataset spatial dimensions to the bounding box of the target POIs</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.slice_coarsen" title="grid_process.grid_interp.slice_coarsen"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_coarsen</span></code></a>(→ xarray.Dataset)</p></td>
+<td><p>Slice input dataset to the extend of the destination grid and coarsen it if the</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.grid_interp.logger">
+<span class="sig-name descname"><span class="pre">logger</span></span><a class="headerlink" href="#grid_process.grid_interp.logger" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="grid_process.grid_interp.GridInterp">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GridInterp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#GridInterp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.GridInterp" title="Link to this definition">#</a></dt>
+<dd><p>Xarray accessors class for spatial interpolation of gridded data</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.grid_interp.dataset_accessor">
+<span class="sig-name descname"><span class="pre">dataset_accessor</span></span><a class="headerlink" href="#grid_process.grid_interp.dataset_accessor" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.grid_interp.POI_MODEL">
+<span class="sig-name descname"><span class="pre">POI_MODEL</span></span><a class="headerlink" href="#grid_process.grid_interp.POI_MODEL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.grid_interp.POI_DIM">
+<span class="sig-name descname"><span class="pre">POI_DIM</span></span><a class="headerlink" href="#grid_process.grid_interp.POI_DIM" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.grid_interp.POI_COORD_COL">
+<span class="sig-name descname"><span class="pre">POI_COORD_COL</span></span><a class="headerlink" href="#grid_process.grid_interp.POI_COORD_COL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.grid_interp.SRC_ATTRS_KEEP">
+<span class="sig-name descname"><span class="pre">SRC_ATTRS_KEEP</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('source',</span> <span class="pre">'title',</span> <span class="pre">'institution',</span> <span class="pre">'history',</span> <span class="pre">'references',</span> <span class="pre">'comment')</span></em><a class="headerlink" href="#grid_process.grid_interp.SRC_ATTRS_KEEP" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.grid_interp.SWISS_CRS">
+<span class="sig-name descname"><span class="pre">SWISS_CRS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('EPSG:2056',</span> <span class="pre">'EPSG:21781')</span></em><a class="headerlink" href="#grid_process.grid_interp.SWISS_CRS" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.grid_interp.InterpMethods">
+<span class="sig-name descname"><span class="pre">InterpMethods</span></span><a class="headerlink" href="#grid_process.grid_interp.InterpMethods" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.interp_temp">
+<span class="sig-name descname"><span class="pre">interp_temp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords_flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pois_coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_fact</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">36</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_power</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grad_only</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#interp_temp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.interp_temp" title="Link to this definition">#</a></dt>
+<dd><p>Interpolation from grid to POIs for temperature data, based on local
+soundings. The grid does not need to be regular. The sounding curves are
+fitted on the k nearest neighbors considering a distance that more heavily
+penalizes elevation differences for <code class="docutils literal notranslate"><span class="pre">z_fact</span></code> &gt; 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coords_flat</strong> (<em>numpy.ndarray, shape (n_grids, m)</em>) – array of flattened grid coordinates. n_grids is the number of model
+grid points, m the number of coordinates dimensions (i.e. 3)</p></li>
+<li><p><strong>data_flat</strong> (<em>numpy.ndarray, shape (n_grids, …)</em>) – array containing the flattened model data with various trailing
+dimensions</p></li>
+<li><p><strong>pois_coords</strong> (<em>numpy.ndarray , shape (n_pois, m)</em>) – array of POI coordinates. n_pois is the number of POIs, m the number of
+coordinates dimensions (i.e. 3)</p></li>
+<li><p><strong>z_fact</strong> (<em>positive int, optional</em>) – factor to multiply the z coordinates to find nearest neighbors based on a
+non-euclidean distance that penalizes more altitude differences. Default
+value is 50. A value of 1 will use regular euclidean distances.</p></li>
+<li><p><strong>k</strong> (<em>positive int, optional</em>) – number of considered nearest neighbors for the local sounding. Default
+is 36</p></li>
+<li><p><strong>weight_power</strong> (<em>positive float, optional</em>) – a weight vector is passed to the sounding fit according to
+<code class="docutils literal notranslate"><span class="pre">w</span> <span class="pre">=</span> <span class="pre">d^(-weight_power)</span></code>, with d being the (non-euclidean) distances between
+the considered POI and the k nearest grid points. The greater is the
+<code class="docutils literal notranslate"><span class="pre">weight_power</span></code>, the stronger is the penalization with distance. A
+<code class="docutils literal notranslate"><span class="pre">weight_power</span></code> of 0 is equivalent to None (i.e. same weights for all
+points). By default, gives same weight for all points</p></li>
+<li><p><strong>grad_only</strong> (<em>bool, optional</em>) – if True, only uses the local gradient to correct the nearest gridpoint
+temperature based on the altitude difference with the POI. Default is
+False</p></li>
+<li><p><strong>chunk_size</strong> (<em>positive int, optional</em>) – number of POIs processed per sounding batch. Smaller values reduce peak
+memory (dominant cost: <code class="docutils literal notranslate"><span class="pre">chunk_size</span> <span class="pre">×</span> <span class="pre">k</span> <span class="pre">×</span> <span class="pre">n_trail</span> <span class="pre">×</span> <span class="pre">12</span></code> bytes) and
+keep the working set in L3 cache, which is typically faster when
+<code class="docutils literal notranslate"><span class="pre">n_trail</span></code> is large. Larger values reduce loop overhead and are better
+for small trailing dimensions or when n_pois is small. Default is 20.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>poi_data</strong> – array containing the interpolated values and the same trailing
+dimensions as the input <code class="docutils literal notranslate"><span class="pre">data_flat</span></code> array</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (n_pois, …)</p>
+</dd>
+</dl>
+<p>:raises ValueError : Raised if the orography is flat, as no sounding can be estimated.:</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#grid_process.grid_interp.interp2poi" title="grid_process.grid_interp.interp2poi"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2poi()</span></code></a></p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For POIs with altitude higher than 300m above the highest gridpoint or lower
+than 500m below the lowest gridpoint in the local neighborhood used for the fit,
+the fixgrad method is used with default gradient of 0.006 [K / m].</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.interp_temp_fixgrad">
+<span class="sig-name descname"><span class="pre">interp_temp_fixgrad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords_flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pois_coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_search</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grad</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.006</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#interp_temp_fixgrad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.interp_temp_fixgrad" title="Link to this definition">#</a></dt>
+<dd><p>Interpolation from grid to POIs for temperature data by taking the
+surrounding gridpoint with the most similar altitude and further correct
+for altitude difference with a fixed gradient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coords_flat</strong> (<em>numpy.ndarray, shape (n_grids, m)</em>) – array of flattened grid coordinates. n_grids is the number of model
+grid points, m the number of coordinates dimensions (i.e. 3)</p></li>
+<li><p><strong>data_flat</strong> (<em>numpy.ndarray, shape (n_grids, …)</em>) – array containing the flattened model data with various trailing
+dimensions</p></li>
+<li><p><strong>pois_coords</strong> (<em>numpy.ndarray , shape (n_pois, m)</em>) – array of POI coordinates. n_pois is the number of POIs, m the number of
+coordinates dimensions (i.e. 3)</p></li>
+<li><p><strong>r_search</strong> (<em>positive float, optional</em>) – radius in model gridpoints that define the number of neighbors included
+in the search. Default is 4</p></li>
+<li><p><strong>z_weight</strong> (<em>positive int, optional</em>) – weight for the z axis in the distance computation of the “most adequat”
+gridpoint. <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">=</span> <span class="pre">horizontal_dist</span> <span class="pre">+</span> <span class="pre">z_weight</span> <span class="pre">*</span> <span class="pre">vertical_dist</span></code>.
+Default value is 200</p></li>
+<li><p><strong>grad</strong> (<em>positive float</em>) – gradient in [K / m] to correct for altitude difference between POI and
+nearest grid point. Default is 0.006 [K / m]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>poi_data</strong> – array containing the interpolated values and the same trailing
+dimensions as the input <code class="docutils literal notranslate"><span class="pre">data_flat</span></code> array.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (n_pois, …)</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#grid_process.grid_interp.interp2poi" title="grid_process.grid_interp.interp2poi"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2poi()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.interp_nearest_alt">
+<span class="sig-name descname"><span class="pre">interp_nearest_alt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords_flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pois_coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_search</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">500</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#interp_nearest_alt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.interp_nearest_alt" title="Link to this definition">#</a></dt>
+<dd><p>Interpolation from grid to POIs for elevation dependent data. The method finds
+the nearest grid point according to a distance that use a much larger weight
+along the z axis. For wind data for instance, grid points at similar altitudes
+are preferred. The grid does not need to be regular.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coords_flat</strong> (<em>numpy.ndarray, shape (n_grids, m)</em>) – array of flattened grid coordinates. n_grids is the number of model
+grid points, m the number of coordinates dimensions (i.e. 3)</p></li>
+<li><p><strong>data_flat</strong> (<em>numpy.ndarray, shape (n_grids, …)</em>) – array containing the flattened model data with various trailing
+dimensions</p></li>
+<li><p><strong>pois_coords</strong> (<em>numpy.ndarray , shape (n_pois, m)</em>) – array of POI coordinates. n_pois is the number of POIs, m the number of
+coordinates dimensions (i.e. 3)</p></li>
+<li><p><strong>r_search</strong> (<em>positive float, optional</em>) – radius in model gridpoints that define the number of neighbors included
+in the search. Default is 4</p></li>
+<li><p><strong>z_weight</strong> (<em>positive int, optional</em>) – weight for the z axis in the distance computation of the “most adequat”
+gridpoint. <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">=</span> <span class="pre">horizontal_dist</span> <span class="pre">+</span> <span class="pre">z_weight</span> <span class="pre">*</span> <span class="pre">vertical_dist</span></code>.
+Default value is 500</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>poi_data</strong> – array containing the interpolated values and the same trailing
+dimensions as the input <code class="docutils literal notranslate"><span class="pre">data_flat</span></code> array</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (n_pois, …)</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#grid_process.grid_interp.interp2poi" title="grid_process.grid_interp.interp2poi"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2poi()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.interp_idw">
+<span class="sig-name descname"><span class="pre">interp_idw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords_flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pois_coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_power</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#interp_idw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.interp_idw" title="Link to this definition">#</a></dt>
+<dd><p>Performs interpolations from grid to POIs using inverse distance
+weightning.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coords_flat</strong> (<em>numpy.ndarray, shape (n_grids,m)</em>) – array of flattened grid coordinates. n_grids is the number of model
+grid points, m the number of coordinates dimensions (i.e. 2 or 3)</p></li>
+<li><p><strong>data_flat</strong> (<em>numpy.ndarray, shape (n_grids, …)</em>) – array containing the flattened model data with various trailing
+dimensions</p></li>
+<li><p><strong>pois_coords</strong> (<em>numpy.ndarray , shape (n_pois, m)</em>) – array of POI coordinates. n_pois is the number of POIs, m the number of
+coordinates dimensions (i.e. 2 or 3)</p></li>
+<li><p><strong>k</strong> (<em>positive int, optional</em>) – number of considered nearest neighbors. Default is 4</p></li>
+<li><p><strong>weight_power</strong> (<em>positive float, optional</em>) – the interpolated value is the weighted average of the k nearest grid
+points accordi g to <code class="docutils literal notranslate"><span class="pre">w</span> <span class="pre">=</span> <span class="pre">d^(-weight_power)</span></code>, with d being the
+distance between the considered POI and the gird points. The greater is
+the <code class="docutils literal notranslate"><span class="pre">weight_power</span></code>, the stronger is the penalization with distance.
+A <code class="docutils literal notranslate"><span class="pre">weight_power</span></code> of 0 produces a normal average of the k nearest grid
+points</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>poi_data</strong> – array containing the interpolated values and the same trailing
+dimensions as the input <code class="docutils literal notranslate"><span class="pre">data_flat</span></code> array</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (n_pois, …)</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#grid_process.grid_interp.interp2poi" title="grid_process.grid_interp.interp2poi"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2poi()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.interp_upscaled">
+<span class="sig-name descname"><span class="pre">interp_upscaled</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords_flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pois_coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agg_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">collections.abc.Callable</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">np.max</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#interp_upscaled"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.interp_upscaled" title="Link to this definition">#</a></dt>
+<dd><p>Perform interpolations from grid to POIs by computing a group statistic
+over the k nearest neighbors (e.g. upscaling).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coords_flat</strong> (<em>numpy.ndarray, shape (n_grids, m)</em>) – array of flattened grid coordinates. n_grids is the number of model
+grid points, m the number of coordinates dimensions (i.e. 2 or 3)</p></li>
+<li><p><strong>data_flat</strong> (<em>numpy.ndarray, shape (n_grids, …)</em>) – array containing the flattened model data with various trailing
+dimensions</p></li>
+<li><p><strong>pois_coords</strong> (<em>numpy.ndarray , shape (n_pois, m)</em>) – array of POI coordinates. n_pois is the number of POIs, m the number of
+coordinates dimensions (i.e. 2 or 3).</p></li>
+<li><p><strong>k</strong> (<em>positive int, optional</em>) – number of considered nearest neighbors. Default is 4</p></li>
+<li><p><strong>agg_func</strong> (<em>callable, optional</em>) – specify the spatial aggregation function to use (i.e. numpy.mean,
+numpy.max, numpy.min, numpy.std). Default is numpy.max.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>poi_data</strong> – array containing the interpolated values and the same trailing
+dimensions as the input <code class="docutils literal notranslate"><span class="pre">data_flat</span></code> array</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (n_pois, …)</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#grid_process.grid_interp.interp2poi" title="grid_process.grid_interp.interp2poi"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2poi()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.interp_nearest">
+<span class="sig-name descname"><span class="pre">interp_nearest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords_flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pois_coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#interp_nearest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.interp_nearest" title="Link to this definition">#</a></dt>
+<dd><p>Performs nearest neighbor interpolation from grid to POIs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coords_flat</strong> (<em>numpy.ndarray, shape (n_grids, m)</em>) – array of flattened grid coordinates. n_grids is the number of model
+grid points, m the number of coordinates dimensions (i.e. 2 or 3).</p></li>
+<li><p><strong>data_flat</strong> (<em>numpy.ndarray, shape (n_grids, …)</em>) – array containing the flattened model data with various trailing
+dimensions</p></li>
+<li><p><strong>pois_coords</strong> (<em>numpy.ndarray , shape (n_pois, m)</em>) – array of POI coordinates. n_pois is the number of POIs, m the number of
+coordinates dimensions (i.e. 2 or 3).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>poi_data</strong> – array containing the interpolated values and the same trailing
+dimensions as the input <code class="docutils literal notranslate"><span class="pre">data_flat</span></code> array</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (n_pois, …)</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#grid_process.grid_interp.interp2poi" title="grid_process.grid_interp.interp2poi"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2poi()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.interp_snowlim">
+<span class="sig-name descname"><span class="pre">interp_snowlim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords_flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pois_coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">36</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_max</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">40000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#interp_snowlim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.interp_snowlim" title="Link to this definition">#</a></dt>
+<dd><p>Special interpolation routine for snow limit. Snow limits below model
+topography are undefined, resulting in datasets with randomly distributed
+NaNs. This routine checks for the nearest non-NaN grid points. If this
+point is further away than d_max, the snowlimit is set to a value between
+0 and 200 [m] depending on the POI altitude. Otherwise, the minimum between
+the nearest non-NaN grid point and the minimum altitude of NaN grid points
+among the k nearest neighbors is taken.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coords_flat</strong> (<em>numpy.ndarray, shape (n_grids, m)</em>) – array of flattened grid coordinates. n_grids is the number of model
+grid points, m the number of coordinates dimensions (i.e. 3)</p></li>
+<li><p><strong>data_flat</strong> (<em>numpy.ndarray, shape (n_grids, …)</em>) – Array containing the flattened model data with various trailing
+dimension.</p></li>
+<li><p><strong>pois_coords</strong> (<em>numpy.ndarray , shape (n_pois, m)</em>) – array of POI coordinates. n_pois is the number of POIs, m the number of
+coordinates dimensions (i.e. 3)</p></li>
+<li><p><strong>k</strong> (<em>positive int</em>) – Number of considered nearest neighbors to check for altitude of NaN
+grid points.</p></li>
+<li><p><strong>d_max</strong> (<em>positive float</em>) – if all grid points within a radius of d_max meter from the POI are NaNs
+the snow limit is set to a value between 0 and 200 [m] depending on
+the POI altitude</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>poi_data</strong> – array containing the interpolated values and the same trailing
+dimensions as the input <code class="docutils literal notranslate"><span class="pre">data_flat</span></code> array</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (n_pois, …)</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#grid_process.grid_interp.interp2poi" title="grid_process.grid_interp.interp2poi"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2poi()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.interp2poi">
+<span class="sig-name descname"><span class="pre">interp2poi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">poi_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">geopandas.GeoDataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">InterpMethods</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">try_reg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">xarray.Dataset</span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#interp2poi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.interp2poi" title="Link to this definition">#</a></dt>
+<dd><p>Interpolates gridded spatial data to a set of Points of Interest (POIs).</p>
+<p>This function provides a unified interface for interpolating values from regular or unstructured spatial grids
+to arbitrary POI locations, supporting a variety of interpolation methods and data models. It replaces the
+original spatial grid dimensions in <cite>data</cite> with a POI dimension, containing interpolated values for each POI.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>data</strong> (<em>xarray.Dataset</em>) –</p>
+<p>The source grid dataset. Supported data models include:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>CF-convention grids (see <a class="reference external" href="https://cfconventions.org/">https://cfconventions.org/</a>)</p></li>
+<li><p>internal MCH models</p></li>
+<li><p>Unstructured grids</p></li>
+</ul>
+</div></blockquote>
+<p>Typical spatial dimension and coordinate names are supported, and can be extended via environment variables:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Y coordinate: export GRID_PROCESS__data_model__grid__y (e.g., ‘[“y”, “latitude”, “lat”, “dummy_y”]’)</p></li>
+<li><p>X coordinate: export GRID_PROCESS__data_model__grid__x (e.g., ‘[“x”, “longitude”, “lon”, “dummy_x”]’)</p></li>
+<li><p>Unstructured dimension: export GRID_PROCESS__data_model__grid__unstructured_dim (e.g., ‘[“dummy_cell”]’)</p></li>
+<li><p>When the spatial coordinates variables have a CF compliant <cite>standard_name</cite> attribute, arbitrary names can be
+used directly.</p></li>
+</ul>
+</div></blockquote>
+<p>Spatial CRS must be referenced via one of:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Global attribute ‘crs’ (e.g., “EPSG:2056” or anything accepted by <code class="xref py py-meth docutils literal notranslate"><span class="pre">pyproj.CRS.from_user_input()</span></code>)</p></li>
+<li><p>Global attribute ‘grid_mapping’ (internal grid database convention)</p></li>
+<li><p>CF-convention grid mapping variable</p></li>
+<li><p>If coordinates are named ‘latitude’/’longitude’ or ‘lat’/’lon’, WGS84 (EPSG:4326) is assumed.</p></li>
+</ul>
+</div></blockquote>
+<p>For methods requiring altitude, ensure a surface altitude coordinate is present; extend supported names via
+GRID_PROCESS__data_model__grid__surf_alt.</p>
+</li>
+<li><p><strong>poi_info</strong> (<em>geopandas.GeoDataFrame</em>) – POI locations and attributes. Must have geometry and a defined CRS.
+For methods requiring altitude, a POI altitude column or z-component in geometry (in units of meters) is needed.
+Extend supported POI altitude column names via:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>export GRID_PROCESS__data_model__poi__alt_from (e.g., ‘[“height_masl”, “altitude”, “dummy_height”]’)</p></li>
+</ul>
+</div></blockquote>
+<p>The column <cite>name</cite> is used for the output POI coordinate by default; override via:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>export GRID_PROCESS__data_model__poi__coord_from (e.g., dummy_name)</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><strong>method</strong> (<em>str</em>) –</p>
+<p>Interpolation method. Supported options include:</p>
+<blockquote>
+<div><p>{‘nearest’, ‘linear’, ‘cubic’, ‘idw’, ‘temp’, ‘temp_fixgrad’, ‘nearest_alt’, ‘snowlim’,
+‘nearest_3D’, ‘linear_3D’, ‘idw_3D’, ‘upscaled’, ‘upscaled_3D’}.</p>
+</div></blockquote>
+<p>3D methods include altitude in neighbor selection. For unstructured grids, prefer ‘idw’ with k=4 and
+weight_power=2 over ‘linear’ for performence reasons.</p>
+</li>
+<li><p><strong>try_reg</strong> (<em>bool, default True</em>) – If True, attempts regular grid interpolation for structured grids with 1D coordinates when <code class="docutils literal notranslate"><span class="pre">method</span></code> is
+‘nearest’ or ‘linear’. Regular grid interpolation is typically more efficient for large grids, but may be less
+so for small grids with many trailing dimensions.</p></li>
+<li><p><strong>**kwargs</strong> (<em>Any</em>) – Additional arguments passed to the specific interpolation sub-function, named <cite>interp_&lt;method&gt;</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dataset where original spatial dimensions are replaced with a POI dimension containing interpolated values.
+The output POI dimension name can be overridden via GRID_PROCESS__data_model__poi__dim (e.g. station).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>xr.Dataset</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#grid_process.grid_interp.interp_temp" title="grid_process.grid_interp.interp_temp"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_temp()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_temp_fixgrad" title="grid_process.grid_interp.interp_temp_fixgrad"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_temp_fixgrad()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_nearest_alt" title="grid_process.grid_interp.interp_nearest_alt"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_nearest_alt()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_idw" title="grid_process.grid_interp.interp_idw"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_idw()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_upscaled" title="grid_process.grid_interp.interp_upscaled"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_upscaled()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_nearest" title="grid_process.grid_interp.interp_nearest"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_nearest()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_snowlim" title="grid_process.grid_interp.interp_snowlim"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_snowlim()</span></code></a>, <code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.interpolate.griddata()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">xarray.Dataset.interp()</span></code></p>
+</div>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>Grid points containing only NaNs across all dimensions are excluded from interpolation, enabling easy masking
+(e.g., excluding water pixels with <cite>ds.where(ds.fr_land &gt; 0.5).interp2poi(…, try_reg=False)</cite>).</p></li>
+<li><p>For regular grid interpolation, all NaN grid points are kept.</p></li>
+<li><p>Environment variables allow flexible support for custom grid and POI data models.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.nn_lookup">
+<span class="sig-name descname"><span class="pre">nn_lookup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid_coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#nn_lookup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.nn_lookup" title="Link to this definition">#</a></dt>
+<dd><p>Find the k nearest grid points and corresponding distances for a set of
+POIs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>grid_coords</strong> (<em>numpy.ndarray, shape (n, m)</em>) – array of flattened grid coordinates. N is the number of model grid
+points, m the number of coordinates dimensions (i.e. 2 or 3)</p></li>
+<li><p><strong>points</strong> (<em>numpy.ndarray, shape (p, m)</em>) – array of POIs coordinates. P is the number of POIs, m the number of
+coordinates dimensions (i.e. 2 or 3)</p></li>
+<li><p><strong>k</strong> (<em>positive int</em>) – number of considered nearest neighbors</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>dd</strong> (<em>numpy.ndarray, shape (p, k)</em>) – array of nearest neighbor distances.</p></li>
+<li><p><strong>ii</strong> (<em>numpy.ndarray, shape (p, k)</em>) – array of nearest neighbor grid indexes</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#grid_process.grid_interp.nn_lookup_cached" title="grid_process.grid_interp.nn_lookup_cached"><code class="xref py py-func docutils literal notranslate"><span class="pre">nn_lookup_cached()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.nn_lookup_cached">
+<span class="sig-name descname"><span class="pre">nn_lookup_cached</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid_coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#nn_lookup_cached"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.nn_lookup_cached" title="Link to this definition">#</a></dt>
+<dd><p>Wrapper to <a class="reference internal" href="#grid_process.grid_interp.nn_lookup" title="grid_process.grid_interp.nn_lookup"><code class="xref py py-func docutils literal notranslate"><span class="pre">nn_lookup()</span></code></a> function to use it with a cache</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.nn_lookup_regular">
+<span class="sig-name descname"><span class="pre">nn_lookup_regular</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid_coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_spacing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">xarray.DataArray</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#nn_lookup_regular"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.nn_lookup_regular" title="Link to this definition">#</a></dt>
+<dd><p>Find the nearest grid point for a set of POIs when the source
+grid is regular and the spacing constant along each dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>grid_coords</strong> (<em>tuple of m 1-D arrays</em>) – contains flattened grid coordinates arrays for all m dimensions</p></li>
+<li><p><strong>grid_spacing</strong> (<em>tuple of m floats</em>) – contains the grid spacing for all m dimensions</p></li>
+<li><p><strong>points</strong> (<em>tuple of m 1-D arrays (or xarray.DataArray with dim poi)</em>) – contains POIs coordinates for all m dimensions. It assumes the same
+order of dimensions as in <code class="docutils literal notranslate"><span class="pre">grid_coords</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>index</strong> – Used to index the dataset in each spatial dimension. The output indexes
+have length equals to the number of points</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of m 1-D arrays (or xarray DataArray with dimension <cite>poi</cite>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.interp2grid">
+<span class="sig-name descname"><span class="pre">interp2grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dst_grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">InterpMethods</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">try_reg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">xarray.Dataset</span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#interp2grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.interp2grid" title="Link to this definition">#</a></dt>
+<dd><p>Interpolates data from a source grid to a destination grid, supporting regular and unstructured grids.</p>
+<p>This function provides a unified interface for grid-to-grid interpolation, supporting a variety of interpolation
+methods and data models. The output dataset contains the data of the source grid mapped onto the destination grid
+coordinates.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>data</strong> (<em>xarray.Dataset</em>) –</p>
+<p>The source grid dataset. Supported data models include:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>CF-convention grids (see <a class="reference external" href="https://cfconventions.org/">https://cfconventions.org/</a>)</p></li>
+<li><p>internal MCH models</p></li>
+<li><p>Unstructured grids</p></li>
+</ul>
+</div></blockquote>
+<p>Typical spatial dimension and coordinate names are supported, and can be extended via environment variables:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Y coordinate: export GRID_PROCESS__data_model__grid__y (e.g., ‘[“y”, “latitude”, “lat”, “dummy_y”]’)</p></li>
+<li><p>X coordinate: export GRID_PROCESS__data_model__grid__x (e.g., ‘[“x”, “longitude”, “lon”, “dummy_x”]’)</p></li>
+<li><p>Unstructured dimension: export GRID_PROCESS__data_model__grid__unstructured_dim (e.g., ‘[“dummy_cell”]’)</p></li>
+<li><p>When the spatial coordinates variables have a CF compliant <cite>standard_name</cite> attribute, arbitrary names can be
+used directly.</p></li>
+</ul>
+</div></blockquote>
+<p>Spatial CRS must be referenced via one of:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Global attribute ‘crs’ (e.g., “EPSG:2056” or anything accepted by <code class="xref py py-meth docutils literal notranslate"><span class="pre">pyproj.CRS.from_user_input()</span></code>)</p></li>
+<li><p>Global attribute ‘grid_mapping’ (internal grid database convention)</p></li>
+<li><p>CF-convention grid mapping variable</p></li>
+<li><p>If coordinates are named ‘latitude’/’longitude’ or ‘lat’/’lon’, WGS84 (EPSG:4326) is assumed.</p></li>
+</ul>
+</div></blockquote>
+<p>For methods requiring altitude, ensure a surface altitude coordinate is present; extend supported names via
+GRID_PROCESS__data_model__grid__surf_alt.</p>
+</li>
+<li><p><strong>dst_grid</strong> (<em>xarray.Dataset</em>) – The destination grid to interpolate to. Same supported data models as the source grid, including conventions for
+dimensions and coordinates as well as spatial CRS.
+For methods requiring altitude, ensure a surface altitude coordinate is also present.
+The destination dataset may contain only spatial coordinates or also data variables which will be ignored.</p></li>
+<li><p><strong>method</strong> (<em>str</em>) –</p>
+<p>Interpolation method. Supported options include:</p>
+<blockquote>
+<div><p>{‘nearest’, ‘linear’, ‘cubic’, ‘idw’, ‘temp’, ‘temp_fixgrad’, ‘nearest_alt’, ‘snowlim’,
+‘nearest_3D’, ‘linear_3D’, ‘idw_3D’, ‘upscaled’, ‘upscaled_3D’}.</p>
+</div></blockquote>
+<p>3D methods include altitude in neighbor selection. For unstructured grids, prefer ‘idw’ with k=4 and
+weight_power=2 over ‘linear’ for performence reasons.</p>
+</li>
+<li><p><strong>try_reg</strong> (<em>bool, default True</em>) – If True, attempts regular grid interpolation for structured source grids with 1D coordinates when <code class="docutils literal notranslate"><span class="pre">method</span></code> is
+‘nearest’ or ‘linear’. Regular grid interpolation is typically more efficient for large grids, but may be less
+so for small grids with many trailing dimensions.</p></li>
+<li><p><strong>**kwargs</strong> (<em>Any</em>) – Additional arguments passed to the specific interpolation sub-function, named <cite>interp_&lt;method&gt;</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dataset with values from <cite>data</cite> interpolated onto the coordinates of <cite>dst_grid</cite>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>xr.Dataset</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#grid_process.grid_interp.interp_temp" title="grid_process.grid_interp.interp_temp"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_temp()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_temp_fixgrad" title="grid_process.grid_interp.interp_temp_fixgrad"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_temp_fixgrad()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_nearest_alt" title="grid_process.grid_interp.interp_nearest_alt"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_nearest_alt()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_idw" title="grid_process.grid_interp.interp_idw"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_idw()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_upscaled" title="grid_process.grid_interp.interp_upscaled"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_upscaled()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_nearest" title="grid_process.grid_interp.interp_nearest"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_nearest()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_snowlim" title="grid_process.grid_interp.interp_snowlim"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_snowlim()</span></code></a>, <code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.interpolate.griddata()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">xarray.Dataset.interp()</span></code></p>
+</div>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>Not all interpolation methods scale efficiently with large input datasets or and/or destination grids.</p></li>
+<li><p>Recommended methods: ‘nearest’, ‘linear’ (if the source grid is regular with 1D coordinates), ‘idw’ (with k=4),
+‘temp_fixgrad’, ‘nearest_3D’, ‘nearest_alt’.</p></li>
+<li><p>Environment variables allow flexible support for custom grid data models.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.slice_boundingbox">
+<span class="sig-name descname"><span class="pre">slice_boundingbox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">poi_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">geopandas.GeoDataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spatial_dims</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">xarray.Dataset</span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#slice_boundingbox"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.slice_boundingbox" title="Link to this definition">#</a></dt>
+<dd><p>Slice input dataset spatial dimensions to the bounding box of the target POIs
+plus a buffer depending on the interpolation method and corresponding kwargs.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.slice_coarsen">
+<span class="sig-name descname"><span class="pre">slice_coarsen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dst_grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spatial_dims</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dst_spatial_dims</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">xarray.Dataset</span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#slice_coarsen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.slice_coarsen" title="Link to this definition">#</a></dt>
+<dd><p>Slice input dataset to the extend of the destination grid and coarsen it if the
+destination grid has lower resolution (downsampling).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.grid_interp.HEIGHT_METHODS">
+<span class="sig-name descname"><span class="pre">HEIGHT_METHODS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('temp',</span> <span class="pre">'temp_fixgrad',</span> <span class="pre">'snowlim',</span> <span class="pre">'nearest_alt',</span> <span class="pre">'idw_3D',</span> <span class="pre">'nearest_3D',</span> <span class="pre">'linear_3D',</span> <span class="pre">'upscaled_3D')</span></em><a class="headerlink" href="#grid_process.grid_interp.HEIGHT_METHODS" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.grid_interp.INTERP_FUNC">
+<span class="sig-name descname"><span class="pre">INTERP_FUNC</span></span><a class="headerlink" href="#grid_process.grid_interp.INTERP_FUNC" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../ens_stats/index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">grid_process.ens_stats</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../grid_interp_utils/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">grid_process.grid_interp_utils</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attributes">Attributes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.logger"><code class="docutils literal notranslate"><span class="pre">logger</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.GridInterp"><code class="docutils literal notranslate"><span class="pre">GridInterp</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.dataset_accessor"><code class="docutils literal notranslate"><span class="pre">dataset_accessor</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.POI_MODEL"><code class="docutils literal notranslate"><span class="pre">POI_MODEL</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.POI_DIM"><code class="docutils literal notranslate"><span class="pre">POI_DIM</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.POI_COORD_COL"><code class="docutils literal notranslate"><span class="pre">POI_COORD_COL</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.SRC_ATTRS_KEEP"><code class="docutils literal notranslate"><span class="pre">SRC_ATTRS_KEEP</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.SWISS_CRS"><code class="docutils literal notranslate"><span class="pre">SWISS_CRS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.InterpMethods"><code class="docutils literal notranslate"><span class="pre">InterpMethods</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.interp_temp"><code class="docutils literal notranslate"><span class="pre">interp_temp()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.interp_temp_fixgrad"><code class="docutils literal notranslate"><span class="pre">interp_temp_fixgrad()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.interp_nearest_alt"><code class="docutils literal notranslate"><span class="pre">interp_nearest_alt()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.interp_idw"><code class="docutils literal notranslate"><span class="pre">interp_idw()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.interp_upscaled"><code class="docutils literal notranslate"><span class="pre">interp_upscaled()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.interp_nearest"><code class="docutils literal notranslate"><span class="pre">interp_nearest()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.interp_snowlim"><code class="docutils literal notranslate"><span class="pre">interp_snowlim()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.interp2poi"><code class="docutils literal notranslate"><span class="pre">interp2poi()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.nn_lookup"><code class="docutils literal notranslate"><span class="pre">nn_lookup()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.nn_lookup_cached"><code class="docutils literal notranslate"><span class="pre">nn_lookup_cached()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.nn_lookup_regular"><code class="docutils literal notranslate"><span class="pre">nn_lookup_regular()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.interp2grid"><code class="docutils literal notranslate"><span class="pre">interp2grid()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.slice_boundingbox"><code class="docutils literal notranslate"><span class="pre">slice_boundingbox()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.slice_coarsen"><code class="docutils literal notranslate"><span class="pre">slice_coarsen()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.HEIGHT_METHODS"><code class="docutils literal notranslate"><span class="pre">HEIGHT_METHODS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.INTERP_FUNC"><code class="docutils literal notranslate"><span class="pre">INTERP_FUNC</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item"><!-- This will display the version of the docs -->
+grid-process, version: dev-dfe089a</div>
+      
+        <div class="footer-item"><p class="last-updated">
+  Last updated on 14.10.2026.
+  <br/>
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, MeteoSwiss.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

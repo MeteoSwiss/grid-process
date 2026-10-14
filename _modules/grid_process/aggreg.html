@@ -1,0 +1,933 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>grid_process.aggreg &#8212; grid-process</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=f9b577db"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/grid_process/aggreg';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = '_static/switcher_config.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="dev" />
+    <meta name="docbuild:last-update" content="14.10.2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">grid-process</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../changelog.html">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../autoapi/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../changelog.html">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../autoapi/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">grid_process.aggreg</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for grid_process.aggreg</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (c) 2026 MeteoSwiss, contributors listed in AUTHORS</span>
+<span class="c1">#</span>
+<span class="c1"># Distributed under the terms of the BSD 3-Clause License.</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: BSD-3-Clause</span>
+
+<span class="sd">"""</span>
+<span class="sd">Module to perform temporal aggregations</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Hashable</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_accessor</span><span class="p">,</span> <span class="n">keepattrs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.data_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_validtime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.ds_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cast_dtype</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">interptogranularity</span><span class="p">,</span> <span class="n">InterpMethods</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="c1"># Register xarray accessor so module functions can also be called as methods</span>
+<span class="c1"># on xr.Dataset objects</span>
+<div class="viewcode-block" id="Aggreg">
+<a class="viewcode-back" href="../../autoapi/grid_process/aggreg/index.html#grid_process.aggreg.Aggreg">[docs]</a>
+<span class="nd">@xr</span><span class="o">.</span><span class="n">register_dataset_accessor</span><span class="p">(</span><span class="s2">"aggreg"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Aggreg</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Xarray accessors class for aggregations</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">ds</span></div>
+
+
+
+<span class="n">dataset_accessor</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">make_accessor</span><span class="p">,</span> <span class="n">accessor_class</span><span class="o">=</span><span class="n">Aggreg</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="reshape4intervals_wtst">
+<a class="viewcode-back" href="../../autoapi/grid_process/aggreg/index.html#grid_process.aggreg.reshape4intervals_wtst">[docs]</a>
+<span class="nd">@dataset_accessor</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">reshape4intervals_wtst</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">granularity</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Wrapper for :func:`reshape4intervals` to reshape a dataset into intervals,</span>
+<span class="sd">    additionally handling local time conversion and producing interval</span>
+<span class="sd">    duplicates for summer and winter time.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ds : xarray.Dataset</span>
+<span class="sd">        dataset with a valid time dimension to be reshaped. Must contain one constant</span>
+<span class="sd">        time resolution</span>
+<span class="sd">    granularity : int</span>
+<span class="sd">        time in hours in between two consecutive interval starts</span>
+<span class="sd">    interval : int</span>
+<span class="sd">        time in hours of interval duration</span>
+<span class="sd">    offset : int, optional</span>
+<span class="sd">        time in hours by which interval starts should be shifted from 00:00 am.</span>
+<span class="sd">        E.g. if 6, intervals include the one starting at 6am (4 and 5 am UTC)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ds_out : xarray.Dataset</span>
+<span class="sd">        reshaped dataset with dimensions valid time x `window`. Valid time contains</span>
+<span class="sd">        timestamps for respective interval, `window` has length of the interval</span>
+<span class="sd">        and contains all timesteps belonging to the interval</span>
+
+<span class="sd">    See also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`reshape4intervals`, :func:`interval_stat`</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">granularity</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">offset_utc_w</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">ds_w</span> <span class="o">=</span> <span class="n">reshape4intervals</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">granularity</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="n">offset_utc_w</span><span class="p">)</span>
+        <span class="n">offset_utc_s</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">-</span> <span class="mi">2</span>
+        <span class="n">ds_s</span> <span class="o">=</span> <span class="n">reshape4intervals</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">granularity</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="n">offset_utc_s</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">([</span><span class="n">ds_w</span><span class="p">,</span> <span class="n">ds_s</span><span class="p">],</span> <span class="n">combine_attrs</span><span class="o">=</span><span class="s2">"override"</span><span class="p">,</span> <span class="n">compat</span><span class="o">=</span><span class="s2">"no_conflicts"</span><span class="p">,</span> <span class="n">join</span><span class="o">=</span><span class="s2">"outer"</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">reshape4intervals</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">granularity</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="reshape4intervals">
+<a class="viewcode-back" href="../../autoapi/grid_process/aggreg/index.html#grid_process.aggreg.reshape4intervals">[docs]</a>
+<span class="nd">@dataset_accessor</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">reshape4intervals</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">granularity</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Reshape a dataset into time intervals. The intervals are represented by</span>
+<span class="sd">    the `window` dimension.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ds : xarray.Dataset</span>
+<span class="sd">        dataset with valid time dimension to be reshaped. Must contain one constant</span>
+<span class="sd">        time resolution</span>
+<span class="sd">    granularity : int</span>
+<span class="sd">        time in hours in between two consecutive interval starts</span>
+<span class="sd">    interval : int</span>
+<span class="sd">        time in hours of interval duration</span>
+<span class="sd">    offset : int, optional</span>
+<span class="sd">        time in hours by which interval starts should be shifted from 00:00 am.</span>
+<span class="sd">        E.g. if 6, intervals include the one starting at 6am</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ds_out : xarray.Dataset</span>
+<span class="sd">        reshaped dataset with dimensions valid time x `window`. Valid time</span>
+<span class="sd">        contains timestamps for respective interval, `window` has length of the</span>
+<span class="sd">        interval and contains all timesteps belonging to the interval</span>
+
+<span class="sd">    See also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`reshape4intervals_wtst`, :func:`interval_stat`</span>
+<span class="sd">    """</span>
+
+    <span class="n">t_dim</span> <span class="o">=</span> <span class="n">get_validtime</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">raise_notfound</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ds_ind</span> <span class="o">=</span> <span class="n">_get_valid_start</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">granularity</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">t_dim</span><span class="p">)</span>
+        <span class="n">interval_ind</span><span class="p">,</span> <span class="n">granularity_ind</span> <span class="o">=</span> <span class="n">_adjust_resolution</span><span class="p">(</span><span class="n">ds_ind</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="n">granularity</span><span class="p">,</span> <span class="n">t_dim</span><span class="p">)</span>
+
+        <span class="n">indices</span> <span class="o">=</span> <span class="n">_get_intervalindices</span><span class="p">(</span><span class="n">ds_ind</span><span class="p">,</span> <span class="n">interval_ind</span><span class="p">,</span> <span class="n">granularity_ind</span><span class="p">,</span> <span class="n">t_dim</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ds_ind</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">t_dim</span><span class="p">:</span> <span class="n">indices</span><span class="p">})</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span><span class="n">t_dim</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="s2">"time2"</span><span class="p">:</span> <span class="n">t_dim</span><span class="p">})</span>
+
+    <span class="k">except</span> <span class="p">(</span><span class="ne">IndexError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Not enough timestamps to cover at least one aggregation interval"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">t_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">0</span><span class="p">)})</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="s2">"window"</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_valid_start</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">granularity</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">t_dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Get valid starting timestamp for reshaping a dataset into intervals, based</span>
+<span class="sd">    on the granularity of the desired intervals, the offset and the initial</span>
+<span class="sd">    time resolution of the data (does not require hourly resolution, just</span>
+<span class="sd">    constant one throughout). Use to drop timestamps in the beginning belonging</span>
+<span class="sd">    to 'incomplete' intervals.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ds : xarray.Dataset</span>
+<span class="sd">        dataset to be reshaped into intervals. Must contain one constant time</span>
+<span class="sd">        resolution</span>
+<span class="sd">    granularity : int</span>
+<span class="sd">        time in hours in between two consecutive interval starts</span>
+<span class="sd">    offset : int</span>
+<span class="sd">        time in hours by which interval starts should be shifted from 00:00 am.</span>
+<span class="sd">        E.g. if 6, intervals include the one starting at 6am</span>
+<span class="sd">    t_dim : str</span>
+<span class="sd">        name of the valid time dimension</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ds_out : xarray.Dataset</span>
+<span class="sd">        dataset cut at the first valid time from which one interval can be formed</span>
+<span class="sd">    """</span>
+
+    <span class="n">time_res</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">t_dim</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">-</span> <span class="n">ds</span><span class="p">[</span><span class="n">t_dim</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">offset_td</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="s2">"h"</span><span class="p">)</span>
+    <span class="n">start_t</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">))</span> <span class="o">-</span> <span class="n">time_res</span> <span class="o">-</span> <span class="n">offset_td</span>
+    <span class="n">start_t</span> <span class="o">=</span> <span class="n">start_t</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">granularity</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"h"</span><span class="p">)</span> <span class="o">+</span> <span class="n">time_res</span> <span class="o">+</span> <span class="n">offset_td</span>
+
+    <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="n">t_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="n">start_t</span><span class="p">,</span> <span class="kc">None</span><span class="p">)})</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_adjust_resolution</span><span class="p">(</span><span class="n">ds_ind</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">granularity</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">t_dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Adjust indexing lengths of granularity and interval before reshaping a</span>
+<span class="sd">    dataset to required form for interval aggregations. This allow cases where</span>
+<span class="sd">    time resolution of a dataset is not 1hr (e.g. if desired interval is 3hrs</span>
+<span class="sd">    but time-resolution of the dataset is 10mins, index-length for aggregation</span>
+<span class="sd">    should be 18 instead of 3).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ds_ind : xarray.Dataset</span>
+<span class="sd">        dataset to be reshaped. Must contain one constant time resolution</span>
+<span class="sd">    interval : int</span>
+<span class="sd">        time in hours of interval duration</span>
+<span class="sd">    granularity : int</span>
+<span class="sd">        time in hours in between two consecutive interval starts</span>
+<span class="sd">    t_dim : str</span>
+<span class="sd">        name of the valid time dimension</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    interval_ind : int</span>
+<span class="sd">        interval duration in amount of corresponding timesteps given the time</span>
+<span class="sd">        resolution of ds_ind</span>
+<span class="sd">    granularity_ind : int</span>
+<span class="sd">        amount of corresponding timesteps in between two consecutive intervals,</span>
+<span class="sd">        given the time resolution of ds_ind and the specified granularity</span>
+<span class="sd">    """</span>
+
+    <span class="n">time_res</span> <span class="o">=</span> <span class="n">ds_ind</span><span class="p">[</span><span class="n">t_dim</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">-</span> <span class="n">ds_ind</span><span class="p">[</span><span class="n">t_dim</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">interval_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="n">interval</span><span class="p">,</span> <span class="s2">"h"</span><span class="p">)</span> <span class="o">/</span> <span class="n">time_res</span>
+    <span class="n">granularity_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="n">granularity</span><span class="p">,</span> <span class="s2">"h"</span><span class="p">)</span> <span class="o">/</span> <span class="n">time_res</span>
+
+    <span class="k">if</span> <span class="n">interval_ind</span> <span class="o">%</span> <span class="mi">1</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Interval must be a multiple of the dataset resolution"</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">interval_ind</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">granularity_ind</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_intervalindices</span><span class="p">(</span><span class="n">ds_ind</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">interval_ind</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">granularity_ind</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">t_dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Get an array of indices referring to positions of timestamps to reshape</span>
+<span class="sd">    a dataset according to desired interval and granularity.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ds_ind : xarray.Dataset</span>
+<span class="sd">        dataset to be reshaped. Must contain one constant time-resolution and</span>
+<span class="sd">        be cut to correct start time</span>
+<span class="sd">    interval_ind : int</span>
+<span class="sd">        interval duration in amount of corresponding timesteps given the time</span>
+<span class="sd">        resolution of ds_ind</span>
+<span class="sd">    granularity_ind : int</span>
+<span class="sd">        amount of corresponding timesteps in between two consecutive intervals,</span>
+<span class="sd">        given the time resolution of ds_ind and specified granularity</span>
+<span class="sd">    t_dim : str</span>
+<span class="sd">        name of the valid time dimension</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    da_ind : xarray.DataArray</span>
+<span class="sd">        array of indices for reshaping with dims `time2` x `window` (newly formed</span>
+<span class="sd">        intervals, labelled by their end-point) x (timesteps per interval)</span>
+<span class="sd">    """</span>
+
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">ind</span> <span class="o">+</span> <span class="n">interval_ind</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ds_ind</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span> <span class="o">-</span> <span class="n">interval_ind</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">granularity_ind</span><span class="p">)</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="n">coordinates</span> <span class="o">=</span> <span class="n">ds_ind</span><span class="p">[</span><span class="n">t_dim</span><span class="p">][</span><span class="n">indices</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span>
+    <span class="k">return</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s2">"time2"</span><span class="p">,</span> <span class="s2">"window"</span><span class="p">),</span> <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">"time2"</span><span class="p">:</span> <span class="n">coordinates</span><span class="p">})</span>
+
+
+<div class="viewcode-block" id="split_by_timeres">
+<a class="viewcode-back" href="../../autoapi/grid_process/aggreg/index.html#grid_process.aggreg.split_by_timeres">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">split_by_timeres</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Split a dataset where the time granularity changes. In case several</span>
+<span class="sd">    switches of granularity are present, the split is done at the last</span>
+<span class="sd">    granularity switch.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ds : xarray.Dataset</span>
+<span class="sd">        dataset with valid time dimension and non constant time resolution</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    out : list of two xarray.Dataset</span>
+<span class="sd">        First element contains the first part of the dataset (with potentially</span>
+<span class="sd">        another granularity switch hidden). Second element contains the last</span>
+<span class="sd">        part of the dataset with constant granularity. In case the dataset is</span>
+<span class="sd">        already at constant granularity or is of length 1 in valid time dimension,</span>
+<span class="sd">        the output list has length 1</span>
+<span class="sd">    """</span>
+
+    <span class="n">t_dim</span> <span class="o">=</span> <span class="n">get_validtime</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">raise_notfound</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">ds</span><span class="p">]</span>
+
+    <span class="n">time_delta</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">t_dim</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">switch_gran</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">time_delta</span> <span class="o">!=</span> <span class="n">time_delta</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">switch_gran</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">switch</span> <span class="o">=</span> <span class="n">switch_gran</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">ds</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">t_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">switch</span><span class="p">)}),</span>
+            <span class="n">ds</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">t_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="n">switch</span><span class="p">,</span> <span class="kc">None</span><span class="p">)}),</span>
+        <span class="p">]</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">ds</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="interval_stat">
+<a class="viewcode-back" href="../../autoapi/grid_process/aggreg/index.html#grid_process.aggreg.interval_stat">[docs]</a>
+<span class="nd">@dataset_accessor</span>
+<span class="nd">@keepattrs</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">interval_stat</span><span class="p">(</span>
+    <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">granularity</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">agg_func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">lt_duplicates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">interp_method</span><span class="p">:</span> <span class="n">InterpMethods</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">agg_func_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Aggregate values in time over a moving window defined by a time</span>
+<span class="sd">    ``granularity``, ``interval`` and ``offset``. Aggregation is based on the</span>
+<span class="sd">    aggregating function ``agg_func``. The timeseries must have a granularity</span>
+<span class="sd">    of maximum one hour or an ``interp_method`` must be specified for prior</span>
+<span class="sd">    interpolation. The granularity does not need to be constant.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ds : xarray.Dataset</span>
+<span class="sd">        Must have a valid time dimension, potentially with non-constant time resolution.</span>
+<span class="sd">        Typical valid time dimension names are supported, and can be extended via environment variables:</span>
+
+<span class="sd">          - Valid time: export GRID_PROCESS__data_model__validtime (e.g., '["time", "valid_time", "dummy_time"]')</span>
+<span class="sd">          - When the coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can be</span>
+<span class="sd">            used directly.</span>
+<span class="sd">    granularity : int</span>
+<span class="sd">        time in hours in between two consecutive interval starts</span>
+<span class="sd">    interval : int</span>
+<span class="sd">        time in hours of interval duration</span>
+<span class="sd">    offset : int</span>
+<span class="sd">        time in hours by which interval starts should be shifted from 00:00 am.</span>
+<span class="sd">        E.g. if 6, intervals include the one starting after 6am</span>
+<span class="sd">    agg_func : callable</span>
+<span class="sd">        specify temporal aggregation function to use. The function must operate</span>
+<span class="sd">        on `window` dimension. E.g. ``agg_func = lambda x: x.mean('window')``</span>
+<span class="sd">    lt_duplicates : bool, optional</span>
+<span class="sd">        if True, aggregations are done in the DWH compliant style, which means</span>
+<span class="sd">        intervals are calculated with respect to both UTC+1 and UTC+2. Default</span>
+<span class="sd">        is True</span>
+<span class="sd">    interp_method : str, optional</span>
+<span class="sd">        specify the temporal interpolation method to use if part of the</span>
+<span class="sd">        timeseries has a greater time resolution than one hour. Default is no</span>
+<span class="sd">        prior temporal interpolation (thus assuming the timeseries has max</span>
+<span class="sd">        granularity of 1hr). Must be a method accepted by</span>
+<span class="sd">        :func:`~grid_process.timeseries.interptogranularity`</span>
+<span class="sd">    **agg_func_kwargs : any</span>
+<span class="sd">        keyword arguments passed to the ``agg_func``</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ds_out : xarray.Dataset</span>
+<span class="sd">        dataset with aggregated values. Uncomplete intervals are exluded.</span>
+
+<span class="sd">    See also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`reshape4intervals_wtst`, :func:`reshape4intervals`,</span>
+<span class="sd">    :func:`~grid_process.timeseries.interptogranularity`</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    Alternatively, one can use xarray.Dataset.resample in some cases,</span>
+<span class="sd">    especially when aggregating over uncomplete intervals is preferred.</span>
+<span class="sd">    However, this behaviour can be problematic for cumulative aggregations</span>
+<span class="sd">    (i.e. sum). Note that xarray.Dataset.resample has many more interesting</span>
+<span class="sd">    options than this function although it does not allow to specify an</span>
+<span class="sd">    interval and granularity separately.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">interp_method</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">interptogranularity</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="s2">"1h"</span><span class="p">,</span> <span class="n">interp_method</span><span class="p">)</span>
+
+    <span class="n">list_ds</span> <span class="o">=</span> <span class="n">split_by_timeres</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_ds</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">list_ds</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">interval_stat</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">agg_func</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">agg_func_kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">list_ds</span><span class="p">],</span>
+                <span class="n">compat</span><span class="o">=</span><span class="s2">"no_conflicts"</span><span class="p">,</span>
+                <span class="n">join</span><span class="o">=</span><span class="s2">"outer"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
+
+    <span class="n">func</span> <span class="o">=</span> <span class="n">reshape4intervals_wtst</span> <span class="k">if</span> <span class="n">lt_duplicates</span> <span class="k">else</span> <span class="n">reshape4intervals</span>
+    <span class="n">ds_out</span> <span class="o">=</span> <span class="n">agg_func</span><span class="p">(</span><span class="n">func</span><span class="p">(</span><span class="n">list_ds</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">granularity</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="n">offset</span><span class="p">),</span> <span class="o">**</span><span class="n">agg_func_kwargs</span><span class="p">)</span>
+
+    <span class="n">cast_dtype</span><span class="p">(</span><span class="n">ds_out</span><span class="p">,</span> <span class="n">ds</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ds_out</span></div>
+
+
+
+<div class="viewcode-block" id="mode">
+<a class="viewcode-back" href="../../autoapi/grid_process/aggreg/index.html#grid_process.aggreg.mode">[docs]</a>
+<span class="nd">@dataset_accessor</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mode</span><span class="p">(</span><span class="n">reshaped_ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">ordered_mode</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Take the most frequent category (mode) among categorical variables along</span>
+<span class="sd">    `window` dimension. Could be used as input parameter ``agg_func`` for</span>
+<span class="sd">    :func:`interval_stat`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    reshaped_ds : xarray.Dataset</span>
+<span class="sd">        dataset with dimension `window` along which the mode is taken</span>
+<span class="sd">    ordered_mode : dict {varname: list[any]}, optional</span>
+<span class="sd">        ordered list of possible catergories for each data variable in the</span>
+<span class="sd">        input dataset. If set, the returned category will match the priority</span>
+<span class="sd">        order of this list in case of a tie between 2 or more categories</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ds_out : xarray.Dataset</span>
+<span class="sd">        dataset with `window` dimension reduced</span>
+
+<span class="sd">    See also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`interval_stat`, :func:`count`</span>
+<span class="sd">    """</span>
+
+    <span class="n">ds</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">da</span> <span class="ow">in</span> <span class="n">reshaped_ds</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">categ</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">ordered_mode</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ordered_mode</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">count</span><span class="p">(</span><span class="n">da</span><span class="p">,</span> <span class="n">categ</span><span class="p">)</span>
+        <span class="n">cat_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">counts</span><span class="p">))</span>
+        <span class="n">stacked_da</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+
+        <span class="n">ds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+                <span class="n">cat_arr</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">stacked_da</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)],</span>
+                <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="n">dim</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">counts</span><span class="p">[</span><span class="n">cat_arr</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">dims</span> <span class="k">if</span> <span class="n">dim</span> <span class="o">!=</span> <span class="s2">"window"</span><span class="p">],</span>
+            <span class="p">)</span>
+            <span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="n">cat_arr</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span><span class="o">.</span><span class="n">assign_attrs</span><span class="p">(</span><span class="n">reshaped_ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="count">
+<a class="viewcode-back" href="../../autoapi/grid_process/aggreg/index.html#grid_process.aggreg.count">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span><span class="n">reshaped_da</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">categ</span><span class="p">:</span> <span class="n">Iterable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Count the number of occurences along the `window` dimension for each</span>
+<span class="sd">    element present in the input DataArray or in the ``categ`` list.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    reshaped_da : xarray.DataArray</span>
+<span class="sd">        array with dimension `window` along which the count is done</span>
+<span class="sd">    categ : Iterable, optional</span>
+<span class="sd">        ordered iterable of categories for which to count the occurences. If not</span>
+<span class="sd">        set, ``categ`` is the unique categories in the input DataArray</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    counts : dict of xarray.DataArray</span>
+<span class="sd">        the keys are the different elements found in the array and the values</span>
+<span class="sd">        are arrays with the `window` dimension reduced and containing the</span>
+<span class="sd">        respective count</span>
+
+<span class="sd">    See also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`mode`</span>
+<span class="sd">    """</span>
+
+    <span class="n">counts</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">if</span> <span class="n">categ</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">categ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">reshaped_da</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">ct</span> <span class="ow">in</span> <span class="n">categ</span><span class="p">:</span>
+        <span class="n">counts</span><span class="p">[</span><span class="n">ct</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">reshaped_da</span> <span class="o">==</span> <span class="n">ct</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">"window"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">counts</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item"><!-- This will display the version of the docs -->
+grid-process, version: dev-dfe089a</div>
+      
+        <div class="footer-item"><p class="last-updated">
+  Last updated on 14.10.2026.
+  <br/>
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, MeteoSwiss.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,263 @@
+grid_process.data_model
+=======================
+
+.. py:module:: grid_process.data_model
+
+.. autoapi-nested-parse::
+
+   Module with utility functions to deal with the numerous supported data models
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   grid_process.data_model.logger
+   grid_process.data_model.F
+   grid_process.data_model.DATA_MODEL
+   grid_process.data_model.FLAT_DIM
+   grid_process.data_model.YX
+   grid_process.data_model.LATLON
+   grid_process.data_model.SURF_ALT
+   grid_process.data_model.REFTIME
+   grid_process.data_model.VALIDTIME
+   grid_process.data_model.LEADTIME
+   grid_process.data_model.ENS_DIM
+   grid_process.data_model.POI_ALT_COL
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   grid_process.data_model.get_t_dim
+   grid_process.data_model.get_temporal_dims
+   grid_process.data_model.get_temporal_coords
+   grid_process.data_model.get_reftime
+   grid_process.data_model.get_validtime
+   grid_process.data_model.get_leadtime
+   grid_process.data_model.get_ensemble_dim
+   grid_process.data_model.set_grid_mapping
+   grid_process.data_model.get_spatial_dims
+   grid_process.data_model.get_spatial_coords
+   grid_process.data_model.get_flat_dim
+   grid_process.data_model.get_latlon_coords
+   grid_process.data_model.get_latlon_dims
+   grid_process.data_model.get_surf_alt
+   grid_process.data_model.get_poi_alt
+   grid_process.data_model.get_grid_crs
+   grid_process.data_model.parse_grid_mapping
+   grid_process.data_model.get_coords_name_crs
+   grid_process.data_model.is_decreasing1d
+   grid_process.data_model.is_decreasing
+
+
+Module Contents
+---------------
+
+.. py:data:: logger
+
+.. py:data:: F
+
+.. py:data:: DATA_MODEL
+
+.. py:data:: FLAT_DIM
+   :type:  list[str]
+
+.. py:data:: YX
+   :type:  tuple[tuple[str, str], ...]
+
+.. py:data:: LATLON
+   :type:  tuple[tuple[str, str], ...]
+
+.. py:data:: SURF_ALT
+   :type:  list[str]
+
+.. py:data:: REFTIME
+   :type:  list[str]
+
+.. py:data:: VALIDTIME
+   :type:  list[str]
+
+.. py:data:: LEADTIME
+   :type:  list[str]
+
+.. py:data:: ENS_DIM
+   :type:  list[str]
+
+.. py:data:: POI_ALT_COL
+   :type:  list[str]
+
+.. py:function:: get_t_dim(ds: xarray.Dataset) -> str
+
+   Returns name of temporal dimension according to the possible options defined
+   in the config (could be overwritten by setting appropriate env variable).
+   Temporal dimension could be expressed as valid time or lead time.
+
+
+.. py:function:: get_temporal_dims(data: xarray.Dataset | xarray.DataArray) -> tuple[str | None, str | None, str | None]
+
+   Returns names of temporal dimensions according to the possible options defined
+   in the config (could be overwritten by setting appropriate env variable) or
+   according to CF standard name. The returned tuple contains dimension names in
+   the following order: (reftime, leadtime, validtime).
+
+
+.. py:function:: get_temporal_coords(data: xarray.Dataset | xarray.DataArray) -> tuple[str | None, str | None, str | None]
+
+   Returns names of temporal coordinates according to the possible options defined
+   in the config (could be overwritten by setting appropriate env variable) or
+   according to CF standard name. The returned tuple contains coordinate names in
+   the following order: (reftime, leadtime, validtime).
+
+
+.. py:function:: get_reftime(data: xarray.Dataset | xarray.DataArray, kind: Literal['dim', 'coord'] = 'dim') -> str | None
+
+   Returns name of forecast reference time dimension or coordinate according to
+   the possible options defined in the config (could be overwritten by setting
+   appropriate env variable) or according to CF standard name.
+
+
+.. py:function:: get_validtime(data: xarray.Dataset | xarray.DataArray, kind: Literal['dim', 'coord'] = 'dim', raise_notfound: Literal[True] = True) -> str
+                 get_validtime(data: xarray.Dataset | xarray.DataArray, kind: Literal['dim', 'coord'] = 'dim', raise_notfound: Literal[False] = False) -> str | None
+
+   Returns name of valid time dimension or coordinate according to the possible
+   options defined in the config (could be overwritten by setting appropriate
+   env variable) or according to CF standard name. When raise_notfound is set
+   to True, raise a ValueError if a valid time dimension/coordinate can not be
+   found.
+
+
+.. py:function:: get_leadtime(data: xarray.Dataset | xarray.DataArray, kind: Literal['dim', 'coord'] = 'dim') -> str | None
+
+   Returns name of lead time dimension or coordinate according to the possible
+   options defined in the config (could be overwritten by setting appropriate
+   env variable) or according to CF standard name.
+
+
+.. py:function:: get_ensemble_dim(data: xarray.Dataset | xarray.DataArray) -> str
+
+   Returns name of ensemble members dimension according to the possible options
+   defined in the config (could be overwritten by setting appropriate env variable)
+   or according to CF standard name.
+
+
+.. py:function:: set_grid_mapping(ds: xarray.Dataset) -> xarray.Dataset
+
+   Set grid_mapping attribute according to internal conventions when the input
+   grid follow CF conventions (grid mapping encoded as a data variable). The
+   data variable encoding the grid mapping is removed.
+
+
+.. py:function:: get_spatial_dims(grid: xarray.Dataset | xarray.DataArray) -> tuple[str, ...]
+
+   Returns names of spatial dimensions according to the possible options defined
+   in the config (could be overwritten by setting appropriate env variable)
+   or according to CF conventions. The returned tuple has size one in case of
+   unstructured grid otherwise contains dimension names in the order (y, x).
+
+
+.. py:function:: get_spatial_coords(grid: xarray.Dataset | xarray.DataArray) -> tuple[str, str]
+
+   Returns names of non-dimension spatial coordinates according to the
+   possible options defined in the config (could be overwritten by setting
+   appropriate env variable) or according to CF conventions. The returned
+   tuple contains coordinate names in the order (y, x).
+
+
+.. py:function:: get_flat_dim(grid: xarray.Dataset | xarray.DataArray) -> str | None
+
+   Returns spatial dimension name for an unstructured grid according to the
+   possible options defined in the config (could be overwritten by setting
+   appropriate env variable).
+
+
+.. py:function:: get_latlon_coords(grid: xarray.Dataset | xarray.DataArray, nondim: bool = True) -> tuple[str, str] | None
+
+   Returns names of latitude and longitude coordinates if they exist according
+   to the possible options defined in the config (could be overwritten by setting
+   appropriate env variable) or according to CF conventions. The returned tuple
+   contains coordinate names in the order (latitude, longitude). When ``nondim``
+   is True (default), only checks coordinates that are non-dimensional.
+
+
+.. py:function:: get_latlon_dims(grid: xarray.Dataset | xarray.DataArray) -> tuple[str, str] | None
+
+   Returns names of latitude and longitude dimensions if they exist according
+   to the possible options defined in the config (could be overwritten by setting
+   appropriate env variable) or according to CF conventions. The returned tuple
+   contains coordinate names in the order (latitude, longitude).
+
+
+.. py:function:: get_surf_alt(grid: xarray.Dataset | xarray.DataArray) -> str
+
+   Returns name of the surface altitude coordinate variable according to the
+   possible options defined in the config (could be overwritten by setting
+   appropriate env variable).
+
+
+.. py:function:: get_poi_alt(poi_info: geopandas.GeoDataFrame) -> numpy.typing.NDArray[numpy.float32]
+
+   Returns POIs altitudes from ``poi_info`` according to the column names defined
+   in the config (could be overwritten by setting appropriate env variable) or
+   from a "z" geometry. Altitude data is expected to be in meters above sea level.
+
+
+.. py:function:: get_grid_crs(grid: xarray.Dataset | xarray.DataArray) -> pyproj.CRS
+
+   Get correct CRS according to supported conventions.
+
+   :Parameters: **grid** (*xarray Dataset or DataArray*) -- contains spatial horizontal coordinates. Must have a "grid_mapping" or "crs"
+                attribute referencing the spatial dimensions unless `longitude` and
+                `latitude` (or configured equivalents) are dimensions.
+
+   :returns: pyproj representation of input grid coordinate reference system
+   :rtype: pyproj CRS
+
+   .. seealso:: :func:`~grid_process.helpers.set_grid_mapping`
+
+
+.. py:function:: parse_grid_mapping(grid_mapping: str | dict[str, Any]) -> pyproj.CRS
+
+   Parse internal grid database style "grid_mapping" attribute and decode it with Pyproj.
+
+   :Parameters: **grid_mapping** (*dict or dict encapsulated in a string*) -- contains CF conventions attributes parsable by pyproj.CRS.from_cf() or
+                the key "epsg_code" with value being an authority string (e.g. EPSG:4326)
+
+   :returns: pyproj representation of input grid_mapping
+   :rtype: pyproj CRS
+
+   .. seealso:: :func:`get_grid_crs`
+
+
+.. py:function:: get_coords_name_crs(grid: xarray.Dataset | xarray.DataArray, spatial_dims: tuple[str, ...] | None = None) -> tuple[str, str, pyproj.CRS]
+
+   Get correct coordinate names and CRS according to supported conventions. When
+   non-dimensional longitude and latitude coordinates arrays are present, these
+   are used instead of the native spatial dimension coordinates.
+
+   :Parameters: * **grid** (*xarray Dataset or DataArray*) -- contains spatial horizontal coordinates. Must have a "grid_mapping" or "crs"
+                  attribute referencing the spatial dimensions unless longitude and
+                  latitude coordinates are present.
+                * **spatial_dims** (*tuple of string(s), optional*) -- name of the ``grid`` spatial dimension(s). Has size one in case of
+                  unstructured grid otherwise contains dimension names in the order (y, x).
+                  If not provided, calls :func:`~grid_process.helpers.get_spatial_dims`
+
+   :returns: * **grid_y** (*str*) -- name of the northward coordinate. Usually 'x' or 'longitude'
+             * **grid_x** (*str*) -- name of the eastward coordinate. Usually 'y' or 'latitude''
+             * **grid_crs** (*pyproj CRS*) -- pyproj representation of input grid coordinate reference system
+
+
+.. py:function:: is_decreasing1d(coords: xarray.DataArray) -> bool
+
+   Whether 1 dimensional ``coords`` are in decreasing order.
+
+
+.. py:function:: is_decreasing(coords: xarray.DataArray, dim: str) -> bool
+
+   Checks whether ``coords`` are in decreasing order along dimension ``dim``.
+
+

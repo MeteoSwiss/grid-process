@@ -1,0 +1,87 @@
+grid_process.grid_interp_utils
+==============================
+
+.. py:module:: grid_process.grid_interp_utils
+
+.. autoapi-nested-parse::
+
+   Module with utilities for spatial interpolation of gridded datasets
+
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   grid_process.grid_interp_utils.create_dst_grid
+   grid_process.grid_interp_utils.create_dst_grid_from_src
+
+
+Module Contents
+---------------
+
+.. py:function:: create_dst_grid(dst_grid_crs: Any, bottomleft: tuple[float, float], topright: tuple[float, float] | None = None, nrowcol: tuple[int, int] | None = None, resolution: float | None = None, add_latlon: bool = False, dtype: numpy.dtype = np.dtype('float32')) -> xarray.Dataset
+
+   Create a destination grid on which data can be interpolated. The output
+   can be directly used with :func:`interp2grid`. Two out of the three optional
+   input arguments ``topright``, ``nrowcol``, ``resolution`` must be provided.
+
+   :Parameters: * **dst_grid_crs** (*string, int, dict or a CRS object*) -- Anything accepted by pyproj.crs.CRS.from_user_input:
+                  https://pyproj4.github.io/pyproj/dev/api/crs/crs.html#pyproj.crs.CRS.from_user_input
+                  (e.g. EPSG:4326)
+                * **bottomleft** (*tuple of floats*) -- (y, x) coordinates of the center of the bottom left corner pixel
+                * **topright** (*tuple of floats, optional*) -- (y, x) coordinates of the center of the top right corner pixel.
+                  If provided with ``nrowcol``, this is the exact coordinates. If provided
+                  with ``resolution`` this is a closed upper bound. The exact coordinates of
+                  the top right corner pixel will then be a multiple of the resolution with
+                  respect to the bottom left corner.
+                * **nrowcol** (*tuple of int, optional*) -- number of rows (y) and columns (x) respectively
+                * **resolution** (*float, optional*) -- resolution of the destination grid in the units of the ``grid_mapping``
+                * **add_latlon** (*bool*) -- If True, add latitude and longitude 2d arrays as coordinates
+                * **dtype** (*numpy.dtype*) -- The dtype in which spatial coordinates are returned
+
+   :returns: **dst_grid** -- dataset with spatial horizontal coordinates and an associated crs attribute
+   :rtype: xarray.Dataset
+
+   .. seealso:: :func:`interp2grid`
+
+
+.. py:function:: create_dst_grid_from_src(src_grid: xarray.Dataset, dst_grid_crs: Any, add_latlon: bool = False) -> xarray.Dataset
+
+   Creates a destination grid on which data can be interpolated from a source grid
+   in a different Coordinate Reference System. Domain and sizes are preserved.
+   The output can be directly used with :func:`interp2grid`.
+
+   :Parameters: * **src_grid** (*xarray Dataset*) -- The source grid from which a new destination grid with same sizes and domain
+                  is derived. Supported data models include:
+
+                    - CF-convention grids (see https://cfconventions.org/)
+                    - internal MCH models
+                    - Unstructured grids
+
+                  Typical spatial dimension and coordinate names are supported, and can be extended via environment variables:
+
+                    - Y coordinate: export GRID_PROCESS__data_model__grid__y (e.g., '["y", "latitude", "lat", "dummy_y"]')
+                    - X coordinate: export GRID_PROCESS__data_model__grid__x (e.g., '["x", "longitude", "lon", "dummy_x"]')
+                    - Unstructured dimension: export GRID_PROCESS__data_model__grid__unstructured_dim (e.g., '["dummy_cell"]')
+                    - When the spatial coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can be
+                      used directly.
+
+                  Spatial CRS must be referenced via one of:
+
+                    - Global attribute 'crs' (e.g., "EPSG:2056" or anything accepted by :meth:`pyproj.CRS.from_user_input`)
+                    - Global attribute 'grid_mapping' (internal grid database convention)
+                    - CF-convention grid mapping variable
+                    - If coordinates are named 'latitude'/'longitude' or 'lat'/'lon', WGS84 (EPSG:4326) is assumed.
+                * **dst_grid_crs** (*string, int, dict or a CRS object*) -- Anything accepted by pyproj.crs.CRS.from_user_input:
+                  https://pyproj4.github.io/pyproj/dev/api/crs/crs.html#pyproj.crs.CRS.from_user_input
+                  (e.g. EPSG:4326)
+                * **add_latlon** (*bool*) -- If True, add latitude and longitude 2d arrays as coordinates
+
+   :returns: **dst_grid** -- dataset with spatial horizontal coordinates and an associated crs attribute
+   :rtype: xarray.Dataset
+
+   .. seealso:: :func:`interp2grid`
+
+
