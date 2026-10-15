@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+* added a ``py.typed`` marker so that type checkers use the inline type hints of ``grid-process`` (PEP 561)
+
 1.0.0
 -----
 
