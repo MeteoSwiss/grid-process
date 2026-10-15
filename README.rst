@@ -106,7 +106,7 @@ Migrating from gridefix-process
 * Package and import name: ``gridefix-process`` / ``gridefix_process`` became ``grid-process`` / ``grid_process``.
 * Environment variable prefix: ``GRIDEFIX_PROCESS__`` became ``GRID_PROCESS__``
   (e.g. ``GRID_PROCESS__data_model__validtime``).
-* Versioning restarts at ``1.0.0``; the last internal release was ``gridefix-process`` 6.0.1.
+* Versioning restarts at ``1.0.0``; the last internal release was ``gridefix-process`` 6.1.0.
 
 Release the Project
 -------------------
