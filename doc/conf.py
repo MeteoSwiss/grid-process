@@ -1,6 +1,6 @@
 import os
 
-extensions = ["sphinx.ext.napoleon", "autoapi.extension", "sphinx.ext.viewcode"]
+extensions = ["sphinx.ext.napoleon", "autoapi.extension", "sphinx.ext.viewcode", "myst_nb"]
 
 project = "grid-process"
 copyright = "2026, MeteoSwiss"
@@ -10,7 +10,11 @@ version = os.getenv("VERSION", default="")
 build_id = os.getenv("BUILD_ID", default="")
 release = f"{version}-{build_id}"
 
-exclude_patterns = ["_build"]
+exclude_patterns = ["_build", "jupyter_execute", "**.ipynb_checkpoints"]
+
+# Example notebooks are committed with their outputs: they rely on short-lived open data and credentials,
+# so they are rendered as is and never executed during the documentation build.
+nb_execution_mode = "off"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
