@@ -11,6 +11,12 @@ days, re-running them retrieves more recent forecasts. To run them, install the 
 
     poetry install --with example
 
+The forecast and reanalysis data are downloaded with `earthkit-data <https://earthkit-data.readthedocs.io>`_. To
+keep them between sessions, enable its cache once, e.g. in ``~/.config/earthkit/data/config.yaml``::
+
+    cache-policy: user
+    user-cache-directory: /path/to/a/large/disk/earthkit-cache
+
 The ERA5-Land example additionally needs a free account on the
 `Copernicus Climate Data Store <https://cds.climate.copernicus.eu>`_, with the API token in ``~/.cdsapirc`` and the
 licence of the dataset accepted once on its download page.
