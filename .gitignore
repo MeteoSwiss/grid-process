@@ -94,9 +94,7 @@ ENV/
 .editorconfig
 .spyproject
 .idea/
-.vscode/*
-!.vscode/settings.json
-!.vscode/launch.json
+.vscode/
 
 # Rope project settings
 .ropeproject
