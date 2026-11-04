@@ -1268,3 +1268,44 @@ def test_interp2grid_preserved_dtype(interp_kwargs, data_native_lv95, data_nativ
     assert result[varname].dtype == dtype
     result = interp2grid(data_native_lv95_float64, data_native_lv95_shifted, **interp_kwargs)
     assert result[varname].dtype == dtype
+
+
+@pytest.mark.parametrize("method", ["nearest", "linear", "idw"])
+def test_interp2grid_integer_coords(method, model_data):
+    """
+    Test that interp2grid from grid_interp module gives the same results with integer and float
+    coordinates of the destination grid: the reprojected coordinates must not be truncated.
+    """
+
+    from grid_process.grid_interp import interp2grid
+
+    # unstructured source grid in latitude/longitude
+    model_data_flat = model_data.stack({"cell": ("y", "x")}).drop_vars(("cell", "y", "x"))
+    # LV95 destination grid within the source domain, with fewer points: reprojected to latitude/longitude
+    dst_grid_int = xr.Dataset(
+        coords={"x": np.arange(2660000, 2700001, 10000), "y": np.arange(1180000, 1220001, 10000)},
+        attrs={"crs": "EPSG:2056"},
+    )
+    dst_grid = dst_grid_int.assign_coords(x=dst_grid_int.x.astype(np.float64), y=dst_grid_int.y.astype(np.float64))
+
+    expected = interp2grid(model_data_flat, dst_grid, method)
+    result = interp2grid(model_data_flat, dst_grid_int, method)
+    assert expected.test_var_1.notnull().all()
+    np.testing.assert_array_equal(result.test_var_1.values, expected.test_var_1.values)
+
+
+@pytest.mark.parametrize("method", ["nearest", "idw", "temp_fixgrad"])
+def test_interp2poi_integer_coords(method, data_native_lv95, poi_def_lv95):
+    """
+    Test that interp2poi from grid_interp module gives the same results with integer and float
+    spatial coordinates of the source grid: the reprojected POIs coordinates must not be truncated.
+    """
+
+    from grid_process.grid_interp import interp2poi
+
+    data_lv95 = data_native_lv95.drop_vars(["latitude", "longitude"])
+    data_lv95_int = data_lv95.assign_coords(x=data_lv95.x.astype(np.int64), y=data_lv95.y.astype(np.int64))
+
+    expected = interp2poi(data_lv95, poi_def_lv95, method)
+    result = interp2poi(data_lv95_int, poi_def_lv95, method)
+    np.testing.assert_array_equal(result.test_var_1.values, expected.test_var_1.values)
