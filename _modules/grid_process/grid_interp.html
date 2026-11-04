@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=95ba1917"></script>
+    <script src="../../_static/documentation_options.js?v=8be55d2a"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/grid_process/grid_interp';</script>
@@ -55,7 +55,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="02.11.2026"/>
+    <meta name="docbuild:last-update" content="04.11.2026"/>
   </head>
   
   
@@ -1686,11 +1686,11 @@
     <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">HEIGHT_METHODS</span><span class="p">:</span>
         <span class="c1"># include elevation</span>
         <span class="n">surf_alt</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_surf_alt</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-        <span class="n">coords_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span>
+        <span class="n">coords_flat</span> <span class="o">=</span> <span class="n">_stack_coords</span><span class="p">(</span>
             <span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
             <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
             <span class="n">data</span><span class="p">[</span><span class="n">surf_alt</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-        <span class="p">]</span>
+        <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">grid_crs</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SWISS_CRS</span><span class="p">:</span>
             <span class="c1"># project to CH1903+/LV95 to have units in [m]</span>
@@ -1700,7 +1700,7 @@
             <span class="p">)</span>
             <span class="n">grid_crs</span> <span class="o">=</span> <span class="n">new_crs</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">coords_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
+        <span class="n">coords_flat</span> <span class="o">=</span> <span class="n">_stack_coords</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
 
     <span class="c1"># Reproject POIs coordinates in the grid CRS</span>
     <span class="n">pois_coords</span> <span class="o">=</span> <span class="n">_convert_poi</span><span class="p">(</span><span class="n">poi_info</span><span class="p">,</span> <span class="n">grid_crs</span><span class="p">,</span> <span class="n">coords_flat</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
@@ -1728,6 +1728,9 @@
 <span class="sd">    coordinates with the specified dtype.</span>
 <span class="sd">    """</span>
 
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">):</span>
+        <span class="c1"># integer grid coordinates would truncate the (reprojected) POIs coordinates</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
     <span class="n">pois_coords</span> <span class="o">=</span> <span class="n">poi_info</span><span class="o">.</span><span class="n">get_coordinates</span><span class="p">()</span><span class="o">.</span><span class="n">values</span>
     <span class="n">pois_coords</span> <span class="o">=</span> <span class="n">pois_coords</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
@@ -2075,16 +2078,16 @@
         <span class="n">surf_alt</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_surf_alt</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
         <span class="n">dst_surf_alt</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_surf_alt</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">)</span>
         <span class="c1"># include elevation</span>
-        <span class="n">coords_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span>
+        <span class="n">coords_flat</span> <span class="o">=</span> <span class="n">_stack_coords</span><span class="p">(</span>
             <span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
             <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
             <span class="n">data</span><span class="p">[</span><span class="n">surf_alt</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-        <span class="p">]</span>
-        <span class="n">dst_coords_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span>
+        <span class="p">)</span>
+        <span class="n">dst_coords_flat</span> <span class="o">=</span> <span class="n">_stack_coords</span><span class="p">(</span>
             <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
             <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
             <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_surf_alt</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-        <span class="p">]</span>
+        <span class="p">)</span>
         <span class="n">target_crs</span> <span class="o">=</span> <span class="n">_choose_crs_meters</span><span class="p">()</span>
         <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">_reproject_grid_cached</span><span class="p">(</span>
             <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">grid_crs</span><span class="p">,</span> <span class="n">target_crs</span>
@@ -2095,8 +2098,8 @@
         <span class="k">return</span> <span class="n">coords_flat</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dst_coords_flat</span>
 
     <span class="c1"># Non-height methods</span>
-    <span class="n">coords_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
-    <span class="n">dst_coords_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
+    <span class="n">coords_flat</span> <span class="o">=</span> <span class="n">_stack_coords</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+    <span class="n">dst_coords_flat</span> <span class="o">=</span> <span class="n">_stack_coords</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">reproj_dst</span><span class="p">:</span>  <span class="c1"># reproject destination coordinates in the grid CRS</span>
         <span class="n">dst_coords_flat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">dst_coords_flat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">_reproject_grid_cached</span><span class="p">(</span>
             <span class="n">dst_coords_flat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">dst_coords_flat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dst_grid_crs</span><span class="p">,</span> <span class="n">grid_crs</span>
@@ -2138,6 +2141,18 @@
     <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">,</span> <span class="n">grid_crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">grid</span><span class="p">,</span> <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">,</span> <span class="n">grid_crs</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_stack_coords</span><span class="p">(</span><span class="o">*</span><span class="n">coords</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Stack flattened coordinates columnwise into a single 2D array. Integer coordinates are</span>
+<span class="sd">    converted to float64, since reprojected coordinates are written into the array.</span>
+<span class="sd">    """</span>
+
+    <span class="n">stacked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">stacked</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">):</span>
+        <span class="n">stacked</span> <span class="o">=</span> <span class="n">stacked</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">stacked</span>
 
 
 <div class="viewcode-block" id="slice_boundingbox">
@@ -2495,10 +2510,10 @@
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-f0a560a</div>
+grid-process, version: dev-125bdea</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 02.11.2026.
+  Last updated on 04.11.2026.
   <br/>
 </p></div>
       
