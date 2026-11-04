@@ -6,8 +6,19 @@ Unreleased
 ----------
 
 * added a ``py.typed`` marker so that type checkers use the inline type hints of ``grid-process`` (PEP 561)
+Changelog
+=========
+
+Unreleased
+----------
+
+* added a ``py.typed`` marker so that type checkers use the inline type hints of ``grid-process`` (PEP 561)
+<<<<<<< HEAD
 * fixed ``interp2grid`` and ``interp2poi`` truncating reprojected coordinates when the grid coordinates are
   integers (e.g. an LV95 destination grid built with ``np.arange``), which gave wrong values or NaN
+=======
+* added example notebooks to the documentation illustrating ``interp2poi`` and ``interp2grid`` with open data, with
+  their dependencies in the optional ``example`` dependency group
 
 1.0.0
 -----

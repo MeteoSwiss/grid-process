@@ -15,4 +15,5 @@ grid-process Documentation
 
    readme
    usage
+   examples
    changelog
