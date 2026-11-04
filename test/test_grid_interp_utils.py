@@ -10,6 +10,7 @@ import json
 
 from pyproj import CRS
 import numpy as np
+import pytest
 import xarray as xr
 
 import grid_process.grid_interp_utils as gru
@@ -98,3 +99,26 @@ def test_create_dst_grid_from_src(data_native_rotlatlon):
     # check for src grid with decreasing y coords
     results_reversed = gru.create_dst_grid_from_src(data_native_rotlatlon_reversed, dst_grid_map, add_latlon=True)
     xr.testing.assert_identical(results_reversed, results.isel(y=slice(None, None, -1)))
+
+
+@pytest.mark.parametrize(
+    "start, topright, res, expected_n",
+    [
+        (2600000.0, 2600950.0, 100.0, 10),  # topright not a multiple of the resolution
+        (2600000.0, 2601000.0, 100.0, 11),  # topright is a multiple: kept as last point
+        (0.0, 0.3, 0.1, 4),  # float truncation edge case (0.3 / 0.1 = 2.9999...)
+    ],
+)
+def test_create_dst_grid_topright_resolution(start, topright, res, expected_n):
+    """
+    With topright and resolution, the resolution must be exact and topright a closed upper bound
+    """
+
+    grid = gru.create_dst_grid(
+        "EPSG:2056", (start, start), topright=(topright, topright), resolution=res, dtype=np.dtype("float64")
+    )
+    for coords in (grid.x.values, grid.y.values):
+        assert coords.size == expected_n
+        np.testing.assert_allclose(np.diff(coords), res)
+        assert coords[0] == start
+        assert coords[-1] <= topright + 1e-9

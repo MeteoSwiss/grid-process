@@ -10,6 +10,8 @@ Unreleased
   their dependencies in the optional ``example`` dependency group
 * fixed ``interp2grid`` and ``interp2poi`` truncating reprojected coordinates when the grid coordinates are
   integers (e.g. an LV95 destination grid built with ``np.arange``), which gave wrong values or NaN
+* fixed ``create_dst_grid`` with ``topright`` and ``resolution``: the resolution is now exact and ``topright``
+  a closed upper bound, instead of the grid spacing being stretched to end exactly on ``topright``
 
 1.0.0
 -----

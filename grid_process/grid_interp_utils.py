@@ -78,8 +78,11 @@ def create_dst_grid(  # pylint: disable=too-many-locals
         x_coords = np.linspace(start_x, end_x, ncols, dtype=dtype)
     elif topright is not None and resolution is not None:
         end_y, end_x = topright
-        y_coords = np.linspace(start_y, end_y, num=int((end_y - start_y) / resolution) + 1, dtype=dtype)
-        x_coords = np.linspace(start_x, end_x, num=int((end_x - start_x) / resolution) + 1, dtype=dtype)
+        # the resolution is exact, topright is a closed upper bound (tolerance guards against float truncation)
+        nrows = int(np.floor((end_y - start_y) / resolution + 1e-9)) + 1
+        ncols = int(np.floor((end_x - start_x) / resolution + 1e-9)) + 1
+        y_coords = (start_y + np.arange(nrows, dtype=np.float64) * resolution).astype(dtype)
+        x_coords = (start_x + np.arange(ncols, dtype=np.float64) * resolution).astype(dtype)
     elif nrowcol is not None and resolution is not None:
         nrows, ncols = nrowcol
         end_y = start_y + (nrows - 1) * resolution
