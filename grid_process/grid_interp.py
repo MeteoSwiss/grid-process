@@ -1252,11 +1252,11 @@ def _flatten_concat(
     if method in HEIGHT_METHODS:
         # include elevation
         surf_alt = dm.get_surf_alt(data)
-        coords_flat = np.c_[
+        coords_flat = _stack_coords(
             data[grid_x].values,
             data[grid_y].values,
             data[surf_alt].values,
-        ]
+        )
 
         if grid_crs not in SWISS_CRS:
             # project to CH1903+/LV95 to have units in [m]
@@ -1266,7 +1266,7 @@ def _flatten_concat(
             )
             grid_crs = new_crs
     else:
-        coords_flat = np.c_[data[grid_x].values, data[grid_y].values]
+        coords_flat = _stack_coords(data[grid_x].values, data[grid_y].values)
 
     # Reproject POIs coordinates in the grid CRS
     pois_coords = _convert_poi(poi_info, grid_crs, coords_flat.dtype)
@@ -1294,6 +1294,9 @@ def _convert_poi(poi_info: gpd.GeoDataFrame, grid_crs: CRS, dtype: np.dtype) -> 
     coordinates with the specified dtype.
     """
 
+    if not np.issubdtype(dtype, np.floating):
+        # integer grid coordinates would truncate the (reprojected) POIs coordinates
+        dtype = np.dtype(np.float64)
     pois_coords = poi_info.get_coordinates().values
     pois_coords = pois_coords.astype(dtype, copy=False)
 
@@ -1638,16 +1641,16 @@ def _flatten_concat_grids(  # pylint: disable=too-many-locals
         surf_alt = dm.get_surf_alt(data)
         dst_surf_alt = dm.get_surf_alt(dst_grid)
         # include elevation
-        coords_flat = np.c_[
+        coords_flat = _stack_coords(
             data[grid_x].values,
             data[grid_y].values,
             data[surf_alt].values,
-        ]
-        dst_coords_flat = np.c_[
+        )
+        dst_coords_flat = _stack_coords(
             dst_grid[dst_grid_x].values,
             dst_grid[dst_grid_y].values,
             dst_grid[dst_surf_alt].values,
-        ]
+        )
         target_crs = _choose_crs_meters()
         coords_flat[:, 0], coords_flat[:, 1] = _reproject_grid_cached(
             coords_flat[:, 0], coords_flat[:, 1], grid_crs, target_crs
@@ -1658,8 +1661,8 @@ def _flatten_concat_grids(  # pylint: disable=too-many-locals
         return coords_flat, data.values, dst_coords_flat
 
     # Non-height methods
-    coords_flat = np.c_[data[grid_x].values, data[grid_y].values]
-    dst_coords_flat = np.c_[dst_grid[dst_grid_x].values, dst_grid[dst_grid_y].values]
+    coords_flat = _stack_coords(data[grid_x].values, data[grid_y].values)
+    dst_coords_flat = _stack_coords(dst_grid[dst_grid_x].values, dst_grid[dst_grid_y].values)
     if reproj_dst:  # reproject destination coordinates in the grid CRS
         dst_coords_flat[:, 0], dst_coords_flat[:, 1] = _reproject_grid_cached(
             dst_coords_flat[:, 0], dst_coords_flat[:, 1], dst_grid_crs, grid_crs
@@ -1701,6 +1704,18 @@ def _flatten_coords_crs(
     grid_y, grid_x, grid_crs = dm.get_coords_name_crs(grid, spatial_dims)
 
     return grid, grid_y, grid_x, grid_crs
+
+
+def _stack_coords(*coords: np.ndarray) -> np.ndarray:
+    """
+    Stack flattened coordinates columnwise into a single 2D array. Integer coordinates are
+    converted to float64, since reprojected coordinates are written into the array.
+    """
+
+    stacked = np.column_stack(coords)
+    if not np.issubdtype(stacked.dtype, np.floating):
+        stacked = stacked.astype(np.float64)
+    return stacked
 
 
 def slice_boundingbox(

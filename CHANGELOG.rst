@@ -6,6 +6,8 @@ Unreleased
 ----------
 
 * added a ``py.typed`` marker so that type checkers use the inline type hints of ``grid-process`` (PEP 561)
+* fixed ``interp2grid`` and ``interp2poi`` truncating reprojected coordinates when the grid coordinates are
+  integers (e.g. an LV95 destination grid built with ``np.arange``), which gave wrong values or NaN
 
 1.0.0
 -----
