@@ -6,6 +6,8 @@ Unreleased
 ----------
 
 * added a ``py.typed`` marker so that type checkers use the inline type hints of ``grid-process`` (PEP 561)
+* fixed ``create_dst_grid`` with ``topright`` and ``resolution``: the resolution is now exact and ``topright``
+  a closed upper bound, instead of the grid spacing being stretched to end exactly on ``topright``
 
 1.0.0
 -----
