@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=8be55d2a"></script>
+    <script src="_static/documentation_options.js?v=1de118f2"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'changelog';</script>
@@ -407,6 +407,8 @@
 their dependencies in the optional <code class="docutils literal notranslate"><span class="pre">example</span></code> dependency group</p></li>
 <li><p>fixed <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> truncating reprojected coordinates when the grid coordinates are
 integers (e.g. an LV95 destination grid built with <code class="docutils literal notranslate"><span class="pre">np.arange</span></code>), which gave wrong values or NaN</p></li>
+<li><p>fixed <code class="docutils literal notranslate"><span class="pre">create_dst_grid</span></code> with <code class="docutils literal notranslate"><span class="pre">topright</span></code> and <code class="docutils literal notranslate"><span class="pre">resolution</span></code>: the resolution is now exact and <code class="docutils literal notranslate"><span class="pre">topright</span></code>
+a closed upper bound, instead of the grid spacing being stretched to end exactly on <code class="docutils literal notranslate"><span class="pre">topright</span></code></p></li>
 </ul>
 </section>
 <section id="id1">
@@ -496,7 +498,7 @@ integers (e.g. an LV95 destination grid built with <code class="docutils literal
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-125bdea</div>
+grid-process, version: dev-3d57771</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 04.11.2026.
