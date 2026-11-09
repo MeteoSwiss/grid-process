@@ -7,7 +7,8 @@ Unreleased
 
 * added a ``py.typed`` marker so that type checkers use the inline type hints of ``grid-process`` (PEP 561)
 * added example notebooks to the documentation illustrating ``interp2poi`` and ``interp2grid`` with open data, with
-  their dependencies in the optional ``example`` dependency group
+  their dependencies in the optional ``example`` dependency group. Two of them are global: GFS 2 m temperature to
+  stations worldwide (compared with GHCN-hourly observations) and ERA5 2 m temperature to the IFS 0.1° grid
 * fixed ``interp2grid`` and ``interp2poi`` truncating reprojected coordinates when the grid coordinates are
   integers (e.g. an LV95 destination grid built with ``np.arange``), which gave wrong values or NaN
 * fixed ``create_dst_grid`` with ``topright`` and ``resolution``: the resolution is now exact and ``topright``
