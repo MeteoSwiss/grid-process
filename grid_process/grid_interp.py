@@ -133,10 +133,6 @@ def interp_temp(  # pylint: disable=too-many-locals
         array containing the interpolated values and the same trailing
         dimensions as the input ``data_flat`` array
 
-    Raises
-    ------
-    ValueError : Raised if the orography is flat, as no sounding can be estimated.
-
     See also
     --------
     :func:`interp2poi`
@@ -145,7 +141,9 @@ def interp_temp(  # pylint: disable=too-many-locals
     ----
     For POIs with altitude higher than 300m above the highest gridpoint or lower
     than 500m below the lowest gridpoint in the local neighborhood used for the fit,
-    the fixgrad method is used with default gradient of 0.006 [K / m].
+    or whose neighbors all have the same altitude (no sounding can be fitted, e.g. at
+    the poles of a latitude/longitude grid or on flat orography), the fixgrad method
+    is used with default gradient of 0.006 [K / m].
     """
 
     # make sure k is smaller or equal to the number of grid points
@@ -183,11 +181,15 @@ def interp_temp(  # pylint: disable=too-many-locals
         # to classify fixgrad vs sounding POIs.
         alt_minmax = np.quantile(all_alt, [0, 1], axis=1)  # shape (2, n_pois)
         fixgrad_mask = (poi_alts < alt_minmax[0] - 600) | (poi_alts > alt_minmax[1] + 200)
+        fixgrad_mask |= alt_minmax[1] - alt_minmax[0] <= FLAT_NEIGHBORHOOD
         sounding_groups = [(np.nonzero(~fixgrad_mask)[0], 1, True)]
     else:
         # classify each POI into three groups: fixgrad, deg1 sounding, deg3 sounding
         alt_q = np.quantile(all_alt, [0, 0.15, 0.85, 1], axis=1)  # shape (4, n_pois)
         fixgrad_mask = (poi_alts < alt_q[0] - 600) | (poi_alts > alt_q[-1] + 200)
+        # no sounding can be fitted when all neighbors have the same altitude (e.g. copies of the pole point of a
+        # latitude/longitude grid, flat orography)
+        fixgrad_mask |= alt_q[-1] - alt_q[0] <= FLAT_NEIGHBORHOOD
         sounding_mask = ~fixgrad_mask
         deg3_mask = sounding_mask & (alt_q[1] < poi_alts) & (poi_alts < alt_q[2])
         deg1_mask = sounding_mask & ~deg3_mask
@@ -2233,6 +2235,7 @@ def _combine_attrs(src_attrs: dict, dst_attrs: dict) -> dict:
 
 # methods relying on scipy.interpolate.griddata (Delaunay triangulation), not supported in ECEF coordinates
 GRIDDATA_METHODS = ("linear", "linear_3D", "cubic")
+FLAT_NEIGHBORHOOD = 1e-6  # [m] max altitude range of the neighbors of a POI for which interp_temp uses fixgrad
 
 HEIGHT_METHODS = (
     "temp",

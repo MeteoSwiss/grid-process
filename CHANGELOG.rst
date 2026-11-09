@@ -38,6 +38,9 @@ Unreleased
   their 360 degree seam. When slicing a latitude/longitude source grid, the longitude buffer is widened by
   1 / cos(latitude) (as nearest neighbors are now searched in meters) and all longitudes are kept close to the
   poles
+* changed the ``temp`` method of ``interp2poi``: POIs whose nearest grid points all have the same altitude (e.g.
+  close to the poles of a latitude/longitude grid, whose pole rows repeat the same point, or on flat orography)
+  use the fixed lapse rate fallback (as POIs far above or below their neighborhood) instead of raising an error
 * fixed ``create_dst_grid_from_src``: the destination grid now spans exactly the bounding box of the source domain
   reprojected in the destination CRS (from native coordinates projected in meters when available), instead of the
   reprojected corners of its latitude/longitude bounding box, which could be much larger (e.g. +80 km for ICON-CH2

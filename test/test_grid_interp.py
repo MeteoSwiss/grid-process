@@ -151,18 +151,22 @@ def test_interp_temp():
     # compare
     assert np.allclose(expected, results)
 
-    # ***flat orography: all neighbor altitudes identical → deg=1 rank-deficient***
-    # must raise ValueError without infinite recursion
+    # ***flat orography: all neighbor altitudes identical (e.g. copies of the pole point of a lat/lon grid)***
+    # no sounding can be fitted: fixgrad fallback (nearest grid point corrected with 6 K/km), for both branches
 
     x_flat = np.tile(np.arange(0, 10), (10, 1))
     y_flat = x_flat.T
     z_flat = np.zeros(x_flat.shape)  # completely flat
     coords_flat_flat = np.c_[x_flat.flatten(), y_flat.flatten(), z_flat.flatten()]
     data_flat_flat = (x_flat + y_flat).flatten().astype(np.float32)[:, None]
-    poi_coords_flat = np.array([[2.5, 2.5, 0.0], [7.0, 7.0, 0.0]])
+    poi_coords_flat = np.array([[2.0, 3.0, 0.0], [7.0, 7.0, 100.0]])  # on grid points: unambiguous nearest
 
-    with pytest.raises(ValueError, match="rank-deficient"):
-        gri.interp_temp(coords_flat_flat, data_flat_flat, poi_coords_flat, z_fact=1, k=9)
+    expected_flat = np.array([[5.0], [14.0 - 0.006 * 100]])
+    for grad_only in (False, True):
+        results_flat = gri.interp_temp(
+            coords_flat_flat, data_flat_flat, poi_coords_flat, z_fact=1, k=9, grad_only=grad_only
+        )
+        np.testing.assert_allclose(results_flat, expected_flat, rtol=1e-6)
 
     # ***chunk_size invariance: results must not depend on chunk_size***
 
@@ -1630,3 +1634,28 @@ def test_interp2grid_regional_latlon_source_unchanged():
     inside = (lon_2d >= -10) & (lon_2d <= 30) & (lat_2d <= 70) & (lat_2d >= 30)
     assert np.isnan(out[~inside]).all()
     np.testing.assert_allclose(out[inside], _sphere_field(lon_2d, lat_2d)[inside], atol=0.01)
+
+
+def test_interp2poi_temp_at_poles():
+    """
+    On a latitude/longitude grid with rows at the poles, all points of a pole row are copies of the same point
+    (same altitude and value): the k nearest neighbors of a POI close to a pole may all be such copies, for which
+    no sounding can be fitted. temp falls back to the nearest grid point corrected with a fixed lapse rate
+    """
+
+    import grid_process.grid_interp as gri
+
+    src = _global_grid(1.0, 0.0)
+    rng = np.random.default_rng(0)
+    alt = rng.uniform(0, 3000, src["var"].shape)
+    alt[[0, -1], :] = alt[[0, -1], :1]  # one altitude per pole
+    src = src.assign_coords(surface_altitude=(("latitude", "longitude"), alt))
+    lon, lat = np.array([0.0, 120.0, -45.0]), np.array([-90.0, -89.99, 89.95])
+    pois = gpd.GeoDataFrame(
+        {"name": ["south_pole", "near_south_pole", "near_north_pole"], "height_masl": alt[[-1, -1, 0], 0]},
+        geometry=gpd.points_from_xy(lon, lat),
+        crs="EPSG:4326",
+    )
+    out = gri.interp2poi(src, pois, "temp", z_fact=15, k=50, weight_power=0.75)["var"].values
+    # same altitude as the pole point: its value
+    np.testing.assert_allclose(out, _sphere_field(lon, lat), atol=0.01)
