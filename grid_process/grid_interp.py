@@ -1058,7 +1058,11 @@ def _interp_regular(  # pylint: disable=too-many-locals
     data = _y_increasing(data, y_dim)
 
     # Reproject POIs coordinates in the grid CRS
-    pois_coords = _convert_poi(poi_info, dm.get_grid_crs(data), data[y_dim].dtype)
+    grid_crs = dm.get_grid_crs(data)
+    pois_coords = _convert_poi(poi_info, grid_crs, data[y_dim].dtype)
+    if grid_crs.is_geographic:  # longitudes in the convention of the grid, across the 360 degree seam
+        pois_coords = (_wrap_lon(pois_coords[0], _lon_center(data[x_dim].values)), pois_coords[1])
+        data = _pad_global_lon(data, x_dim, pois_coords[0])
     poi_dim_coord = poi_info[POI_COORD_COL].to_numpy(dtype=str)
     pois_coords = (
         xr.DataArray(pois_coords[0], coords=[(POI_DIM, poi_dim_coord)]),
@@ -1734,9 +1738,15 @@ def _interp_grid_regular(
             interp_data = interp_data.coarsen(coarsen_specs, boundary="trim").reduce(np.mean)
 
         interp_data = _y_increasing(interp_data, src_spatial_dims[0])
+        x_targets = x_coords
+        if src_crs.is_geographic:  # longitudes in the convention of the grid, across the 360 degree seam
+            x_targets = x_coords.copy(
+                data=_wrap_lon(x_coords.values, _lon_center(interp_data[src_spatial_dims[1]].values))
+            )
+            interp_data = _pad_global_lon(interp_data, src_spatial_dims[1], x_targets.values)
 
         interp_data = interp_data.interp(
-            {src_spatial_dims[1]: x_coords, src_spatial_dims[0]: y_coords},
+            {src_spatial_dims[1]: x_targets, src_spatial_dims[0]: y_coords},
             method=method,
             assume_sorted=True,
         ).drop_vars(src_spatial_dims)
@@ -1876,14 +1886,13 @@ def slice_boundingbox(
         spatial_dims = dm.get_spatial_dims(data)
 
     grid_y, grid_x, grid_crs = dm.get_coords_name_crs(data, spatial_dims)
-    pois_coords = _convert_poi(poi_info, grid_crs, data[grid_y].dtype)
-    yx_bnds = (
-        (pois_coords[1].min().item(), pois_coords[1].max().item()),
-        (pois_coords[0].min().item(), pois_coords[0].max().item()),
-    )
+    pois_x, pois_y = _convert_poi(poi_info, grid_crs, data[grid_y].dtype)
+    if grid_crs.is_geographic:  # longitudes in the convention of the grid (e.g. 0..360 or -180..180)
+        pois_x = _wrap_lon(pois_x, _lon_center(data[grid_x].values))
+    yx_bnds = ((pois_y.min().item(), pois_y.max().item()), (pois_x.min().item(), pois_x.max().item()))
 
     buffer = _get_buffer(method, **kwargs)
-    sub_domain, _ = _get_sub_domain(data, spatial_dims, (grid_y, grid_x), yx_bnds, buffer)
+    sub_domain, _ = _get_sub_domain(data, spatial_dims, (grid_y, grid_x), yx_bnds, buffer, grid_crs.is_geographic)
     return data.isel(sub_domain)
 
 
@@ -1930,11 +1939,13 @@ def slice_coarsen(  # pylint: disable=too-many-locals
 
         # Reproject destination coordinates in the grid CRS
         x_coords, y_coords = reproject(x_coords, y_coords, dst_grid_crs, grid_crs)
+    if grid_crs.is_geographic:  # longitudes in the convention of the grid (e.g. 0..360 or -180..180)
+        x_coords = _wrap_lon(x_coords, _lon_center(data[coords_crs[1]].values))
 
     yx_bnds = ((y_coords.min(), y_coords.max()), (x_coords.min(), x_coords.max()))
 
     buffer = _get_buffer(method, **kwargs)
-    sub_domain, res = _get_sub_domain(data, spatial_dims, coords_crs[:2], yx_bnds, buffer)
+    sub_domain, res = _get_sub_domain(data, spatial_dims, coords_crs[:2], yx_bnds, buffer, grid_crs.is_geographic)
     data_sub = data.isel(sub_domain)
 
     # coarsen input dataset if needed (downsampling)
@@ -2000,20 +2011,38 @@ def _get_sub_domain(  # pylint: disable=too-many-locals
     spatial_coords: tuple[str, str],
     yx_bnds: tuple[tuple[float, float], tuple[float, float]],
     buffer: int,
+    geographic: bool = False,
 ) -> tuple[dict[str, slice], None] | tuple[dict[str, NDArray], float]:
     """
     Get a dict to index ``data`` in ``spatial_dims`` according to ``yx_bnds``
     plus a ``buffer``. Also return an estimate of the resolution if input grid is
     unstructured.
+
+    For a ``geographic`` grid (latitude/longitude or rotated pole, in degrees), the x bounds must be in the
+    longitude convention of the grid (see :func:`_wrap_lon`). The x buffer is widened by 1 / cos(latitude), as
+    a degree of longitude shrinks towards the poles, and all longitudes are kept when the target spans more
+    than half of them or reaches the poles, whose neighbors can be at any longitude.
     """
 
-    def get_cond_xy(buffer_crs: float) -> NDArray[np.bool_]:
+    def lon_buffer_factor(res_y: float) -> float | None:
         """
-        Get a boolean array to indicate which points are within x_bnds and y_bnds
-        +- ``buffer_crs`` to index data on the unstructured grid dimension.
+        Factor to widen the x buffer of a geographic grid, or None to keep all longitudes.
         """
 
-        cond_x = (data[grid_x].values > x_bnds[0] - buffer_crs) & (data[grid_x].values < x_bnds[1] + buffer_crs)
+        lat_reach = max(abs(y_bnds[0]), abs(y_bnds[1])) + (buffer + 1) * res_y
+        cos_lat = np.cos(np.radians(min(lat_reach, 90.0)))
+        if cos_lat < 0.01 or x_bnds[1] - x_bnds[0] > 180.0:
+            return None
+        return 1.0 / cos_lat
+
+    def get_cond_xy(buffer_crs: float, x_factor: float = 1.0) -> NDArray[np.bool_]:
+        """
+        Get a boolean array to indicate which points are within x_bnds and y_bnds
+        +- ``buffer_crs`` (times ``x_factor`` in x) to index data on the unstructured grid dimension.
+        """
+
+        x_buffer = buffer_crs * x_factor
+        cond_x = (data[grid_x].values > x_bnds[0] - x_buffer) & (data[grid_x].values < x_bnds[1] + x_buffer)
         cond_y = (data[grid_y].values > y_bnds[0] - buffer_crs) & (data[grid_y].values < y_bnds[1] + buffer_crs)
         return cond_x & cond_y
 
@@ -2046,21 +2075,30 @@ def _get_sub_domain(  # pylint: disable=too-many-locals
 
     grid_y, grid_x = spatial_coords
     y_bnds, x_bnds = yx_bnds
+    x_factor = 1.0
 
     if len(spatial_dims) == 1:
         res_start = max(abs(np.diff(data[grid_x][:2])[0]), abs(np.diff(data[grid_y][:2])[0]))
         res_end = max(abs(np.diff(data[grid_x][-2:])[0]), abs(np.diff(data[grid_y][-2:])[0]))
         res_approx = max(res_start, res_end)
-        cond_xy = get_cond_xy(2 * res_approx)
+        if geographic:
+            factor = lon_buffer_factor(res_approx)
+            x_bnds, x_factor = ((-np.inf, np.inf), 1.0) if factor is None else (x_bnds, factor)
+        cond_xy = get_cond_xy(2 * res_approx, x_factor)
         res = _get_flat_grid_res(data[grid_x][cond_xy], data[grid_y][cond_xy])
-        cond_xy = get_cond_xy(buffer * res * 1.5)
+        cond_xy = get_cond_xy(buffer * res * 1.5, x_factor)
         return {spatial_dims[0]: cond_xy}, res
 
     y_dim, x_dim = spatial_dims
+    if geographic:
+        res_y = float(np.nanmedian(np.abs(np.diff(data[grid_y].values, axis=data[grid_y].get_axis_num(y_dim)))))
+        factor = lon_buffer_factor(res_y)
+        x_bnds, x_factor = ((-np.inf, np.inf), 1.0) if factor is None else (x_bnds, factor)
     idx_start, idx_end = get_ind_startend(grid_x, x_dim, x_bnds)
     idy_start, idy_end = get_ind_startend(grid_y, y_dim, y_bnds)
-    idx_start = max(idx_start - buffer, 0)
-    idx_end += buffer
+    x_buffer = max(buffer, ceil(buffer * (x_factor - 0.01)))  # widened beyond 1 % of distortion (latitudes > ~8°)
+    idx_start = max(idx_start - x_buffer, 0)
+    idx_end += x_buffer
     idy_start = max(idy_start - buffer, 0)
     idy_end += buffer
     return {x_dim: slice(idx_start, idx_end), y_dim: slice(idy_start, idy_end)}, None
@@ -2076,6 +2114,55 @@ def _get_flat_grid_res(coords_x: xr.DataArray, coords_y: xr.DataArray) -> float:
         return np.median(abs(np.diff(coords.values)))
 
     return max(dcoords(coords_x), dcoords(coords_y))
+
+
+def _lon_center(lon: np.ndarray) -> float:
+    """
+    Center of the longitude range [degrees] of a geographic grid, see :func:`_wrap_lon`.
+    """
+
+    return (float(np.nanmin(lon)) + float(np.nanmax(lon))) / 2
+
+
+def _wrap_lon(lon: np.ndarray, center: float) -> np.ndarray:
+    """
+    Longitudes [degrees] brought within [center - 180, center + 180), i.e. in the convention (e.g. 0..360 or
+    -180..180) of a geographic grid whose longitude range is centered on ``center`` (see :func:`_lon_center`).
+    Longitudes already in that range are unchanged.
+    """
+
+    lon = np.asarray(lon)
+    wrapped = center - 180.0 + np.mod(lon - (center - 180.0), 360.0)
+    return wrapped.astype(lon.dtype, copy=False) if np.issubdtype(lon.dtype, np.floating) else wrapped
+
+
+def _pad_global_lon(data: xr.Dataset, x_dim: str, x_targets: np.ndarray) -> xr.Dataset:
+    """
+    For a regular latitude/longitude grid covering all longitudes (1D increasing longitudes), add the last
+    column before the first one (at -360) and/or the first column after the last one (at +360) when target
+    longitudes (in the grid convention, see :func:`_wrap_lon`) fall between them, so that the regular grid
+    interpolation does not return NaN across the 360 degree seam. The data are only copied when needed.
+
+    Grids without rows at the poles are not padded across the poles: targets beyond their first or last
+    latitude get NaN.
+    """
+
+    lon = data[x_dim].values
+    if lon.size < 2:
+        return data
+    spacing = float(np.median(np.diff(lon)))
+    if abs(lon[-1] - lon[0] + spacing - 360.0) > 0.01 * spacing:  # not global in longitude
+        return data
+
+    parts = []
+    if np.nanmin(x_targets) < lon[0]:
+        parts.append(data.isel({x_dim: [-1]}).assign_coords({x_dim: [lon[-1] - 360.0]}))
+    parts.append(data)
+    if np.nanmax(x_targets) > lon[-1]:
+        parts.append(data.isel({x_dim: [0]}).assign_coords({x_dim: [lon[0] + 360.0]}))
+    if len(parts) == 1:
+        return data
+    return xr.concat(parts, dim=x_dim, data_vars="minimal", coords="minimal", compat="override", join="exact")
 
 
 def _get_coarsen_ratio(  # pylint: disable=too-many-locals

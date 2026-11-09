@@ -31,6 +31,13 @@ Unreleased
 * changed the methods with altitude, which no longer reproject to Swiss coordinates when the source grid or the
   destination has another CRS projected in meters (e.g. UTM)
 * added an explicit error when the destination grid of ``interp2grid`` is unstructured, which is not supported
+* fixed ``interp2poi`` and ``interp2grid`` with latitude/longitude source grids whose longitude convention
+  (0..360 or -180..180) differs from the one of the POIs or destination grid: the source was sliced to the
+  wrong longitudes (wrong values in the generic path, e.g. for a global destination grid) and the regular grid
+  interpolation (``try_reg=True``) returned NaN. Global latitude/longitude grids are also interpolated across
+  their 360 degree seam. When slicing a latitude/longitude source grid, the longitude buffer is widened by
+  1 / cos(latitude) (as nearest neighbors are now searched in meters) and all longitudes are kept close to the
+  poles
 * fixed ``create_dst_grid_from_src``: the destination grid now spans exactly the bounding box of the source domain
   reprojected in the destination CRS (from native coordinates projected in meters when available), instead of the
   reprojected corners of its latitude/longitude bounding box, which could be much larger (e.g. +80 km for ICON-CH2

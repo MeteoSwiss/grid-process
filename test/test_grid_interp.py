@@ -904,20 +904,15 @@ def test_slice_boundingbox(model_data_2dflat, poi_def, data_native_lv95_2dflat, 
 
     import grid_process.grid_interp as gri
 
-    # check that with a single POI the sliced grid has correct sizes
-    sliced_data = gri.slice_boundingbox(model_data_2dflat, poi_def.loc[[0]], method="nearest")
-    if "cell" in sliced_data.dims:
-        assert 4 <= sliced_data.sizes["cell"] <= 16
-    else:
-        assert sliced_data.sizes["x"] == 2
-        assert sliced_data.sizes["y"] == 2
-
-    sliced_data = gri.slice_boundingbox(data_native_lv95_2dflat, poi_def_lv95.loc[[0]], method="nearest")
-    if "cell" in sliced_data.dims:
-        assert 4 <= sliced_data.sizes["cell"] <= 16
-    else:
-        assert sliced_data.sizes["x"] == 2
-        assert sliced_data.sizes["y"] == 2
+    # check that with a single POI the sliced grid has correct sizes. Both grids are sliced in latitude/longitude
+    # (~46°N), where the x buffer is widened by 1 / cos(latitude): 1 -> 2 columns on each side
+    for data, pois in ((model_data_2dflat, poi_def), (data_native_lv95_2dflat, poi_def_lv95)):
+        sliced_data = gri.slice_boundingbox(data, pois.loc[[0]], method="nearest")
+        if "cell" in sliced_data.dims:
+            assert 4 <= sliced_data.sizes["cell"] <= 24
+        else:
+            assert sliced_data.sizes["x"] == 4
+            assert sliced_data.sizes["y"] == 2
 
 
 @pytest.mark.parametrize("method", ["nearest", "linear"])
@@ -1540,3 +1535,98 @@ def test_kdtree_native_metric_coords(data_native_lv95, poi_def_lv95):
         native = gri.interp2poi(data_native_lv95, poi_def_lv95, method, try_reg=False, **kwargs)
         latlon = gri.interp2poi(data_latlon, poi_def_lv95, method, try_reg=False, **kwargs)
         xr.testing.assert_allclose(native.drop_vars(["x", "y"], errors="ignore"), latlon, rtol=1e-4)
+
+
+def _sphere_field(lon: np.ndarray, lat: np.ndarray) -> np.ndarray:
+    """Smooth field on the sphere, continuous across the 360 degree seam and at the poles"""
+
+    lon, lat = np.radians(lon), np.radians(lat)
+    return 10 * np.cos(lat) * np.cos(lon) + 5 * np.sin(lat)
+
+
+def _global_grid(res: float, lon_start: float, lon_span: float = 360.0, lat_bnds=(90.0, -90.0), var=True):
+    """Regular latitude/longitude grid (decreasing latitudes, as ERA5 or GFS) with the field of _sphere_field"""
+
+    lat = np.arange(lat_bnds[0], lat_bnds[1] - res / 2, -res)
+    lon = np.arange(lon_start, lon_start + lon_span - res / 2, res)
+    grid = xr.Dataset(coords={"latitude": lat, "longitude": lon}, attrs={"crs": "EPSG:4326"})
+    if var:
+        lon_2d, lat_2d = np.meshgrid(lon, lat)
+        grid["var"] = (("latitude", "longitude"), _sphere_field(lon_2d, lat_2d).astype(np.float32))
+    return grid
+
+
+@pytest.mark.parametrize(
+    "method,kwargs", [("nearest", {}), ("linear", {}), ("nearest", {"try_reg": False}), ("idw", {})]
+)
+@pytest.mark.parametrize(
+    "src_lon,dst_lon,dst_span,dst_lat",
+    [
+        (0.0, -180.0, 360.0, (90.0, -90.0)),  # 0..360 to -180..180
+        (-180.0, 0.0, 360.0, (90.0, -90.0)),  # -180..180 to 0..360
+        (-180.0, 170.0, 20.0, (30.0, -30.0)),  # destination across the antimeridian, 170..190
+        (0.0, -190.0, 20.0, (30.0, -30.0)),  # destination across the source seam, -190..-170
+    ],
+)
+def test_interp2grid_longitude_convention(method, kwargs, src_lon, dst_lon, dst_span, dst_lat):
+    """
+    Latitude/longitude source and destination grids with different longitude conventions (0..360 or -180..180):
+    all destination cells get the value of their location, including across the 360 degree seam
+    """
+
+    import grid_process.grid_interp as gri
+
+    src = _global_grid(1.0, src_lon)
+    dst = _global_grid(0.5, dst_lon, dst_span, dst_lat, var=False)
+    out = gri.interp2grid(src, dst, method, **kwargs)["var"].transpose("latitude", "longitude").values
+    expected = _sphere_field(*np.meshgrid(dst.longitude.values, dst.latitude.values))
+    assert not np.isnan(out).any()
+    # max gradient of the field ~0.2 per degree: nearest is within half a grid spacing
+    np.testing.assert_allclose(out, expected, atol=0.01 if method == "linear" else 0.15)
+
+
+@pytest.mark.parametrize("src_lon", [0.0, -180.0])
+def test_interp2poi_longitude_convention(src_lon):
+    """
+    POIs at any longitude (incl. the 360 degree seam and near the poles) on a global latitude/longitude grid in
+    either longitude convention, through the regular path (try_reg=True) and the generic (ECEF) path
+    """
+
+    import grid_process.grid_interp as gri
+
+    src = _global_grid(1.0, src_lon)
+    rng = np.random.default_rng(0)
+    src = src.assign_coords(surface_altitude=(("latitude", "longitude"), rng.uniform(0, 3000, src["var"].shape)))
+    lon = np.array([-179.9, 179.9, 359.6, -70.0, 0.0, 0.2, 139.7, -0.1, 290.0, -120.0])
+    lat = np.array([-18.0, 0.0, 10.0, -16.5, -89.99, 89.9, 35.7, 51.5, 60.0, 40.0])
+    pois = gpd.GeoDataFrame(
+        {"name": [f"p{i}" for i in range(lon.size)], "height_masl": 500.0},
+        geometry=gpd.points_from_xy(lon, lat),
+        crs="EPSG:4326",
+    )
+    expected = _sphere_field(lon, lat)
+    for method, kwargs, atol in [
+        ("nearest", {}, 0.15),
+        ("linear", {}, 0.01),
+        ("nearest", {"try_reg": False}, 0.15),
+        ("temp", {"k": 9}, 0.5),
+    ]:
+        out = gri.interp2poi(src, pois, method, **kwargs)["var"].values
+        np.testing.assert_allclose(out, expected, atol=atol, err_msg=f"{method} {kwargs}")
+
+
+def test_interp2grid_regional_latlon_source_unchanged():
+    """
+    A regional latitude/longitude source is not wrapped around the globe: the regular path gives NaN outside of
+    its domain and the expected values inside
+    """
+
+    import grid_process.grid_interp as gri
+
+    src = _global_grid(1.0, -10.0, 41.0, (70.0, 30.0))
+    dst = _global_grid(0.5, -180.0, 360.0, (80.0, 20.0), var=False)
+    out = gri.interp2grid(src, dst, "linear")["var"].transpose("latitude", "longitude").values
+    lon_2d, lat_2d = np.meshgrid(dst.longitude.values, dst.latitude.values)
+    inside = (lon_2d >= -10) & (lon_2d <= 30) & (lat_2d <= 70) & (lat_2d >= 30)
+    assert np.isnan(out[~inside]).all()
+    np.testing.assert_allclose(out[inside], _sphere_field(lon_2d, lat_2d)[inside], atol=0.01)
