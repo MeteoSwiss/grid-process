@@ -6,6 +6,8 @@
 
 """Tests for the helpers module"""
 
+import json
+
 import pytest
 import numpy as np
 import xarray as xr
@@ -222,6 +224,30 @@ def test_set_grid_mapping(data_cf_2dflat):
         dm.set_grid_mapping(ds_multi_gridmap)
 
 
+def test_set_grid_mapping_numpy_attrs():
+    """
+    CF grid mapping attributes read from netCDF files can be numpy arrays or scalars (not JSON serializable as such),
+    e.g. a Lambert conformal conic with two standard parallels. They are serialized and parsed with cache.
+    """
+
+    lambert = {
+        "grid_mapping_name": "lambert_conformal_conic",
+        "standard_parallel": np.array([45.0, 50.0]),
+        "longitude_of_central_meridian": np.float32(10.0),
+        "latitude_of_projection_origin": np.float64(47.0),
+        "earth_radius": np.int32(6371229),
+    }
+    ds = xr.Dataset(
+        {"var": (("y", "x"), np.zeros((2, 3)), {"grid_mapping": "lambert"}), "lambert": ((), 0, lambert)},
+        coords={"y": [0.0, 1000.0], "x": [0.0, 1000.0, 2000.0]},
+    )
+
+    results = dm.set_grid_mapping(ds)
+    assert json.loads(results.grid_mapping)["standard_parallel"] == [45.0, 50.0]
+    assert dm.get_grid_crs(results) == CRS.from_cf(lambert)
+    assert dm.parse_grid_mapping(lambert) is dm.parse_grid_mapping(lambert)
+
+
 @pytest.mark.parametrize(
     "data_cf_2dflat",
     ["2d_grid", "flat_grid"],
@@ -416,6 +442,100 @@ def test_get_coords_name_crs(data_native_lv95_2dflat, data_native_rotlatlon_2dfl
         dm.get_coords_name_crs(
             data_native_lv95_2dflat.drop_vars(("latitude", "longitude", "y", "x", "cell"), errors="ignore")
         )
+
+
+@pytest.mark.parametrize(
+    "data_native_lv95_2dflat,data_native_rotlatlon_2dflat",
+    [("2d_grid", "2d_grid"), ("flat_grid", "flat_grid")],
+    indirect=True,
+)
+def test_get_coords_name_crs_prefer_projected(data_native_lv95_2dflat, data_native_rotlatlon_2dflat):
+    """
+    get_coords_name_crs with prefer_projected=True returns native coordinates in meters before latitude/longitude
+    """
+
+    # native LV95 with latitude/longitude: LV95
+    lv95 = dm.get_coords_name_crs(data_native_lv95_2dflat, prefer_projected=True)
+    assert lv95 == ("y", "x", CRS.from_string("EPSG:2056"))
+    da = data_native_lv95_2dflat[list(data_native_lv95_2dflat)[0]]
+    # a data variable has no CRS attribute: latitude/longitude, unless the attributes are copied (as ds_to_da does)
+    assert dm.get_coords_name_crs(da, prefer_projected=True)[:2] == ("latitude", "longitude")
+    da = da.assign_attrs(data_native_lv95_2dflat.attrs)
+    assert dm.get_coords_name_crs(da, prefer_projected=True) == lv95
+    # default unchanged: latitude/longitude
+    assert dm.get_coords_name_crs(data_native_lv95_2dflat)[2] == CRS.from_string("EPSG:4326")
+
+    # native rotated pole (in degrees) with latitude/longitude: latitude/longitude
+    rotated = dm.get_coords_name_crs(data_native_rotlatlon_2dflat, prefer_projected=True)
+    assert rotated == ("latitude", "longitude", CRS.from_string("EPSG:4326"))
+
+    # no CRS attribute: only latitude/longitude can be used
+    no_crs = data_native_lv95_2dflat.copy()
+    no_crs.attrs.pop("grid_mapping")
+    assert dm.get_coords_name_crs(no_crs, prefer_projected=True) == ("latitude", "longitude", CRS.from_epsg(4326))
+
+
+def test_parse_grid_mapping(monkeypatch):
+    """
+    CF latitude/longitude and rotated pole mappings on a sphere are built directly on WGS84 (fast, without
+    pyproj.CRS.from_cf), equivalent to CRS.from_cf with WGS84 as base. Parsed grid mappings are cached.
+    """
+
+    from grid_process.helpers import sphere_as_wgs84
+
+    rotated = {
+        "earth_radius": 6371229.0,
+        "grid_mapping_name": "rotated_latitude_longitude",
+        "grid_north_pole_latitude": 43.0,
+        "grid_north_pole_longitude": 190.0,
+        "north_pole_grid_longitude": 0.0,
+    }
+    expected = sphere_as_wgs84(CRS.from_cf(rotated))
+    lambert = {
+        "grid_mapping_name": "lambert_conformal_conic",
+        "standard_parallel": [45.0, 50.0],
+        "longitude_of_central_meridian": 10.0,
+        "latitude_of_projection_origin": 47.0,
+        "earth_radius": 6371229.0,
+    }
+    expected_lambert = CRS.from_cf(lambert)
+
+    def fail(*args, **kwargs):
+        raise AssertionError("CRS.from_cf must not be called")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(CRS, "from_cf", fail)
+        assert dm.parse_grid_mapping(rotated) == expected
+        assert dm.parse_grid_mapping(json.dumps(rotated)) == expected
+        assert dm.parse_grid_mapping({"grid_mapping_name": "latitude_longitude"}) == CRS.from_epsg(4326)
+        assert dm.parse_grid_mapping({"epsg_code": "EPSG:2056"}) == CRS.from_epsg(2056)
+
+    # other mappings: pyproj.CRS.from_cf, cached on the JSON string
+    # (e.g. latitude/longitude on another datum given only by the GDAL "spatial_ref" WKT)
+    ch1903 = {"grid_mapping_name": "latitude_longitude", "spatial_ref": CRS.from_epsg(4150).to_wkt()}
+    assert dm.parse_grid_mapping(ch1903) == CRS.from_epsg(4150)
+    assert dm.parse_grid_mapping(lambert) == expected_lambert
+    assert dm.parse_grid_mapping(lambert) is dm.parse_grid_mapping(lambert)
+    assert dm.parse_grid_mapping(json.dumps(lambert)) is dm.parse_grid_mapping(json.dumps(lambert))
+
+
+def test_is_metric_crs():
+    """
+    Simple testcase for is_metric_crs
+    """
+
+    rotated = CRS.from_cf(
+        {
+            "grid_mapping_name": "rotated_latitude_longitude",
+            "grid_north_pole_latitude": 43.0,
+            "grid_north_pole_longitude": -170.0,
+            "earth_radius": 6371229.0,
+        }
+    )
+    for epsg in (2056, 21781, 32632, 3035):  # LV95, LV03, UTM 32N, LAEA Europe
+        assert dm.is_metric_crs(CRS.from_epsg(epsg))
+    for crs in (CRS.from_epsg(4326), CRS.from_epsg(4978), CRS.from_epsg(2263), rotated):  # lat/lon, ECEF, US feet
+        assert not dm.is_metric_crs(crs)
 
 
 def test_config_extended():

@@ -167,8 +167,78 @@ def reproject(
         same as input ``x_coords`` in the new CRS and cast as float64
     y_coords_new : numpy.ndarray, list or tuple of float64
         same as input ``y_coords`` in the new CRS and cast as float64
+
+    Note
+    ----
+    Geographic CRS defined on a sphere without datum (e.g. the rotated pole of a CF grid mapping with
+    ``earth_radius``) are considered to be based on WGS84, see :func:`sphere_as_wgs84`. CRS parsed from such a CF
+    "grid_mapping" attribute are already based on WGS84 (see :func:`~grid_process.data_model.parse_grid_mapping`),
+    this covers the other ones (e.g. "crs" attribute, POIs CRS or direct calls).
     """
 
-    transformer = Transformer.from_crs(src_crs, dst_crs, always_xy=True)
+    transformer = Transformer.from_crs(sphere_as_wgs84(src_crs), sphere_as_wgs84(dst_crs), always_xy=True)
 
     return transformer.transform(x_coords, y_coords)
+
+
+def sphere_as_wgs84(crs: CRS | str) -> CRS:
+    """
+    Returns a geographic CRS defined on a sphere (e.g. the rotated pole or latitude/longitude of a CF grid mapping
+    with ``earth_radius``, as used by NWP models) with WGS84 as base CRS instead, keeping the pole rotation if any.
+    Other CRS are returned unchanged.
+
+    The latitudes and longitudes on the sphere of NWP models are usually considered as WGS84 latitudes and
+    longitudes (e.g. the 2D ``latitude`` and ``longitude`` coordinates of their output). Without a defined datum,
+    pyproj transforms them to other datums with a "ballpark" transformation that leaves out the datum shift, e.g.
+    ~180 m in Switzerland between a rotated pole grid and Swiss LV95 coordinates. With WGS84 as base CRS, the datum
+    shift is applied as for WGS84 latitudes and longitudes. The rotation of the pole is the same on any ellipsoid.
+
+    Parameters
+    ----------
+    crs : pyproj.CRS or equivalent string
+        anything accepted by pyproj.CRS.from_user_input
+
+    Returns
+    -------
+    pyproj.CRS
+    """
+
+    crs = CRS.from_user_input(crs)
+    ellipsoid = crs.ellipsoid
+    if not crs.is_geographic or ellipsoid is None or ellipsoid.semi_major_metre != ellipsoid.semi_minor_metre:
+        return crs
+
+    wgs84 = CRS.from_epsg(4326)
+    crs_json = crs.to_json_dict()
+    if "base_crs" not in crs_json:  # latitude and longitude on the sphere
+        return wgs84
+
+    # derived geographic CRS, e.g. rotated pole: same conversion (rotation), WGS84 as base CRS
+    crs_json["base_crs"] = wgs84.to_json_dict()
+    return CRS.from_json_dict(crs_json)
+
+
+def outer_ring(x_coords: np.ndarray, y_coords: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Coordinates of the outer ring of points of a structured grid, from 1D (dimension) or 2D coordinates in the
+    order (y, x). On a grid, it encloses the image of the whole grid in any continuous projection, e.g. the bounding
+    box of a reprojected grid is the bounding box of its reprojected outer ring.
+
+    Parameters
+    ----------
+    x_coords, y_coords : numpy.ndarray
+        1D coordinates of the x and y dimensions, or 2D coordinates of shape (y, x)
+
+    Returns
+    -------
+    x_ring, y_ring : numpy.ndarray
+        1D coordinates of the outer ring points (first and last rows, then first and last columns)
+    """
+
+    if x_coords.ndim == 1:
+        x_coords, y_coords = np.meshgrid(x_coords, y_coords)
+
+    def ring(coords: np.ndarray) -> np.ndarray:
+        return np.append(coords[[0, -1], :].ravel(), coords[1:-1, [0, -1]].ravel())
+
+    return ring(x_coords), ring(y_coords)

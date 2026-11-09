@@ -22,10 +22,10 @@ import xarray as xr
 import geopandas as gpd
 from scipy.interpolate import griddata
 from scipy.spatial import KDTree
-from pyproj import CRS
+from pyproj import CRS, Transformer
 
 from grid_process import CONFIG
-from grid_process.helpers import make_accessor, reproject
+from grid_process.helpers import make_accessor, outer_ring, reproject, sphere_as_wgs84
 from grid_process import data_model as dm
 from grid_process.optimization import memoize
 from grid_process.ds_utils import ds_to_da, cast_dtype
@@ -52,7 +52,11 @@ POI_MODEL = CONFIG.data_model.poi
 POI_DIM = POI_MODEL.dim
 POI_COORD_COL = POI_MODEL.coord_from
 SRC_ATTRS_KEEP = ("source", "title", "institution", "history", "references", "comment")
-SWISS_CRS = ("EPSG:2056", "EPSG:21781")
+# CRS of the nearest neighbor searches and triangulations when both grids are geographic (lat/lon, rotated pole):
+# Swiss LV95 if the destination is close enough to Switzerland, otherwise earth-centered earth-fixed (ECEF)
+LV95 = CRS.from_epsg(2056)
+LV95_NORTHING_CENTER = 1_200_000.0
+ECEF = CRS.from_epsg(4978)
 
 InterpMethods = (
     Literal[
@@ -91,13 +95,13 @@ def interp_temp(  # pylint: disable=too-many-locals
     ----------
     coords_flat : numpy.ndarray, shape (n_grids, m)
         array of flattened grid coordinates. n_grids is the number of model
-        grid points, m the number of coordinates dimensions (i.e. 3)
+        grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)
     data_flat : numpy.ndarray, shape (n_grids, ...)
         array containing the flattened model data with various trailing
         dimensions
     pois_coords : numpy.ndarray , shape (n_pois, m)
         array of POI coordinates. n_pois is the number of POIs, m the number of
-        coordinates dimensions (i.e. 3)
+        coordinates dimensions (3 or 4, with the altitude as last column)
     z_fact : positive int, optional
         factor to multiply the z coordinates to find nearest neighbors based on a
         non-euclidean distance that penalizes more altitude differences. Default
@@ -453,13 +457,13 @@ def interp_temp_fixgrad(
     ----------
     coords_flat : numpy.ndarray, shape (n_grids, m)
         array of flattened grid coordinates. n_grids is the number of model
-        grid points, m the number of coordinates dimensions (i.e. 3)
+        grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)
     data_flat : numpy.ndarray, shape (n_grids, ...)
         array containing the flattened model data with various trailing
         dimensions
     pois_coords : numpy.ndarray , shape (n_pois, m)
         array of POI coordinates. n_pois is the number of POIs, m the number of
-        coordinates dimensions (i.e. 3)
+        coordinates dimensions (3 or 4, with the altitude as last column)
     r_search : positive float, optional
         radius in model gridpoints that define the number of neighbors included
         in the search. Default is 4
@@ -548,13 +552,13 @@ def interp_nearest_alt(
     ----------
     coords_flat : numpy.ndarray, shape (n_grids, m)
         array of flattened grid coordinates. n_grids is the number of model
-        grid points, m the number of coordinates dimensions (i.e. 3)
+        grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)
     data_flat : numpy.ndarray, shape (n_grids, ...)
         array containing the flattened model data with various trailing
         dimensions
     pois_coords : numpy.ndarray , shape (n_pois, m)
         array of POI coordinates. n_pois is the number of POIs, m the number of
-        coordinates dimensions (i.e. 3)
+        coordinates dimensions (3 or 4, with the altitude as last column)
     r_search : positive float, optional
         radius in model gridpoints that define the number of neighbors included
         in the search. Default is 4
@@ -594,7 +598,7 @@ def _grid_assignation(
 
     k = round(np.pi * r_search**2)
     # find indexes and distances of nearest neighbor grids for all POIs
-    dist_nn_horz, ind_nn = nn_lookup_cached(coords_flat[:, :2], pois_coords[:, :2], k)
+    dist_nn_horz, ind_nn = nn_lookup_cached(coords_flat[:, :-1], pois_coords[:, :-1], k)
 
     dist_nn_vert = np.abs(coords_flat[ind_nn, -1] - pois_coords[:, [-1]])
     dist_weighted = dist_nn_horz + z_weight * (dist_nn_vert - deltah_min).clip(0)
@@ -617,13 +621,13 @@ def interp_idw(
     ----------
     coords_flat : numpy.ndarray, shape (n_grids,m)
         array of flattened grid coordinates. n_grids is the number of model
-        grid points, m the number of coordinates dimensions (i.e. 2 or 3)
+        grid points, m the number of coordinates dimensions (2 to 4)
     data_flat : numpy.ndarray, shape (n_grids, ...)
         array containing the flattened model data with various trailing
         dimensions
     pois_coords : numpy.ndarray , shape (n_pois, m)
         array of POI coordinates. n_pois is the number of POIs, m the number of
-        coordinates dimensions (i.e. 2 or 3)
+        coordinates dimensions (2 to 4)
     k : positive int, optional
         number of considered nearest neighbors. Default is 4
     weight_power : positive float, optional
@@ -675,13 +679,13 @@ def interp_upscaled(
     ----------
     coords_flat : numpy.ndarray, shape (n_grids, m)
         array of flattened grid coordinates. n_grids is the number of model
-        grid points, m the number of coordinates dimensions (i.e. 2 or 3)
+        grid points, m the number of coordinates dimensions (2 to 4)
     data_flat : numpy.ndarray, shape (n_grids, ...)
         array containing the flattened model data with various trailing
         dimensions
     pois_coords : numpy.ndarray , shape (n_pois, m)
         array of POI coordinates. n_pois is the number of POIs, m the number of
-        coordinates dimensions (i.e. 2 or 3).
+        coordinates dimensions (2 to 4).
     k : positive int, optional
         number of considered nearest neighbors. Default is 4
     agg_func : callable, optional
@@ -717,13 +721,13 @@ def interp_nearest(coords_flat: np.ndarray, data_flat: np.ndarray, pois_coords: 
     ----------
     coords_flat : numpy.ndarray, shape (n_grids, m)
         array of flattened grid coordinates. n_grids is the number of model
-        grid points, m the number of coordinates dimensions (i.e. 2 or 3).
+        grid points, m the number of coordinates dimensions (2 to 4).
     data_flat : numpy.ndarray, shape (n_grids, ...)
         array containing the flattened model data with various trailing
         dimensions
     pois_coords : numpy.ndarray , shape (n_pois, m)
         array of POI coordinates. n_pois is the number of POIs, m the number of
-        coordinates dimensions (i.e. 2 or 3).
+        coordinates dimensions (2 to 4).
 
     Returns
     -------
@@ -762,13 +766,13 @@ def interp_snowlim(
     ----------
     coords_flat : numpy.ndarray, shape (n_grids, m)
         array of flattened grid coordinates. n_grids is the number of model
-        grid points, m the number of coordinates dimensions (i.e. 3)
+        grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)
     data_flat : numpy.ndarray, shape (n_grids, ...)
         Array containing the flattened model data with various trailing
         dimension.
     pois_coords : numpy.ndarray , shape (n_pois, m)
         array of POI coordinates. n_pois is the number of POIs, m the number of
-        coordinates dimensions (i.e. 3)
+        coordinates dimensions (3 or 4, with the altitude as last column)
     k : positive int
         Number of considered nearest neighbors to check for altitude of NaN
         grid points.
@@ -798,14 +802,14 @@ def interp_snowlim(
     data_flat = data_flat.reshape((data_shape[0], -1), order="C")
 
     # array with default values when there is only NaNs within distance d_max
-    poi_data = (pois_coords[:, 2] - 200).clip(0, 200).astype(data_flat.dtype, copy=False)
+    poi_data = (pois_coords[:, -1] - 200).clip(0, 200).astype(data_flat.dtype, copy=False)
     poi_data -= poi_data % 50  # floor to multiple of 50
     poi_data = np.broadcast_to(poi_data[:, None], (n_pois, data_flat.shape[-1])).copy()
 
     for idx, array in enumerate(data_flat.T):
         ind = ~np.isnan(array)
         if ind.any():
-            dist_nn, ind_nn = nn_lookup(coords_flat[ind, :2], pois_coords[:, :2], 1)
+            dist_nn, ind_nn = nn_lookup(coords_flat[ind, :-1], pois_coords[:, :-1], 1)
             bool_dist = dist_nn < d_max
             poi_data[bool_dist, idx] = array[ind][ind_nn[bool_dist]]
 
@@ -824,13 +828,13 @@ def _fillna_alt(coords_flat: np.ndarray, data_flat: np.ndarray, pois_coords: np.
     ----------
     coords_flat : numpy.ndarray, shape (n_grids, m)
         array of flattened grid coordinates. n_grids is the number of model
-        grid points, m the number of coordinates dimensions (i.e. 3)
+        grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)
     data_flat : numpy.ndarray, shape (n_grids, ...)
         array containing the flattened model data with various trailing
         dimensions
     pois_coords : numpy.ndarray , shape (n_pois, m)
         array of POI coordinates. n_pois is the number of POIs, m the number of
-        coordinates dimensions (i.e. 3)
+        coordinates dimensions (3 or 4, with the altitude as last column)
     k : positive int
         number of considered nearest neighbors to check for altitude of NaN
 
@@ -846,7 +850,7 @@ def _fillna_alt(coords_flat: np.ndarray, data_flat: np.ndarray, pois_coords: np.
     """
 
     ndim_trail = data_flat.ndim - 1
-    _, ind_nn = nn_lookup(coords_flat[:, :2], pois_coords[:, :2], k)
+    _, ind_nn = nn_lookup(coords_flat[:, :-1], pois_coords[:, :-1], k)
     data_poi = data_flat[ind_nn]
     ind_na = np.isnan(data_poi)
     alt_poi = coords_flat[ind_nn, -1].reshape(ind_nn.shape + (1,) * ndim_trail)
@@ -942,6 +946,20 @@ def interp2poi(
       (e.g., excluding water pixels with `ds.where(ds.fr_land > 0.5).interp2poi(..., try_reg=False)`).
     - For regular grid interpolation, all NaN grid points are kept.
     - Environment variables allow flexible support for custom grid and POI data models.
+    - Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for 'linear',
+      'linear_3D' and 'cubic' are done) with distances in meters, never in latitude/longitude degrees. The source
+      grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and
+      longitude coordinates are present, otherwise its latitude/longitude. The coordinates are converted to:
+
+        - the CRS projected in meters of the source grid or of the destination, if any (the one of the larger grid
+          if both are);
+        - otherwise Swiss LV95 (EPSG:2056) if the destination is within ``lv95_max_offset`` meters (default 700 km,
+          set with the environment variable GRID_PROCESS__lv95_max_offset) of the LV95 central northing
+          (1 200 000 m), where the LV95 scale error is small (0.6 % at 700 km);
+        - otherwise earth-centered earth-fixed coordinates (ECEF, EPSG:4978), e.g. for global grids. The methods
+          'linear', 'linear_3D' and 'cubic' are not supported in this case.
+
+      Methods with altitude use it as an additional coordinate in meters.
     """
 
     def _fullnan_ds(data: xr.DataArray) -> xr.Dataset:
@@ -1143,10 +1161,10 @@ def nn_lookup(grid_coords: np.ndarray, points: np.ndarray, k: int) -> tuple[np.n
     ----------
     grid_coords : numpy.ndarray, shape (n, m)
         array of flattened grid coordinates. N is the number of model grid
-        points, m the number of coordinates dimensions (i.e. 2 or 3)
+        points, m the number of coordinates dimensions (2 to 4)
     points : numpy.ndarray, shape (p, m)
         array of POIs coordinates. P is the number of POIs, m the number of
-        coordinates dimensions (i.e. 2 or 3)
+        coordinates dimensions (2 to 4)
     k : positive int
         number of considered nearest neighbors
 
@@ -1242,42 +1260,32 @@ def _flatten_concat(
     method: str,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Flattens the grid and concatenate columnwise `x` and `y` coordinates into a
-    single 2D array. Also, reprojects the POIs coordinates if they are not in
-    the same CRS than the model coordinates
+    Flattens the grid and concatenate columnwise the horizontal coordinates (and the altitude for
+    ``HEIGHT_METHODS``) into a single 2D array, in the CRS chosen by :func:`_choose_kdtree_crs`. The POIs
+    coordinates are converted in the same CRS.
     """
 
     data, grid_y, grid_x, grid_crs = _flatten_coords_crs(data, spatial_dims)
 
-    if method in HEIGHT_METHODS:
-        # include elevation
-        surf_alt = dm.get_surf_alt(data)
-        coords_flat = _stack_coords(
-            data[grid_x].values,
-            data[grid_y].values,
-            data[surf_alt].values,
-        )
+    target_crs = _choose_kdtree_crs(
+        grid_crs,
+        poi_info.crs.to_2d(),
+        src_larger=True,
+        dst_lv95=lambda: _convert_poi(poi_info, LV95, np.dtype(np.float64)),
+    )
+    _check_griddata_crs(method, target_crs)
 
-        if grid_crs not in SWISS_CRS:
-            # project to CH1903+/LV95 to have units in [m]
-            new_crs = CRS.from_string(SWISS_CRS[0])
-            coords_flat[:, 0], coords_flat[:, 1] = _reproject_grid_cached(
-                coords_flat[:, 0], coords_flat[:, 1], grid_crs, new_crs
-            )
-            grid_crs = new_crs
-    else:
-        coords_flat = _stack_coords(data[grid_x].values, data[grid_y].values)
-
-    # Reproject POIs coordinates in the grid CRS
-    pois_coords = _convert_poi(poi_info, grid_crs, coords_flat.dtype)
-    if method in HEIGHT_METHODS:
-        pois_coords_cat = np.c_[
-            pois_coords[0],
-            pois_coords[1],
-            dm.get_poi_alt(poi_info),
-        ]
-    else:
-        pois_coords_cat = np.c_[pois_coords[0], pois_coords[1]]
+    height = method in HEIGHT_METHODS
+    coords_flat = _kdtree_coords(
+        data[grid_x].values,
+        data[grid_y].values,
+        grid_crs,
+        target_crs,
+        data[dm.get_surf_alt(data)].values if height else None,
+    )
+    pois_coords_cat = _poi_kdtree_coords(
+        poi_info, target_crs, coords_flat.dtype, dm.get_poi_alt(poi_info) if height else None
+    )
 
     if method == "snowlim":
         return coords_flat, data.values, pois_coords_cat
@@ -1348,6 +1356,135 @@ def _reproject_grid_cached(
     return x_coords.astype(np.float64, copy=False), y_coords.astype(np.float64, copy=False)
 
 
+@memoize(CONFIG.cache_size.reproject_grid)
+def _to_ecef(x_coords: np.ndarray, y_coords: np.ndarray, src_crs: CRS) -> np.ndarray:
+    """
+    Earth-centered earth-fixed (ECEF, EPSG:4978) coordinates [m] at zero ellipsoidal height, shape (n, 3), of
+    horizontal coordinates in ``src_crs``. That can be cached.
+    """
+
+    transformer = Transformer.from_crs(sphere_as_wgs84(src_crs), ECEF, always_xy=True)
+    x_coords = np.asarray(x_coords, dtype=np.float64)
+    y_coords = np.asarray(y_coords, dtype=np.float64)
+    return np.column_stack(transformer.transform(x_coords, y_coords, np.zeros_like(x_coords)))
+
+
+def _to_ecef_cached(x_coords: np.ndarray, y_coords: np.ndarray, src_crs: CRS) -> np.ndarray:
+    """
+    Cached conversion of horizontal coordinates to ECEF coordinates, see :func:`_to_ecef`.
+    """
+
+    hkey = (x_coords.tobytes(), y_coords.tobytes(), x_coords.shape, src_crs, "ECEF")
+    return _to_ecef(x_coords, y_coords, src_crs, hkey=hkey)  # type: ignore[call-arg]
+
+
+def _choose_kdtree_crs(
+    src_crs: CRS,
+    dst_crs: CRS,
+    src_larger: bool,
+    dst_lv95: Callable[[], tuple[np.ndarray, np.ndarray]],
+) -> CRS:
+    """
+    Choose the CRS in which the nearest neighbor searches (KDTree) and triangulations (griddata) of the
+    generic interpolation path are done, so that distances are euclidean distances in meters (never in degrees):
+
+    - if exactly one of the source and destination CRS is projected with axes in meters (e.g. LV95, LV03, UTM),
+      this one, so that only the other side is reprojected;
+    - if both are, the CRS of the larger grid (``src_larger``), whose reprojection would be the most costly;
+    - if both are geographic (e.g. latitude/longitude or rotated pole), Swiss LV95 (EPSG:2056) if all the
+      destination points are within ``CONFIG.lv95_max_offset`` meters of the LV95 central northing (where the LV95
+      scale error is small), otherwise earth-centered earth-fixed coordinates (ECEF, EPSG:4978).
+
+    Parameters
+    ----------
+    src_crs, dst_crs : pyproj.CRS
+        CRS of the source grid and of the destination (grid or POIs) coordinates
+    src_larger : bool
+        whether the source grid has more points than the destination
+    dst_lv95 : callable
+        returns the LV95 coordinates (x, y) of the destination points to check against ``CONFIG.lv95_max_offset``:
+        the POIs, or the outer ring of a destination grid (see :func:`~grid_process.helpers.outer_ring`). Only called
+        when both CRS are geographic.
+
+    Returns
+    -------
+    pyproj.CRS
+        the chosen CRS. ``crs.is_geocentric`` is True for ECEF.
+    """
+
+    src_metric, dst_metric = dm.is_metric_crs(src_crs), dm.is_metric_crs(dst_crs)
+    if src_metric and dst_metric:
+        return src_crs if src_larger else dst_crs
+    if src_metric:
+        return src_crs
+    if dst_metric:
+        return dst_crs
+
+    x_lv95, y_lv95 = dst_lv95()
+    offset = np.abs(np.asarray(y_lv95, dtype=np.float64) - LV95_NORTHING_CENTER)
+    if np.isfinite(x_lv95).all() and np.isfinite(offset).all() and offset.max() <= CONFIG.lv95_max_offset:
+        return LV95
+
+    logger.debug("Destination beyond %s m of the LV95 central northing: interpolation in ECEF", CONFIG.lv95_max_offset)
+    return ECEF
+
+
+def _check_griddata_crs(method: str, target_crs: CRS) -> None:
+    """
+    Raise an error for griddata methods (triangulation) in ECEF coordinates, see :func:`_choose_kdtree_crs`.
+    """
+
+    if method in GRIDDATA_METHODS and target_crs.is_geocentric:
+        raise ValueError(
+            f"Method {method!r} is not supported for geographic grids beyond {CONFIG.lv95_max_offset / 1000:.0f} km"
+            " of the Swiss LV95 central northing, which are interpolated in earth-centered earth-fixed (ECEF)"
+            " coordinates: a Delaunay triangulation of points close to the Earth's surface is degenerate in ECEF."
+            " Use e.g. method='idw' instead, or try_reg=True for a regular grid with 1D coordinates (or adjust"
+            " GRID_PROCESS__lv95_max_offset)."
+        )
+
+
+def _kdtree_coords(
+    x_coords: np.ndarray,
+    y_coords: np.ndarray,
+    src_crs: CRS,
+    target_crs: CRS,
+    alt: np.ndarray | None = None,
+) -> np.ndarray:
+    """
+    Stack columnwise the flattened horizontal coordinates converted to ``target_crs``, and the altitude ``alt``
+    if given (always as last column): ``[x, y(, alt)]`` for a projected ``target_crs``, ``[X, Y, Z(, alt)]``
+    in float64 for ECEF.
+    """
+
+    if target_crs.is_geocentric:
+        ecef = _to_ecef_cached(x_coords, y_coords, src_crs)
+        return ecef.copy() if alt is None else np.column_stack((ecef, alt.astype(np.float64)))
+
+    coords = _stack_coords(x_coords, y_coords) if alt is None else _stack_coords(x_coords, y_coords, alt)
+    if src_crs != target_crs:
+        coords[:, 0], coords[:, 1] = _reproject_grid_cached(coords[:, 0], coords[:, 1], src_crs, target_crs)
+    return coords
+
+
+def _poi_kdtree_coords(
+    poi_info: gpd.GeoDataFrame, target_crs: CRS, dtype: np.dtype, alt: np.ndarray | None = None
+) -> np.ndarray:
+    """
+    POIs coordinates in ``target_crs``, stacked like :func:`_kdtree_coords`.
+    """
+
+    if target_crs.is_geocentric:
+        xy = poi_info.get_coordinates().to_numpy(dtype=np.float64)
+        ecef = _to_ecef_cached(xy[:, 0], xy[:, 1], poi_info.crs.to_2d())
+        return ecef.copy() if alt is None else np.column_stack((ecef, alt.astype(np.float64)))
+
+    pois_coords = _convert_poi(poi_info, target_crs, dtype)
+    if alt is None:
+        return np.c_[pois_coords[0], pois_coords[1]]
+    return np.c_[pois_coords[0], pois_coords[1], alt]
+
+
 @dataset_accessor
 def interp2grid(
     data: xr.Dataset,
@@ -1390,8 +1527,9 @@ def interp2grid(
         For methods requiring altitude, ensure a surface altitude coordinate is present; extend supported names via
         GRID_PROCESS__data_model__grid__surf_alt.
     dst_grid : xarray.Dataset
-        The destination grid to interpolate to. Same supported data models as the source grid, including conventions for
-        dimensions and coordinates as well as spatial CRS.
+        The destination grid to interpolate to. It must be a structured grid with two spatial dimensions (y, x):
+        unstructured (1D) grids are only supported as source grid. Same supported data models as the source grid,
+        including conventions for dimensions and coordinates as well as spatial CRS.
         For methods requiring altitude, ensure a surface altitude coordinate is also present.
         The destination dataset may contain only spatial coordinates or also data variables which will be ignored.
     method : str
@@ -1414,6 +1552,12 @@ def interp2grid(
     xr.Dataset
         Dataset with values from `data` interpolated onto the coordinates of `dst_grid`.
 
+    Raises
+    ------
+    ValueError
+        If ``dst_grid`` is not a structured grid, or for the methods 'linear', 'linear_3D' and 'cubic' when the
+        interpolation is done in ECEF coordinates (see notes).
+
     See also
     --------
     :func:`interp_temp`, :func:`interp_temp_fixgrad`, :func:`interp_nearest_alt`,
@@ -1426,6 +1570,20 @@ def interp2grid(
     - Recommended methods: 'nearest', 'linear' (if the source grid is regular with 1D coordinates), 'idw' (with k=4),
       'temp_fixgrad', 'nearest_3D', 'nearest_alt'.
     - Environment variables allow flexible support for custom grid data models.
+    - Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for 'linear',
+      'linear_3D' and 'cubic' are done) with distances in meters, never in latitude/longitude degrees. The source
+      grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and
+      longitude coordinates are present, otherwise its latitude/longitude. The coordinates are converted to:
+
+        - the CRS projected in meters of the source grid or of the destination, if any (the one of the larger grid
+          if both are);
+        - otherwise Swiss LV95 (EPSG:2056) if the destination is within ``lv95_max_offset`` meters (default 700 km,
+          set with the environment variable GRID_PROCESS__lv95_max_offset) of the LV95 central northing
+          (1 200 000 m), where the LV95 scale error is small (0.6 % at 700 km);
+        - otherwise earth-centered earth-fixed coordinates (ECEF, EPSG:4978), e.g. for global grids. The methods
+          'linear', 'linear_3D' and 'cubic' are not supported in this case.
+
+      Methods with altitude use it as an additional coordinate in meters.
     """
 
     def _array2ds(data: xr.DataArray) -> xr.Dataset:
@@ -1453,6 +1611,11 @@ def interp2grid(
 
     src_spatial_dims = dm.get_spatial_dims(data)
     dst_spatial_dims = dm.get_spatial_dims(dst_grid)
+    if len(dst_spatial_dims) != 2:
+        raise ValueError(
+            f"The destination grid must be a structured grid with two spatial dimensions (y, x), got"
+            f" {dst_spatial_dims}. Unstructured grids are only supported as source grid."
+        )
     data = dm.set_grid_mapping(data)
     dst_grid = dm.set_grid_mapping(dst_grid)
     dst_grid = dst_grid.drop_dims(set(dst_grid.dims) - set(dst_spatial_dims))
@@ -1612,66 +1775,45 @@ def _flatten_concat_grids(  # pylint: disable=too-many-locals
     method: str,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Flattens the grids and concatenate columnwise `x` and `y` coordinates into a
-    single 2D array. Also, reprojects the destination grid coordinates if they are not
-    in the same CRS than the input model coordinates.
+    Flattens the grids and concatenate columnwise the horizontal coordinates (and the altitude for
+    ``HEIGHT_METHODS``) into a single 2D array per grid, in the CRS chosen by :func:`_choose_kdtree_crs`.
     """
 
-    def _choose_crs_meters() -> CRS:
+    def _dst_lv95() -> tuple[np.ndarray, np.ndarray]:
         """
-        Choose the target CRS with units in [m] for reprojection.
+        LV95 coordinates of the outer ring of the destination grid, to check its extent.
         """
 
-        if reproj_dst:
-            if grid_crs in SWISS_CRS:
-                return grid_crs
-            return CRS.from_string(SWISS_CRS[1]) if dst_grid_crs == SWISS_CRS[1] else CRS.from_string(SWISS_CRS[0])
+        x_ring, y_ring = outer_ring(dst_grid[dst_grid_x].values, dst_grid[dst_grid_y].values)
+        return reproject(x_ring.astype(np.float64), y_ring.astype(np.float64), dst_grid_crs, LV95)
 
-        if dst_grid_crs in SWISS_CRS:
-            return dst_grid_crs
-        return CRS.from_string(SWISS_CRS[1]) if grid_crs == SWISS_CRS[1] else CRS.from_string(SWISS_CRS[0])
-
+    dst_grid_y, dst_grid_x, dst_grid_crs = dm.get_coords_name_crs(dst_grid, dst_spatial_dims, prefer_projected=True)
     data, grid_y, grid_x, grid_crs = _flatten_coords_crs(data, spatial_dims)
     flat_dim = spatial_dims[0] if len(spatial_dims) == 1 else "cell"
-    dst_grid, dst_grid_y, dst_grid_x, dst_grid_crs = _flatten_coords_crs(dst_grid, dst_spatial_dims, flat_dim)
+    dst_flat, _, _, _ = _flatten_coords_crs(dst_grid, dst_spatial_dims, flat_dim)
 
-    reproj_dst = dst_grid.sizes[flat_dim] <= data.sizes[flat_dim]
+    target_crs = _choose_kdtree_crs(
+        grid_crs,
+        dst_grid_crs,
+        src_larger=dst_flat.sizes[flat_dim] <= data.sizes[flat_dim],
+        dst_lv95=_dst_lv95,
+    )
+    _check_griddata_crs(method, target_crs)
 
-    if method in HEIGHT_METHODS:
-        surf_alt = dm.get_surf_alt(data)
-        dst_surf_alt = dm.get_surf_alt(dst_grid)
-        # include elevation
-        coords_flat = _stack_coords(
-            data[grid_x].values,
-            data[grid_y].values,
-            data[surf_alt].values,
-        )
-        dst_coords_flat = _stack_coords(
-            dst_grid[dst_grid_x].values,
-            dst_grid[dst_grid_y].values,
-            dst_grid[dst_surf_alt].values,
-        )
-        target_crs = _choose_crs_meters()
-        coords_flat[:, 0], coords_flat[:, 1] = _reproject_grid_cached(
-            coords_flat[:, 0], coords_flat[:, 1], grid_crs, target_crs
-        )
-        dst_coords_flat[:, 0], dst_coords_flat[:, 1] = _reproject_grid_cached(
-            dst_coords_flat[:, 0], dst_coords_flat[:, 1], dst_grid_crs, target_crs
-        )
-        return coords_flat, data.values, dst_coords_flat
-
-    # Non-height methods
-    coords_flat = _stack_coords(data[grid_x].values, data[grid_y].values)
-    dst_coords_flat = _stack_coords(dst_grid[dst_grid_x].values, dst_grid[dst_grid_y].values)
-    if reproj_dst:  # reproject destination coordinates in the grid CRS
-        dst_coords_flat[:, 0], dst_coords_flat[:, 1] = _reproject_grid_cached(
-            dst_coords_flat[:, 0], dst_coords_flat[:, 1], dst_grid_crs, grid_crs
-        )
-        return coords_flat, data.values, dst_coords_flat
-
-    # reproject grid coordinates in the destination CRS
-    coords_flat[:, 0], coords_flat[:, 1] = _reproject_grid_cached(
-        coords_flat[:, 0], coords_flat[:, 1], grid_crs, dst_grid_crs
+    height = method in HEIGHT_METHODS
+    coords_flat = _kdtree_coords(
+        data[grid_x].values,
+        data[grid_y].values,
+        grid_crs,
+        target_crs,
+        data[dm.get_surf_alt(data)].values if height else None,
+    )
+    dst_coords_flat = _kdtree_coords(
+        dst_flat[dst_grid_x].values,
+        dst_flat[dst_grid_y].values,
+        dst_grid_crs,
+        target_crs,
+        dst_flat[dm.get_surf_alt(dst_flat)].values if height else None,
     )
     return coords_flat, data.values, dst_coords_flat
 
@@ -1692,16 +1834,16 @@ def _flatten_coords_crs(
     flat_dim: str = "cell",
 ) -> tuple[xr.DataArray | xr.Dataset, str, str, CRS]:
     """
-    Flatten input dataset if not already and extract spatial coordinates and
-    corresponding crs to be used.
+    Flatten input dataset if not already and extract spatial coordinates and corresponding crs to be used:
+    native coordinates if their CRS is projected with axes in meters, otherwise latitude and longitude
+    if present (see :func:`~grid_process.data_model.get_coords_name_crs`).
     """
 
-    if len(spatial_dims) > 1:
-        # flatten grid
-        grid = grid.stack({flat_dim: spatial_dims}).transpose(flat_dim, ...)
-        spatial_dims = (flat_dim,)
+    grid_y, grid_x, grid_crs = dm.get_coords_name_crs(grid, spatial_dims, prefer_projected=True)
 
-    grid_y, grid_x, grid_crs = dm.get_coords_name_crs(grid, spatial_dims)
+    if len(spatial_dims) > 1:
+        # flatten grid: 1D dimension coordinates become levels of the flat dimension
+        grid = grid.stack({flat_dim: spatial_dims}).transpose(flat_dim, ...)
 
     return grid, grid_y, grid_x, grid_crs
 
@@ -1783,12 +1925,8 @@ def slice_coarsen(  # pylint: disable=too-many-locals
     )
 
     if grid_crs != dst_grid_crs:
-        if x_coords.ndim == 1:
-            x_coords, y_coords = np.meshgrid(x_coords, y_coords)
-
         # only keep the outer rectangle
-        x_coords = np.append(x_coords[[0, -1], :].ravel(), x_coords[1:-1, [0, -1]].ravel())
-        y_coords = np.append(y_coords[[0, -1], :].ravel(), y_coords[1:-1, [0, -1]].ravel())
+        x_coords, y_coords = outer_ring(x_coords, y_coords)
 
         # Reproject destination coordinates in the grid CRS
         x_coords, y_coords = reproject(x_coords, y_coords, dst_grid_crs, grid_crs)
@@ -2005,6 +2143,9 @@ def _combine_attrs(src_attrs: dict, dst_attrs: dict) -> dict:
     combined_attrs.update({key: dst_attrs[key] for key in from_dst if key in dst_attrs})
     return combined_attrs
 
+
+# methods relying on scipy.interpolate.griddata (Delaunay triangulation), not supported in ECEF coordinates
+GRIDDATA_METHODS = ("linear", "linear_3D", "cubic")
 
 HEIGHT_METHODS = (
     "temp",

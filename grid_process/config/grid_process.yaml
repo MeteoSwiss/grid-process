@@ -4,6 +4,10 @@ cache_size:
   reproject_poi: 6
   reproject_grid: 6
 
+# [m] max |N_LV95 - 1 200 000| of the destination for interpolating in LV95 when both grids are
+# in lat/lon (otherwise ECEF). 700 km ≈ 0.6 % scale error, covers ICON-CH1/CH2 (523 km)
+lv95_max_offset: 700000
+
 data_model: # supported names
   grid:
     unstructured_dim: ["cell", "points"]

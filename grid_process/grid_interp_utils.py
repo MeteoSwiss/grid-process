@@ -14,7 +14,7 @@ import numpy as np
 from pyproj import CRS
 import xarray as xr
 
-from grid_process.helpers import reproject
+from grid_process.helpers import outer_ring, reproject
 from grid_process import data_model as dm
 
 
@@ -164,14 +164,18 @@ def create_dst_grid_from_src(  # pylint: disable=too-many-locals
 
     spatial_dims = dm.get_spatial_dims(src_grid)
     src_grid = dm.set_grid_mapping(src_grid)
-    src_y, src_x, src_crs = dm.get_coords_name_crs(src_grid, spatial_dims)
+    src_y, src_x, src_crs = dm.get_coords_name_crs(src_grid, spatial_dims, prefer_projected=True)
     dst_crs = CRS.from_user_input(dst_grid_crs)
-    x_min, x_max = src_grid[src_x].values.min(), src_grid[src_x].values.max()
-    y_min, y_max = src_grid[src_y].values.min(), src_grid[src_y].values.max()
-    x_bnds = (x_min, x_min, x_max, x_max)
-    y_bnds = (y_min, y_max, y_min, y_max)
-    x_bnds, y_bnds = reproject(x_bnds, y_bnds, src_crs, dst_crs)
-    x_bnds, y_bnds = (min(x_bnds), max(x_bnds)), (min(y_bnds), max(y_bnds))
+
+    # bounding box of the source domain in the destination CRS: of the outer ring of a structured grid (which
+    # encloses the reprojected grid), of all points of an unstructured one
+    src_x_coords = src_grid[src_x].values.astype(np.float64)
+    src_y_coords = src_grid[src_y].values.astype(np.float64)
+    if len(spatial_dims) == 2:
+        src_x_coords, src_y_coords = outer_ring(src_x_coords, src_y_coords)
+    x_src_dst, y_src_dst = reproject(src_x_coords, src_y_coords, src_crs, dst_crs)
+    x_bnds = (float(np.nanmin(x_src_dst)), float(np.nanmax(x_src_dst)))
+    y_bnds = (float(np.nanmin(y_src_dst)), float(np.nanmax(y_src_dst)))
 
     if len(spatial_dims) == 1:  # need to infer expected sizes for x and y dims
         xy_ratio = (x_bnds[1] - x_bnds[0]) / (y_bnds[1] - y_bnds[0])

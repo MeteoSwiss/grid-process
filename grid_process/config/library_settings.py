@@ -55,6 +55,7 @@ class LibrarySettings(BaseSettings):
     )
     cache_size: CacheSizeSettings
     data_model: DataModelSettings
+    lv95_max_offset: float = Field(gt=0)
 
     @classmethod
     def settings_customise_sources(
