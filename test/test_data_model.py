@@ -392,14 +392,10 @@ def test_get_poi_alt(poi_def):
         dm.get_poi_alt(poi_broken)
 
 
-@pytest.mark.parametrize(
-    "data_native_lv95_2dflat,data_native_rotlatlon_2dflat,data_cf_2dflat",
-    [("2d_grid", "2d_grid", "2d_grid"), ("flat_grid", "flat_grid", "flat_grid")],
-    indirect=True,
-)
-def test_get_coords_name_crs(data_native_lv95_2dflat, data_native_rotlatlon_2dflat, data_cf_2dflat):
+@pytest.mark.parametrize("data_native_lv95_2dflat", ["2d_grid", "flat_grid"], indirect=True)
+def test_get_coords_name_crs_lv95(data_native_lv95_2dflat):
     """
-    Simple testcase for the get_coords_name_crs function
+    get_coords_name_crs with native LV95 coordinates: latitude/longitude when present, otherwise LV95
     """
 
     grid_y_x_crs = dm.get_coords_name_crs(data_native_lv95_2dflat)
@@ -410,6 +406,22 @@ def test_get_coords_name_crs(data_native_lv95_2dflat, data_native_rotlatlon_2dfl
 
     grid_y_x_crs = dm.get_coords_name_crs(data_native_lv95_2dflat.drop_vars(("latitude", "longitude")))
     assert grid_y_x_crs == ("y", "x", CRS.from_string("EPSG:2056"))
+
+    if "cell" in data_native_lv95_2dflat.dims:
+        pattern = "Could not find non-dimension spatial coordinates"
+    else:
+        pattern = "Missing spatial coordinates"
+    with pytest.raises(ValueError, match=pattern):
+        dm.get_coords_name_crs(
+            data_native_lv95_2dflat.drop_vars(("latitude", "longitude", "y", "x", "cell"), errors="ignore")
+        )
+
+
+@pytest.mark.parametrize("data_native_rotlatlon_2dflat", ["2d_grid", "flat_grid"], indirect=True)
+def test_get_coords_name_crs_rotlatlon(data_native_rotlatlon_2dflat):
+    """
+    get_coords_name_crs with native rotated pole coordinates: latitude/longitude when present, otherwise rotated pole
+    """
 
     spatial_dims = dm.get_spatial_dims(data_native_rotlatlon_2dflat)
     grid_y_x_crs = dm.get_coords_name_crs(data_native_rotlatlon_2dflat, spatial_dims)
@@ -424,6 +436,13 @@ def test_get_coords_name_crs(data_native_lv95_2dflat, data_native_rotlatlon_2dfl
     assert grid_y_x_crs[:2] == ("y", "x")
     assert grid_y_x_crs[2].is_geographic
 
+
+@pytest.mark.parametrize("data_cf_2dflat", ["2d_grid", "flat_grid"], indirect=True)
+def test_get_coords_name_crs_cf(data_cf_2dflat):
+    """
+    get_coords_name_crs with a CF grid mapping: latitude/longitude coordinates
+    """
+
     grid_y_x_crs = dm.get_coords_name_crs(data_cf_2dflat)
     if "points" in data_cf_2dflat.dims:
         lat, lon = "lat", "lon"
@@ -434,27 +453,13 @@ def test_get_coords_name_crs(data_native_lv95_2dflat, data_native_rotlatlon_2dfl
     da = data_cf_2dflat[list(data_cf_2dflat)[0]]
     assert grid_y_x_crs == dm.get_coords_name_crs(da)
 
-    if "cell" in data_native_lv95_2dflat.dims:
-        pattern = "Could not find non-dimension spatial coordinates"
-    else:
-        pattern = "Missing spatial coordinates"
-    with pytest.raises(ValueError, match=pattern):
-        dm.get_coords_name_crs(
-            data_native_lv95_2dflat.drop_vars(("latitude", "longitude", "y", "x", "cell"), errors="ignore")
-        )
 
-
-@pytest.mark.parametrize(
-    "data_native_lv95_2dflat,data_native_rotlatlon_2dflat",
-    [("2d_grid", "2d_grid"), ("flat_grid", "flat_grid")],
-    indirect=True,
-)
-def test_get_coords_name_crs_prefer_projected(data_native_lv95_2dflat, data_native_rotlatlon_2dflat):
+@pytest.mark.parametrize("data_native_lv95_2dflat", ["2d_grid", "flat_grid"], indirect=True)
+def test_get_coords_name_crs_prefer_projected_lv95(data_native_lv95_2dflat):
     """
-    get_coords_name_crs with prefer_projected=True returns native coordinates in meters before latitude/longitude
+    get_coords_name_crs with prefer_projected=True and native LV95 coordinates: LV95 before latitude/longitude
     """
 
-    # native LV95 with latitude/longitude: LV95
     lv95 = dm.get_coords_name_crs(data_native_lv95_2dflat, prefer_projected=True)
     assert lv95 == ("y", "x", CRS.from_string("EPSG:2056"))
     da = data_native_lv95_2dflat[list(data_native_lv95_2dflat)[0]]
@@ -465,14 +470,21 @@ def test_get_coords_name_crs_prefer_projected(data_native_lv95_2dflat, data_nati
     # default unchanged: latitude/longitude
     assert dm.get_coords_name_crs(data_native_lv95_2dflat)[2] == CRS.from_string("EPSG:4326")
 
-    # native rotated pole (in degrees) with latitude/longitude: latitude/longitude
-    rotated = dm.get_coords_name_crs(data_native_rotlatlon_2dflat, prefer_projected=True)
-    assert rotated == ("latitude", "longitude", CRS.from_string("EPSG:4326"))
-
     # no CRS attribute: only latitude/longitude can be used
     no_crs = data_native_lv95_2dflat.copy()
     no_crs.attrs.pop("grid_mapping")
     assert dm.get_coords_name_crs(no_crs, prefer_projected=True) == ("latitude", "longitude", CRS.from_epsg(4326))
+
+
+@pytest.mark.parametrize("data_native_rotlatlon_2dflat", ["2d_grid", "flat_grid"], indirect=True)
+def test_get_coords_name_crs_prefer_projected_rotlatlon(data_native_rotlatlon_2dflat):
+    """
+    get_coords_name_crs with prefer_projected=True and native rotated pole coordinates (in degrees):
+    latitude/longitude
+    """
+
+    rotated = dm.get_coords_name_crs(data_native_rotlatlon_2dflat, prefer_projected=True)
+    assert rotated == ("latitude", "longitude", CRS.from_string("EPSG:4326"))
 
 
 def test_parse_grid_mapping(monkeypatch):
