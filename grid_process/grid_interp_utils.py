@@ -169,8 +169,8 @@ def create_dst_grid_from_src(  # pylint: disable=too-many-locals
 
     # bounding box of the source domain in the destination CRS: of the outer ring of a structured grid (which
     # encloses the reprojected grid), of all points of an unstructured one
-    src_x_coords = src_grid[src_x].values.astype(np.float64)
-    src_y_coords = src_grid[src_y].values.astype(np.float64)
+    src_x_coords = src_grid[src_x].values
+    src_y_coords = src_grid[src_y].values
     if len(spatial_dims) == 2:
         src_x_coords, src_y_coords = outer_ring(src_x_coords, src_y_coords)
     x_src_dst, y_src_dst = reproject(src_x_coords, src_y_coords, src_crs, dst_crs)
