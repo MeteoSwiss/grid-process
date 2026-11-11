@@ -105,7 +105,7 @@ def interp_temp(  # pylint: disable=too-many-locals
     z_fact : positive int, optional
         factor to multiply the z coordinates to find nearest neighbors based on a
         non-euclidean distance that penalizes more altitude differences. Default
-        value is 50. A value of 1 will use regular euclidean distances.
+        value is 25. A value of 1 will use regular euclidean distances.
     k : positive int, optional
         number of considered nearest neighbors for the local sounding. Default
         is 36
@@ -139,8 +139,8 @@ def interp_temp(  # pylint: disable=too-many-locals
 
     Note
     ----
-    For POIs with altitude higher than 300m above the highest gridpoint or lower
-    than 500m below the lowest gridpoint in the local neighborhood used for the fit,
+    For POIs with altitude higher than 200m above the highest gridpoint or lower
+    than 600m below the lowest gridpoint in the local neighborhood used for the fit,
     or whose neighbors all have the same altitude (no sounding can be fitted, e.g. at
     the poles of a latitude/longitude grid or on flat orography), the fixgrad method
     is used with default gradient of 0.006 [K / m].
