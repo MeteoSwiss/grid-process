@@ -48,6 +48,15 @@ Unreleased
   in LV95) or miss parts of the domain (e.g. 28 km for IFS in LV95)
 * fixed ``set_grid_mapping`` with CF grid mappings holding numpy arrays or non-float64 numpy values (e.g. a
   ``standard_parallel`` array read from a netCDF file), which raised a ``TypeError``
+* changed ``memoize``: the least recently used result is evicted (instead of the oldest one), the cache key can be
+  computed by an optional ``key`` function (only when caching is active), a cache size of 0 deactivates caching
+  without overhead, and the cache is safe to use from several threads, also when the process forks (the fork waits
+  until no thread is using the cache). The ``hkey`` keyword argument still works
+* fixed the in-memory caches of the POI and grid reprojections, whose keys left out the source CRS, and the cache
+  of the regular grid nearest interpolation, which failed with a POI dimension name other than ``poi``
+  (``GRID_PROCESS__data_model__poi__dim``)
+* documented the in-memory caches of ``interp2poi`` and ``interp2grid`` and how to set their sizes or deactivate
+  them with the environment variables ``GRID_PROCESS__cache_size__<name>`` (Usage page)
 
 1.0.0
 -----

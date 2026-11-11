@@ -1,3 +1,5 @@
+# number of results kept by each in-memory cache (least recently used evicted), 0 to deactivate it. Override with
+# the environment variables GRID_PROCESS__cache_size__<name>, set before importing grid_process
 cache_size:
   nn_lookup: 10
   nn_lookup_regular: 10

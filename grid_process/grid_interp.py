@@ -13,7 +13,7 @@ Module for spatial interpolation of gridded datasets
 import logging
 from functools import partial
 from typing import Any, Literal, overload
-from collections.abc import Callable
+from collections.abc import Callable, Hashable
 from math import isclose, prod, ceil
 
 import numpy as np
@@ -962,6 +962,10 @@ def interp2poi(
           'linear', 'linear_3D' and 'cubic' are not supported in this case.
 
       Methods with altitude use it as an additional coordinate in meters.
+    - Nearest neighbor lookups and coordinate reprojections are cached in memory, so that later calls with the same
+      grids and POIs are faster. The cache sizes are set by the environment variables
+      GRID_PROCESS__cache_size__<name> (``nn_lookup``, ``nn_lookup_regular``, ``reproject_poi``, ``reproject_grid``),
+      where 0 deactivates a cache. They must be set before importing grid_process, see the Usage page.
     """
 
     def _fullnan_ds(data: xr.DataArray) -> xr.Dataset:
@@ -1145,19 +1149,20 @@ def _interp_nearest_regular(
     )
     data = data.chunk()  # cast to dask
     grid_coords = (data[x_dim].values, data[y_dim].values)
-    hkey = (
-        tuple(pois_coords[0].poi.values.tolist()),
-        pois_coords[0].values.tobytes(),
-        pois_coords[1].values.tobytes(),
-        grid_coords[0].tobytes(),
-        grid_coords[1].tobytes(),
-    )
     # pylint: disable-next=unbalanced-tuple-unpacking  # returns one index array per spatial dimension
-    indx, indy = nn_lookup_regular(grid_coords, grid_spacing, pois_coords, hkey=hkey)  # type: ignore[call-arg]
+    indx, indy = _nn_lookup_regular_cached(grid_coords, grid_spacing, pois_coords)
     return data.isel({x_dim: indx, y_dim: indy}).drop_vars(spatial_dims, errors="ignore")
 
 
-@memoize(CONFIG.cache_size.nn_lookup)
+def _array_key(arr: np.ndarray) -> tuple[tuple[int, ...], str, bytes]:
+    """
+    Exact hashable cache key of a numpy array (shape, dtype and content), see
+    :func:`~grid_process.optimization.memoize`.
+    """
+
+    return arr.shape, arr.dtype.str, arr.tobytes()
+
+
 def nn_lookup(grid_coords: np.ndarray, points: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
     """
     Find the k nearest grid points and corresponding distances for a set of
@@ -1192,16 +1197,19 @@ def nn_lookup(grid_coords: np.ndarray, points: np.ndarray, k: int) -> tuple[np.n
     return dd.astype(points.dtype, copy=False), ii
 
 
+@memoize(
+    CONFIG.cache_size.nn_lookup,
+    key=lambda grid_coords, points, k: (_array_key(grid_coords), _array_key(points), k),
+)
 def nn_lookup_cached(grid_coords: np.ndarray, points: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
     """
-    Wrapper to :func:`nn_lookup` function to use it with a cache
+    :func:`nn_lookup` with an in-memory cache of the results, keyed on the coordinates and ``k``. Its size is set by
+    ``cache_size.nn_lookup`` (environment variable ``GRID_PROCESS__cache_size__nn_lookup``, 0 to deactivate).
     """
 
-    hkey = (grid_coords.tobytes(), points.tobytes(), k)
-    return nn_lookup(grid_coords, points, k, hkey=hkey)  # type: ignore[call-arg]
+    return nn_lookup(grid_coords, points, k)
 
 
-@memoize(CONFIG.cache_size.nn_lookup_regular)
 def nn_lookup_regular(
     grid_coords: tuple[np.ndarray, np.ndarray],
     grid_spacing: tuple[float, float],
@@ -1238,6 +1246,42 @@ def nn_lookup_regular(
         dim_index = np.clip(dim_index, 0, dim_coords.size - 1).astype(int)
         grid_index.append(dim_index)
     return grid_index
+
+
+def _nn_lookup_regular_key(
+    grid_coords: tuple[np.ndarray, np.ndarray],
+    grid_spacing: tuple[float, float],
+    points: tuple[xr.DataArray, xr.DataArray],
+) -> Hashable:
+    """
+    Cache key of :func:`_nn_lookup_regular_cached`: the grid coordinates and spacing, and the POIs coordinates and
+    labels (which become the coordinates of the output indexes).
+    """
+
+    poi_dim = points[0].dims[0]
+    return (
+        tuple(points[0][poi_dim].values.tolist()),
+        _array_key(points[0].values),
+        _array_key(points[1].values),
+        _array_key(grid_coords[0]),
+        _array_key(grid_coords[1]),
+        grid_spacing,
+    )
+
+
+@memoize(CONFIG.cache_size.nn_lookup_regular, key=_nn_lookup_regular_key)
+def _nn_lookup_regular_cached(
+    grid_coords: tuple[np.ndarray, np.ndarray],
+    grid_spacing: tuple[float, float],
+    points: tuple[xr.DataArray, xr.DataArray],
+) -> list[np.ndarray | xr.DataArray]:
+    """
+    :func:`nn_lookup_regular` with an in-memory cache of the results. Its size is set by
+    ``cache_size.nn_lookup_regular`` (environment variable ``GRID_PROCESS__cache_size__nn_lookup_regular``, 0 to
+    deactivate).
+    """
+
+    return nn_lookup_regular(grid_coords, grid_spacing, points)
 
 
 def _compute_dist_weight(dist: np.ndarray, power: float, dtype: np.dtype) -> np.ndarray:
@@ -1318,14 +1362,17 @@ def _convert_poi(poi_info: gpd.GeoDataFrame, grid_crs: CRS, dtype: np.dtype) -> 
     if grid_crs == poi_crs:
         return pois_coords[:, 0], pois_coords[:, 1]
 
-    hkey = (pois_coords[:, 0].tobytes(), pois_coords[:, 1].tobytes(), grid_crs)
-    return _reproject_poi(pois_coords, poi_crs, grid_crs, hkey=hkey)  # type: ignore[call-arg]
+    return _reproject_poi(pois_coords, poi_crs, grid_crs)
 
 
-@memoize(CONFIG.cache_size.reproject_poi)
+@memoize(
+    CONFIG.cache_size.reproject_poi,
+    key=lambda coords, src_crs, dst_crs: (_array_key(coords), src_crs, dst_crs),
+)
 def _reproject_poi(coords: np.ndarray, src_crs: CRS, dst_crs: CRS) -> tuple[np.ndarray, np.ndarray]:
     """
-    Reprojection of POIs coordinates that can be cached
+    Reprojection of POIs coordinates, with an in-memory cache of size ``cache_size.reproject_poi`` (environment
+    variable ``GRID_PROCESS__cache_size__reproject_poi``, 0 to deactivate)
     """
 
     x_coords, y_coords = reproject(coords[:, 0], coords[:, 1], src_crs, dst_crs)
@@ -1335,12 +1382,16 @@ def _reproject_poi(coords: np.ndarray, src_crs: CRS, dst_crs: CRS) -> tuple[np.n
     return x_coords, y_coords
 
 
-@memoize(CONFIG.cache_size.reproject_grid)
+@memoize(
+    CONFIG.cache_size.reproject_grid,
+    key=lambda x_coords, y_coords, src_crs, dst_crs: (_array_key(x_coords), _array_key(y_coords), src_crs, dst_crs),
+)
 def _reproject_grid(
     x_coords: np.ndarray, y_coords: np.ndarray, src_crs: CRS, dst_crs: CRS
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Reprojection of grid coordinates that can be cached
+    Reprojection of grid coordinates, with an in-memory cache of size ``cache_size.reproject_grid`` (environment
+    variable ``GRID_PROCESS__cache_size__reproject_grid``, 0 to deactivate)
     """
 
     return reproject(x_coords, y_coords, src_crs, dst_crs)
@@ -1350,38 +1401,31 @@ def _reproject_grid_cached(
     x_coords: np.ndarray, y_coords: np.ndarray, src_crs: CRS, dst_crs: CRS
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Cached reprojection of grid coordinates
+    Cached reprojection of grid coordinates (see :func:`_reproject_grid`), as float64
     """
 
     if dst_crs != src_crs:
-        hkey = (x_coords.tobytes(), y_coords.tobytes(), x_coords.shape, dst_crs)
-        x_coords, y_coords = _reproject_grid(  # type: ignore[call-arg]
-            x_coords, y_coords, src_crs, dst_crs, hkey=hkey
-        )
+        x_coords, y_coords = _reproject_grid(x_coords, y_coords, src_crs, dst_crs)
 
     return x_coords.astype(np.float64, copy=False), y_coords.astype(np.float64, copy=False)
 
 
-@memoize(CONFIG.cache_size.reproject_grid)
+@memoize(
+    CONFIG.cache_size.reproject_grid,
+    key=lambda x_coords, y_coords, src_crs: (_array_key(x_coords), _array_key(y_coords), src_crs),
+)
 def _to_ecef(x_coords: np.ndarray, y_coords: np.ndarray, src_crs: CRS) -> np.ndarray:
     """
     Earth-centered earth-fixed (ECEF, EPSG:4978) coordinates [m] at zero ellipsoidal height, shape (n, 3), of
-    horizontal coordinates in ``src_crs``. That can be cached.
+    horizontal coordinates in ``src_crs``. With an in-memory cache of size ``cache_size.reproject_grid`` (environment
+    variable ``GRID_PROCESS__cache_size__reproject_grid``, 0 to deactivate), separate from the one of
+    :func:`_reproject_grid`. The cached array must not be modified.
     """
 
     transformer = Transformer.from_crs(sphere_as_wgs84(src_crs), ECEF, always_xy=True)
     x_coords = np.asarray(x_coords, dtype=np.float64)
     y_coords = np.asarray(y_coords, dtype=np.float64)
     return np.column_stack(transformer.transform(x_coords, y_coords, np.zeros_like(x_coords)))
-
-
-def _to_ecef_cached(x_coords: np.ndarray, y_coords: np.ndarray, src_crs: CRS) -> np.ndarray:
-    """
-    Cached conversion of horizontal coordinates to ECEF coordinates, see :func:`_to_ecef`.
-    """
-
-    hkey = (x_coords.tobytes(), y_coords.tobytes(), x_coords.shape, src_crs, "ECEF")
-    return _to_ecef(x_coords, y_coords, src_crs, hkey=hkey)  # type: ignore[call-arg]
 
 
 def _choose_kdtree_crs(
@@ -1464,7 +1508,7 @@ def _kdtree_coords(
     """
 
     if target_crs.is_geocentric:
-        ecef = _to_ecef_cached(x_coords, y_coords, src_crs)
+        ecef = _to_ecef(x_coords, y_coords, src_crs)
         return ecef.copy() if alt is None else np.column_stack((ecef, alt.astype(np.float64)))
 
     coords = _stack_coords(x_coords, y_coords) if alt is None else _stack_coords(x_coords, y_coords, alt)
@@ -1482,7 +1526,7 @@ def _poi_kdtree_coords(
 
     if target_crs.is_geocentric:
         xy = poi_info.get_coordinates().to_numpy(dtype=np.float64)
-        ecef = _to_ecef_cached(xy[:, 0], xy[:, 1], poi_info.crs.to_2d())
+        ecef = _to_ecef(xy[:, 0], xy[:, 1], poi_info.crs.to_2d())
         return ecef.copy() if alt is None else np.column_stack((ecef, alt.astype(np.float64)))
 
     pois_coords = _convert_poi(poi_info, target_crs, dtype)
@@ -1590,6 +1634,10 @@ def interp2grid(
           'linear', 'linear_3D' and 'cubic' are not supported in this case.
 
       Methods with altitude use it as an additional coordinate in meters.
+    - Nearest neighbor lookups and coordinate reprojections are cached in memory, so that later calls with the same
+      grids and POIs are faster. The cache sizes are set by the environment variables
+      GRID_PROCESS__cache_size__<name> (``nn_lookup``, ``nn_lookup_regular``, ``reproject_poi``, ``reproject_grid``),
+      where 0 deactivates a cache. They must be set before importing grid_process, see the Usage page.
     """
 
     def _array2ds(data: xr.DataArray) -> xr.Dataset:
