@@ -57,6 +57,11 @@ Unreleased
   (``GRID_PROCESS__data_model__poi__dim``)
 * documented the in-memory caches of ``interp2poi`` and ``interp2grid`` and how to set their sizes or deactivate
   them with the environment variables ``GRID_PROCESS__cache_size__<name>`` (Usage page)
+* changed ``interp2poi`` and ``interp2grid`` outside of the regular grid interpolation to flatten structured
+  grids with numpy instead of ``xarray.stack``, and ``interp2poi`` to look for the grid points with NaN in all
+  fields (excluded, as before) only among those with NaN in the middle field. Later calls with cached neighbors are
+  faster on large grids (e.g. 0.13 s to 0.05 s for a global 0.25 degree grid to 33 POIs, 1.6 s to 0.5 s from this
+  grid to a global 0.1 degree grid), with identical results
 
 1.0.0
 -----

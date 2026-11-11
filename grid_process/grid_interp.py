@@ -12,12 +12,13 @@ Module for spatial interpolation of gridded datasets
 
 import logging
 from functools import partial
-from typing import Any, Literal, overload
+from typing import Any, Literal
 from collections.abc import Callable, Hashable
 from math import isclose, prod, ceil
 
 import numpy as np
 from numpy.typing import NDArray
+import pandas as pd
 import xarray as xr
 import geopandas as gpd
 from scipy.interpolate import griddata
@@ -1315,7 +1316,7 @@ def _flatten_concat(
     coordinates are converted in the same CRS.
     """
 
-    data, grid_y, grid_x, grid_crs = _flatten_coords_crs(data, spatial_dims)
+    grid_y, grid_x, grid_crs = dm.get_coords_name_crs(data, spatial_dims, prefer_projected=True)
 
     target_crs = _choose_kdtree_crs(
         grid_crs,
@@ -1327,23 +1328,28 @@ def _flatten_concat(
 
     height = method in HEIGHT_METHODS
     coords_flat = _kdtree_coords(
-        data[grid_x].values,
-        data[grid_y].values,
+        _flat_coord(data, grid_x, spatial_dims),
+        _flat_coord(data, grid_y, spatial_dims),
         grid_crs,
         target_crs,
-        data[dm.get_surf_alt(data)].values if height else None,
+        _flat_coord(data, dm.get_surf_alt(data), spatial_dims) if height else None,
     )
     pois_coords_cat = _poi_kdtree_coords(
         poi_info, target_crs, coords_flat.dtype, dm.get_poi_alt(poi_info) if height else None
     )
+    data_flat = _flat_values(data, spatial_dims)
 
     if method == "snowlim":
-        return coords_flat, data.values, pois_coords_cat
+        return coords_flat, data_flat, pois_coords_cat
 
-    # check for all NaN grid points
-    ind = ~data.isnull().all(data.dims[1:]).values
+    # exclude the grid points with only NaN values
+    ind = _valid_points(data_flat)
+    if ind is None:
+        # contiguous rows (one per grid point): gathering the neighbors of the POIs from a strided view (e.g. data
+        # stored with the fields first) is several times slower than this copy
+        return coords_flat, np.ascontiguousarray(data_flat), pois_coords_cat
 
-    return coords_flat[ind], data.values[ind], pois_coords_cat
+    return coords_flat[ind], data_flat[ind], pois_coords_cat
 
 
 def _convert_poi(poi_info: gpd.GeoDataFrame, grid_crs: CRS, dtype: np.dtype) -> tuple[np.ndarray, np.ndarray]:
@@ -1848,64 +1854,87 @@ def _flatten_concat_grids(  # pylint: disable=too-many-locals
         return reproject(x_ring.astype(np.float64), y_ring.astype(np.float64), dst_grid_crs, LV95)
 
     dst_grid_y, dst_grid_x, dst_grid_crs = dm.get_coords_name_crs(dst_grid, dst_spatial_dims, prefer_projected=True)
-    data, grid_y, grid_x, grid_crs = _flatten_coords_crs(data, spatial_dims)
-    flat_dim = spatial_dims[0] if len(spatial_dims) == 1 else "cell"
-    dst_flat, _, _, _ = _flatten_coords_crs(dst_grid, dst_spatial_dims, flat_dim)
+    grid_y, grid_x, grid_crs = dm.get_coords_name_crs(data, spatial_dims, prefer_projected=True)
 
     target_crs = _choose_kdtree_crs(
         grid_crs,
         dst_grid_crs,
-        src_larger=dst_flat.sizes[flat_dim] <= data.sizes[flat_dim],
+        src_larger=prod(dst_grid.sizes[dim] for dim in dst_spatial_dims)
+        <= prod(data.sizes[dim] for dim in spatial_dims),
         dst_lv95=_dst_lv95,
     )
     _check_griddata_crs(method, target_crs)
 
     height = method in HEIGHT_METHODS
     coords_flat = _kdtree_coords(
-        data[grid_x].values,
-        data[grid_y].values,
+        _flat_coord(data, grid_x, spatial_dims),
+        _flat_coord(data, grid_y, spatial_dims),
         grid_crs,
         target_crs,
-        data[dm.get_surf_alt(data)].values if height else None,
+        _flat_coord(data, dm.get_surf_alt(data), spatial_dims) if height else None,
     )
     dst_coords_flat = _kdtree_coords(
-        dst_flat[dst_grid_x].values,
-        dst_flat[dst_grid_y].values,
+        _flat_coord(dst_grid, dst_grid_x, dst_spatial_dims),
+        _flat_coord(dst_grid, dst_grid_y, dst_spatial_dims),
         dst_grid_crs,
         target_crs,
-        dst_flat[dm.get_surf_alt(dst_flat)].values if height else None,
+        _flat_coord(dst_grid, dm.get_surf_alt(dst_grid), dst_spatial_dims) if height else None,
     )
-    return coords_flat, data.values, dst_coords_flat
+    return coords_flat, _flat_values(data, spatial_dims), dst_coords_flat
 
 
-@overload
-def _flatten_coords_crs(
-    grid: xr.DataArray, spatial_dims: tuple[str, ...], flat_dim: str = "cell"
-) -> tuple[xr.DataArray, str, str, CRS]: ...
-@overload
-def _flatten_coords_crs(
-    grid: xr.Dataset, spatial_dims: tuple[str, ...], flat_dim: str = "cell"
-) -> tuple[xr.Dataset, str, str, CRS]: ...
-
-
-def _flatten_coords_crs(
-    grid: xr.DataArray | xr.Dataset,
-    spatial_dims: tuple[str, ...],
-    flat_dim: str = "cell",
-) -> tuple[xr.DataArray | xr.Dataset, str, str, CRS]:
+def _flat_coord(grid: xr.Dataset | xr.DataArray, name: str, spatial_dims: tuple[str, ...]) -> np.ndarray:
     """
-    Flatten input dataset if not already and extract spatial coordinates and corresponding crs to be used:
-    native coordinates if their CRS is projected with axes in meters, otherwise latitude and longitude
-    if present (see :func:`~grid_process.data_model.get_coords_name_crs`).
+    Values of the coordinate ``name`` of ``grid`` at each point of the flattened grid (in C order of
+    ``spatial_dims``, as :meth:`xarray.Dataset.stack` would give them), e.g. a 1D dimension coordinate broadcast
+    to the 2D grid, or 2D coordinates stored in another dimension order.
     """
 
-    grid_y, grid_x, grid_crs = dm.get_coords_name_crs(grid, spatial_dims, prefer_projected=True)
+    coord = grid[name]
+    if not set(coord.dims) <= set(spatial_dims):
+        raise ValueError(
+            f"The coordinate {name!r} has dimensions {coord.dims} other than the spatial dimensions {spatial_dims}"
+        )
+    values = coord.transpose(*(dim for dim in spatial_dims if dim in coord.dims)).values
+    if len(spatial_dims) == 1:
+        return values
+    shape = tuple(grid.sizes[dim] for dim in spatial_dims)
+    index = tuple(slice(None) if dim in coord.dims else np.newaxis for dim in spatial_dims)
+    return np.broadcast_to(values[index], shape).ravel()
 
-    if len(spatial_dims) > 1:
-        # flatten grid: 1D dimension coordinates become levels of the flat dimension
-        grid = grid.stack({flat_dim: spatial_dims}).transpose(flat_dim, ...)
 
-    return grid, grid_y, grid_x, grid_crs
+def _flat_values(data: xr.DataArray, spatial_dims: tuple[str, ...]) -> np.ndarray:
+    """
+    Values of ``data`` (with the spatial dimensions first) with the spatial dimensions flattened into the first
+    axis, shape (n_points, ...), in the same order as :func:`_flat_coord`.
+    """
+
+    return data.values.reshape((-1,) + data.shape[len(spatial_dims) :])
+
+
+def _valid_points(data_flat: np.ndarray) -> np.ndarray | None:
+    """
+    Boolean index of the points (first axis) of ``data_flat`` that are not NaN in all fields (trailing axes), or None
+    if all points are valid (no copy needed). Only the points that are NaN in the middle field are checked across all
+    fields: a point with a value there is valid. The middle field is used rather than the first one, which is NaN
+    everywhere for accumulated variables at the first lead time.
+    """
+
+    if data_flat.dtype.kind in "biu" or data_flat.shape[0] == 0:  # cannot hold NaN
+        return None
+    fields = data_flat.reshape(data_flat.shape[0], -1)
+    if fields.shape[1] == 0:  # no field: like xarray, all() of an empty selection is True
+        return np.zeros(data_flat.shape[0], dtype=bool)
+    isnull = np.isnan if data_flat.dtype.kind in "fc" else pd.isnull  # pd.isnull for NaT, None
+    candidates = np.flatnonzero(isnull(fields[:, fields.shape[1] // 2]))
+    if candidates.size == 0:
+        return None
+    all_nan = candidates[isnull(fields[candidates]).all(axis=1)]
+    if all_nan.size == 0:
+        return None
+    ind = np.ones(data_flat.shape[0], dtype=bool)
+    ind[all_nan] = False
+    return ind
 
 
 def _stack_coords(*coords: np.ndarray) -> np.ndarray:
