@@ -1,0 +1,2853 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Interpolation to stations worldwide: GFS 2 m temperature &#8212; grid-process</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=e0d173ce"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/05_interp2poi_gfs_global_temperature';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = '_static/switcher_config.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Regridding: ERA5 2 m temperature on the global IFS 0.1° grid" href="06_interp2grid_era5_global_temperature.html" />
+    <link rel="prev" title="Regridding: IFS-HRES and ICON-CH2 2 m temperature on a 200 m grid over Valais" href="04_interp2grid_valais_temperature.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="dev" />
+    <meta name="docbuild:last-update" content="11.11.2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-light" alt=""/>
+    <img src="../_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">grid-process</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../changelog.html">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../autoapi/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../changelog.html">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../autoapi/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="01_interp2poi_icon_wind_gusts.html">Interpolation to stations: ICON-CH2 wind gusts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="02_interp2poi_ifs_temperature.html">Interpolation to stations: IFS-HRES 2 m temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="03_interp2grid_era5land_precipitation.html">Regridding: ERA5-Land yearly precipitation on the RhiresY grid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="04_interp2grid_valais_temperature.html">Regridding: IFS-HRES and ICON-CH2 2 m temperature on a 200 m grid over Valais</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Interpolation to stations worldwide: GFS 2 m temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="06_interp2grid_era5_global_temperature.html">Regridding: ERA5 2 m temperature on the global IFS 0.1° grid</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../examples.html" class="nav-link">Examples</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Interpolation to stations worldwide: GFS 2 m temperature</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="interpolation-to-stations-worldwide-gfs-2-m-temperature">
+<h1>Interpolation to stations worldwide: GFS 2 m temperature<a class="headerlink" href="#interpolation-to-stations-worldwide-gfs-2-m-temperature" title="Link to this heading">#</a></h1>
+<p>This example illustrates <a class="reference internal" href="../autoapi/grid_process/grid_interp/index.html#grid_process.grid_interp.interp2poi" title="grid_process.grid_interp.interp2poi"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2poi()</span></code></a> on a global grid with three methods:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">nearest</span></code>: value of the nearest grid point;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">linear</span></code>: bilinear interpolation on the regular latitude/longitude grid;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">temp</span></code>: altitude-aware interpolation designed for temperature. It fits a local sounding on the <code class="docutils literal notranslate"><span class="pre">k</span></code>
+nearest grid points (with a distance penalizing altitude differences by <code class="docutils literal notranslate"><span class="pre">z_fact</span></code>) and evaluates it at
+the station altitude.</p></li>
+</ul>
+<p>The 2 m temperature forecast of the NOAA Global Forecast System (GFS, regular 0.25° grid, about 28 km) is
+interpolated to 33 stations around the world, and compared with their observations. They cover a wide
+range of terrain:</p>
+<ul class="simple">
+<li><p>high mountains: Jungfraujoch, Säntis, Sonnblick, Mauna Loa and El Alto (La Paz);</p></li>
+<li><p>high cities and plateaus: Mexico City, Bogotá, Quito, Nairobi, Johannesburg, Denver,
+Salt Lake City, Ulaanbaatar and Tamanrasset;</p></li>
+<li><p>valleys: Innsbruck, Sion, Kathmandu and Santiago de Chile;</p></li>
+<li><p>coasts and islands, including three near the antimeridian: Nadi (Fiji), Fua’amotu (Tonga), Pago Pago,
+Honolulu, Dakar, Tokyo, Ushuaia, Christchurch and London;</p></li>
+<li><p>tropical lowland and desert: Manaus and Alice Springs;</p></li>
+<li><p>polar: Amundsen-Scott (South Pole), Alert, Utqiaġvik and Longyearbyen.</p></li>
+</ul>
+<p>Since the grid and the stations are both in latitude/longitude and cover the globe, the nearest neighbor
+searches of <code class="docutils literal notranslate"><span class="pre">nearest</span></code> and <code class="docutils literal notranslate"><span class="pre">temp</span></code> run in earth-centered earth-fixed coordinates (ECEF): distances are
+measured in meters through the Earth, so they are correct everywhere, across the antimeridian and at the
+poles.</p>
+<p><em>Data: NOAA Global Forecast System (GFS) and NOAA NCEI Global Historical Climatology Network hourly
+(GHCNh), public domain. Coastlines: Natural Earth.</em></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">timeit</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreadPoolExecutor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="c1"># import pyproj before earthkit.data to avoid a crash at exit (earthkit-data#1202)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyproj</span>  <span class="c1"># noqa: F401  # pylint: disable=unused-import</span>
+
+<span class="c1"># grid_process data model (read at import): the GHCNh station list columns give the POI labels and altitudes</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"GRID_PROCESS__data_model__poi__coord_from"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"GHCN_ID"</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"GRID_PROCESS__data_model__poi__alt_from"</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'["ELEVATION"]'</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cartopy.crs</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ccrs</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">cartopy.feature</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cfeature</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">earthkit.data</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ekd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">earthkit.data.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">download_and_cache</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">grid_process.grid_interp</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gri</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">grid_process.units_conv</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">uconv</span>
+
+<span class="c1"># GHCNh station identifier: (short name, terrain)</span>
+<span class="n">STATIONS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"SZM00006730"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Jungfraujoch"</span><span class="p">,</span> <span class="s2">"high mountain"</span><span class="p">),</span>
+    <span class="s2">"SZM00006680"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Säntis"</span><span class="p">,</span> <span class="s2">"high mountain"</span><span class="p">),</span>
+    <span class="s2">"AUM00011343"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Sonnblick"</span><span class="p">,</span> <span class="s2">"high mountain"</span><span class="p">),</span>
+    <span class="s2">"USW00021514"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Mauna Loa"</span><span class="p">,</span> <span class="s2">"high mountain"</span><span class="p">),</span>
+    <span class="s2">"BLI0000SLLP"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"El Alto"</span><span class="p">,</span> <span class="s2">"high mountain"</span><span class="p">),</span>
+    <span class="s2">"MXI0000MMMX"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Mexico City"</span><span class="p">,</span> <span class="s2">"high city"</span><span class="p">),</span>
+    <span class="s2">"COI0000SKBO"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Bogotá"</span><span class="p">,</span> <span class="s2">"high city"</span><span class="p">),</span>
+    <span class="s2">"ECI0000SEQM"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Quito"</span><span class="p">,</span> <span class="s2">"high city"</span><span class="p">),</span>
+    <span class="s2">"KEI0000HKJK"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Nairobi"</span><span class="p">,</span> <span class="s2">"high city"</span><span class="p">),</span>
+    <span class="s2">"SFI0000FAOR"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Johannesburg"</span><span class="p">,</span> <span class="s2">"high city"</span><span class="p">),</span>
+    <span class="s2">"USW00003017"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Denver"</span><span class="p">,</span> <span class="s2">"high city"</span><span class="p">),</span>
+    <span class="s2">"USW00024127"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Salt Lake City"</span><span class="p">,</span> <span class="s2">"high city"</span><span class="p">),</span>
+    <span class="s2">"MGI0000ZMUB"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Ulaanbaatar"</span><span class="p">,</span> <span class="s2">"high city"</span><span class="p">),</span>
+    <span class="s2">"AGI0000DAAT"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Tamanrasset"</span><span class="p">,</span> <span class="s2">"high city"</span><span class="p">),</span>
+    <span class="s2">"AUI0000LOWI"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Innsbruck"</span><span class="p">,</span> <span class="s2">"valley"</span><span class="p">),</span>
+    <span class="s2">"SZI0000LSGS"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Sion"</span><span class="p">,</span> <span class="s2">"valley"</span><span class="p">),</span>
+    <span class="s2">"NPI0000VNKT"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Kathmandu"</span><span class="p">,</span> <span class="s2">"valley"</span><span class="p">),</span>
+    <span class="s2">"CIN00330021"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Santiago"</span><span class="p">,</span> <span class="s2">"valley"</span><span class="p">),</span>
+    <span class="s2">"FJI0000NFFN"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Nadi"</span><span class="p">,</span> <span class="s2">"coast/island"</span><span class="p">),</span>
+    <span class="s2">"TNI0000NFTF"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Fua'amotu"</span><span class="p">,</span> <span class="s2">"coast/island"</span><span class="p">),</span>
+    <span class="s2">"AQW00061705"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Pago Pago"</span><span class="p">,</span> <span class="s2">"coast/island"</span><span class="p">),</span>
+    <span class="s2">"USW00022521"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Honolulu"</span><span class="p">,</span> <span class="s2">"coast/island"</span><span class="p">),</span>
+    <span class="s2">"SGI0000GOOY"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Dakar"</span><span class="p">,</span> <span class="s2">"coast/island"</span><span class="p">),</span>
+    <span class="s2">"JAI0000RJTT"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Tokyo"</span><span class="p">,</span> <span class="s2">"coast/island"</span><span class="p">),</span>
+    <span class="s2">"ARI0000SAWH"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Ushuaia"</span><span class="p">,</span> <span class="s2">"coast/island"</span><span class="p">),</span>
+    <span class="s2">"NZI0000NZCH"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Christchurch"</span><span class="p">,</span> <span class="s2">"coast/island"</span><span class="p">),</span>
+    <span class="s2">"UKI0000EGLL"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"London"</span><span class="p">,</span> <span class="s2">"coast/island"</span><span class="p">),</span>
+    <span class="s2">"BRM00081730"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Manaus"</span><span class="p">,</span> <span class="s2">"lowland/desert"</span><span class="p">),</span>
+    <span class="s2">"ASI0000YBAS"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Alice Springs"</span><span class="p">,</span> <span class="s2">"lowland/desert"</span><span class="p">),</span>
+    <span class="s2">"AYU089009-1"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"South Pole"</span><span class="p">,</span> <span class="s2">"polar"</span><span class="p">),</span>
+    <span class="s2">"CAMU0019939"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Alert"</span><span class="p">,</span> <span class="s2">"polar"</span><span class="p">),</span>
+    <span class="s2">"USW00027502"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Utqiaġvik"</span><span class="p">,</span> <span class="s2">"polar"</span><span class="p">),</span>
+    <span class="s2">"SVI0000ENSB"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Longyearbyen"</span><span class="p">,</span> <span class="s2">"polar"</span><span class="p">),</span>
+<span class="p">}</span>
+<span class="n">METHODS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"nearest"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"method"</span><span class="p">:</span> <span class="s2">"nearest"</span><span class="p">,</span> <span class="s2">"try_reg"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+    <span class="s2">"linear"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"method"</span><span class="p">:</span> <span class="s2">"linear"</span><span class="p">},</span>
+    <span class="s2">"temp"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"method"</span><span class="p">:</span> <span class="s2">"temp"</span><span class="p">,</span> <span class="s2">"z_fact"</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span> <span class="s2">"k"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s2">"weight_power"</span><span class="p">:</span> <span class="mf">0.75</span><span class="p">},</span>
+<span class="p">}</span>
+<span class="n">RUN_DAYS_AGO</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># GHCNh observations are published with a delay of about two days</span>
+<span class="n">LEAD_H</span> <span class="o">=</span> <span class="mi">12</span>  <span class="c1"># lead time [h]</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="source-data">
+<h2>Source data<a class="headerlink" href="#source-data" title="Link to this heading">#</a></h2>
+<p>GFS forecasts are archived on the NOAA Open Data Dissemination program (AWS). We take the 00 UTC run of
+three days ago at the lead time of 12 hours, so that the observations of the valid time are already
+published. A GFS file holds all variables (about 500 MB): with its index file, only the 2 m temperature
+and the model orography (<code class="docutils literal notranslate"><span class="pre">HGT</span></code> at the surface, needed by <code class="docutils literal notranslate"><span class="pre">temp</span></code>) are downloaded, as byte ranges. The grid
+keeps the GFS longitudes from 0° to 360°, while the stations use -180° to 180°: <code class="docutils literal notranslate"><span class="pre">grid_process</span></code> handles
+both conventions.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">run</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span> <span class="o">-</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">RUN_DAYS_AGO</span><span class="p">),</span> <span class="n">dt</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">valid_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">run</span> <span class="o">+</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="n">LEAD_H</span><span class="p">))</span>
+<span class="n">url</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="sa">f</span><span class="s2">"https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.</span><span class="si">{</span><span class="n">run</span><span class="si">:</span><span class="s2">%Y%m%d</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">run</span><span class="si">:</span><span class="s2">%H</span><span class="si">}</span><span class="s2">/atmos/gfs.t</span><span class="si">{</span><span class="n">run</span><span class="si">:</span><span class="s2">%H</span><span class="si">}</span><span class="s2">z.pgrb2.0p25.f</span><span class="si">{</span><span class="n">LEAD_H</span><span class="si">:</span><span class="s2">03d</span><span class="si">}</span><span class="s2">"</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"GFS run </span><span class="si">{</span><span class="n">run</span><span class="si">:</span><span class="s2">%Y-%m-%d %H</span><span class="si">}</span><span class="s2"> UTC, lead time </span><span class="si">{</span><span class="n">LEAD_H</span><span class="si">}</span><span class="s2"> h, valid </span><span class="si">{</span><span class="n">valid_time</span><span class="si">:</span><span class="s2">%Y-%m-%d %H:%M</span><span class="si">}</span><span class="s2"> UTC"</span><span class="p">)</span>
+
+<span class="c1"># index lines "number:offset:date:variable:level:forecast:": byte ranges of the needed fields</span>
+<span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">":"</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">.idx"</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()]</span>
+<span class="n">offsets</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">index</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+<span class="n">parts</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="n">offsets</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">offsets</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">offsets</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">line</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span> <span class="ow">in</span> <span class="p">((</span><span class="s2">"TMP"</span><span class="p">,</span> <span class="s2">"2 m above ground"</span><span class="p">),</span> <span class="p">(</span><span class="s2">"HGT"</span><span class="p">,</span> <span class="s2">"surface"</span><span class="p">))</span>
+<span class="p">]</span>
+
+<span class="c1"># hide the download progress bars that earthkit always shows on stderr</span>
+<span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">redirect_stderr</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()):</span>
+    <span class="n">gfs</span> <span class="o">=</span> <span class="n">ekd</span><span class="o">.</span><span class="n">from_source</span><span class="p">(</span><span class="s2">"url"</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">parts</span><span class="o">=</span><span class="n">parts</span><span class="p">)</span><span class="o">.</span><span class="n">to_xarray</span><span class="p">()</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">uconv</span><span class="o">.</span><span class="n">ds_to</span><span class="p">(</span><span class="n">gfs</span><span class="p">[[</span><span class="s2">"2t"</span><span class="p">]]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">),</span> <span class="p">{</span><span class="s2">"2t"</span><span class="p">:</span> <span class="s2">"degC"</span><span class="p">})</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span><span class="n">surface_altitude</span><span class="o">=</span><span class="n">gfs</span><span class="p">[</span><span class="s2">"orog"</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">)</span><span class="o">.</span><span class="n">assign_attrs</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="s2">"m"</span><span class="p">))</span>
+<span class="n">ds</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>GFS run 2026-11-06 00 UTC, lead time 12 h, valid 2026-11-06 12:00 UTC
+</pre></div>
+</div>
+<div class="output text_html"><div><svg style="position: absolute; width: 0; height: 0; overflow: hidden">
+<defs>
+<symbol id="icon-database" viewBox="0 0 32 32">
+<path d="M16 0c-8.837 0-16 2.239-16 5v4c0 2.761 7.163 5 16 5s16-2.239 16-5v-4c0-2.761-7.163-5-16-5z"></path>
+<path d="M16 17c-8.837 0-16-2.239-16-5v6c0 2.761 7.163 5 16 5s16-2.239 16-5v-6c0 2.761-7.163 5-16 5z"></path>
+<path d="M16 26c-8.837 0-16-2.239-16-5v6c0 2.761 7.163 5 16 5s16-2.239 16-5v-6c0 2.761-7.163 5-16 5z"></path>
+</symbol>
+<symbol id="icon-file-text2" viewBox="0 0 32 32">
+<path d="M28.681 7.159c-0.694-0.947-1.662-2.053-2.724-3.116s-2.169-2.030-3.116-2.724c-1.612-1.182-2.393-1.319-2.841-1.319h-15.5c-1.378 0-2.5 1.121-2.5 2.5v27c0 1.378 1.122 2.5 2.5 2.5h23c1.378 0 2.5-1.122 2.5-2.5v-19.5c0-0.448-0.137-1.23-1.319-2.841zM24.543 5.457c0.959 0.959 1.712 1.825 2.268 2.543h-4.811v-4.811c0.718 0.556 1.584 1.309 2.543 2.268zM28 29.5c0 0.271-0.229 0.5-0.5 0.5h-23c-0.271 0-0.5-0.229-0.5-0.5v-27c0-0.271 0.229-0.5 0.5-0.5 0 0 15.499-0 15.5 0v7c0 0.552 0.448 1 1 1h7v19.5z"></path>
+<path d="M23 26h-14c-0.552 0-1-0.448-1-1s0.448-1 1-1h14c0.552 0 1 0.448 1 1s-0.448 1-1 1z"></path>
+<path d="M23 22h-14c-0.552 0-1-0.448-1-1s0.448-1 1-1h14c0.552 0 1 0.448 1 1s-0.448 1-1 1z"></path>
+<path d="M23 18h-14c-0.552 0-1-0.448-1-1s0.448-1 1-1h14c0.552 0 1 0.448 1 1s-0.448 1-1 1z"></path>
+</symbol>
+</defs>
+</svg>
+<style>/* CSS stylesheet for displaying xarray objects in notebooks */
+
+:root {
+  --xr-font-color0: var(
+    --jp-content-font-color0,
+    var(--pst-color-text-base rgba(0, 0, 0, 1))
+  );
+  --xr-font-color2: var(
+    --jp-content-font-color2,
+    var(--pst-color-text-base, rgba(0, 0, 0, 0.54))
+  );
+  --xr-font-color3: var(
+    --jp-content-font-color3,
+    var(--pst-color-text-base, rgba(0, 0, 0, 0.38))
+  );
+  --xr-border-color: var(
+    --jp-border-color2,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 10))
+  );
+  --xr-disabled-color: var(
+    --jp-layout-color3,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 40))
+  );
+  --xr-background-color: var(
+    --jp-layout-color0,
+    var(--pst-color-on-background, white)
+  );
+  --xr-background-color-row-even: var(
+    --jp-layout-color1,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 5))
+  );
+  --xr-background-color-row-odd: var(
+    --jp-layout-color2,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 15))
+  );
+}
+
+html[theme="dark"],
+html[data-theme="dark"],
+body[data-theme="dark"],
+body.vscode-dark {
+  --xr-font-color0: var(
+    --jp-content-font-color0,
+    var(--pst-color-text-base, rgba(255, 255, 255, 1))
+  );
+  --xr-font-color2: var(
+    --jp-content-font-color2,
+    var(--pst-color-text-base, rgba(255, 255, 255, 0.54))
+  );
+  --xr-font-color3: var(
+    --jp-content-font-color3,
+    var(--pst-color-text-base, rgba(255, 255, 255, 0.38))
+  );
+  --xr-border-color: var(
+    --jp-border-color2,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 10))
+  );
+  --xr-disabled-color: var(
+    --jp-layout-color3,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 40))
+  );
+  --xr-background-color: var(
+    --jp-layout-color0,
+    var(--pst-color-on-background, #111111)
+  );
+  --xr-background-color-row-even: var(
+    --jp-layout-color1,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 5))
+  );
+  --xr-background-color-row-odd: var(
+    --jp-layout-color2,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 15))
+  );
+}
+
+.xr-wrap {
+  display: block !important;
+  min-width: 300px;
+  max-width: 700px;
+  line-height: 1.6;
+  padding-bottom: 4px;
+}
+
+.xr-text-repr-fallback {
+  /* fallback to plain text repr when CSS is not injected (untrusted notebook) */
+  display: none;
+}
+
+.xr-header {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.xr-header {
+  border-bottom: solid 1px var(--xr-border-color);
+  margin-bottom: 4px;
+}
+
+.xr-header > div,
+.xr-header > ul {
+  display: inline;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.xr-obj-type,
+.xr-obj-name {
+  margin-left: 2px;
+  margin-right: 10px;
+}
+
+.xr-obj-type,
+.xr-group-box-contents > label {
+  color: var(--xr-font-color2);
+  display: block;
+}
+
+.xr-sections {
+  padding-left: 0 !important;
+  display: grid;
+  grid-template-columns: 150px auto auto 1fr 0 20px 0 20px;
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
+
+.xr-section-item {
+  display: contents;
+}
+
+.xr-section-item > input,
+.xr-group-box-contents > input,
+.xr-array-wrap > input {
+  display: block;
+  opacity: 0;
+  height: 0;
+  margin: 0;
+}
+
+.xr-section-item > input + label,
+.xr-var-item > input + label {
+  color: var(--xr-disabled-color);
+}
+
+.xr-section-item > input:enabled + label,
+.xr-var-item > input:enabled + label,
+.xr-array-wrap > input:enabled + label,
+.xr-group-box-contents > input:enabled + label {
+  cursor: pointer;
+  color: var(--xr-font-color2);
+}
+
+.xr-section-item > input:focus-visible + label,
+.xr-var-item > input:focus-visible + label,
+.xr-array-wrap > input:focus-visible + label,
+.xr-group-box-contents > input:focus-visible + label {
+  outline: auto;
+}
+
+.xr-section-item > input:enabled + label:hover,
+.xr-var-item > input:enabled + label:hover,
+.xr-array-wrap > input:enabled + label:hover,
+.xr-group-box-contents > input:enabled + label:hover {
+  color: var(--xr-font-color0);
+}
+
+.xr-section-summary {
+  grid-column: 1;
+  color: var(--xr-font-color2);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.xr-section-summary > em {
+  font-weight: normal;
+}
+
+.xr-span-grid {
+  grid-column-end: -1;
+}
+
+.xr-section-summary > span {
+  display: inline-block;
+  padding-left: 0.3em;
+}
+
+.xr-group-box-contents > input:checked + label > span {
+  display: inline-block;
+  padding-left: 0.6em;
+}
+
+.xr-section-summary-in:disabled + label {
+  color: var(--xr-font-color2);
+}
+
+.xr-section-summary-in + label:before {
+  display: inline-block;
+  content: "►";
+  font-size: 11px;
+  width: 15px;
+  text-align: center;
+}
+
+.xr-section-summary-in:disabled + label:before {
+  color: var(--xr-disabled-color);
+}
+
+.xr-section-summary-in:checked + label:before {
+  content: "▼";
+}
+
+.xr-section-summary-in:checked + label > span {
+  display: none;
+}
+
+.xr-section-summary,
+.xr-section-inline-details,
+.xr-group-box-contents > label {
+  padding-top: 4px;
+}
+
+.xr-section-inline-details {
+  grid-column: 2 / -1;
+}
+
+.xr-section-details {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  margin-bottom: 5px;
+}
+
+.xr-section-summary-in ~ .xr-section-details {
+  display: none;
+}
+
+.xr-section-summary-in:checked ~ .xr-section-details {
+  display: contents;
+}
+
+.xr-children {
+  display: inline-grid;
+  grid-template-columns: 100%;
+  grid-column: 1 / -1;
+  padding-top: 4px;
+}
+
+.xr-group-box {
+  display: inline-grid;
+  grid-template-columns: 0px 30px auto;
+}
+
+.xr-group-box-vline {
+  grid-column-start: 1;
+  border-right: 0.2em solid;
+  border-color: var(--xr-border-color);
+  width: 0px;
+}
+
+.xr-group-box-hline {
+  grid-column-start: 2;
+  grid-row-start: 1;
+  height: 1em;
+  width: 26px;
+  border-bottom: 0.2em solid;
+  border-color: var(--xr-border-color);
+}
+
+.xr-group-box-contents {
+  grid-column-start: 3;
+  padding-bottom: 4px;
+}
+
+.xr-group-box-contents > label::before {
+  content: "📂";
+  padding-right: 0.3em;
+}
+
+.xr-group-box-contents > input:checked + label::before {
+  content: "📁";
+}
+
+.xr-group-box-contents > input:checked + label {
+  padding-bottom: 0px;
+}
+
+.xr-group-box-contents > input:checked ~ .xr-sections {
+  display: none;
+}
+
+.xr-group-box-contents > input + label > span {
+  display: none;
+}
+
+.xr-group-box-ellipsis {
+  font-size: 1.4em;
+  font-weight: 900;
+  color: var(--xr-font-color2);
+  letter-spacing: 0.15em;
+  cursor: default;
+}
+
+.xr-array-wrap {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 20px auto;
+}
+
+.xr-array-wrap > label {
+  grid-column: 1;
+  vertical-align: top;
+}
+
+.xr-preview {
+  color: var(--xr-font-color3);
+}
+
+.xr-array-preview,
+.xr-array-data {
+  padding: 0 5px !important;
+  grid-column: 2;
+}
+
+.xr-array-data,
+.xr-array-in:checked ~ .xr-array-preview {
+  display: none;
+}
+
+.xr-array-in:checked ~ .xr-array-data,
+.xr-array-preview {
+  display: inline-block;
+}
+
+.xr-dim-list {
+  display: inline-block !important;
+  list-style: none;
+  padding: 0 !important;
+  margin: 0;
+}
+
+.xr-dim-list li {
+  display: inline-block;
+  padding: 0;
+  margin: 0;
+}
+
+.xr-dim-list:before {
+  content: "(";
+}
+
+.xr-dim-list:after {
+  content: ")";
+}
+
+.xr-dim-list li:not(:last-child):after {
+  content: ",";
+  padding-right: 5px;
+}
+
+.xr-has-index {
+  font-weight: bold;
+}
+
+.xr-var-list,
+.xr-var-item {
+  display: contents;
+}
+
+.xr-var-item > div,
+.xr-var-item label,
+.xr-var-item > .xr-var-name span {
+  background-color: var(--xr-background-color-row-even);
+  border-color: var(--xr-background-color-row-odd);
+  margin-bottom: 0;
+  padding-top: 2px;
+}
+
+.xr-var-item > .xr-var-name:hover span {
+  padding-right: 5px;
+}
+
+.xr-var-list > li:nth-child(odd) > div,
+.xr-var-list > li:nth-child(odd) > label,
+.xr-var-list > li:nth-child(odd) > .xr-var-name span {
+  background-color: var(--xr-background-color-row-odd);
+  border-color: var(--xr-background-color-row-even);
+}
+
+.xr-var-name {
+  grid-column: 1;
+}
+
+.xr-var-dims {
+  grid-column: 2;
+}
+
+.xr-var-dtype {
+  grid-column: 3;
+  text-align: right;
+  color: var(--xr-font-color2);
+}
+
+.xr-var-preview {
+  grid-column: 4;
+}
+
+.xr-index-preview {
+  grid-column: 2 / 5;
+  color: var(--xr-font-color2);
+}
+
+.xr-var-name,
+.xr-var-dims,
+.xr-var-dtype,
+.xr-preview,
+.xr-attrs dt {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 10px;
+}
+
+.xr-var-name:hover,
+.xr-var-dims:hover,
+.xr-var-dtype:hover,
+.xr-attrs dt:hover {
+  overflow: visible;
+  width: auto;
+  z-index: 1;
+}
+
+.xr-var-attrs,
+.xr-var-data,
+.xr-index-data {
+  display: none;
+  border-top: 2px dotted var(--xr-background-color);
+  padding-bottom: 20px !important;
+  padding-top: 10px !important;
+}
+
+.xr-var-attrs-in + label,
+.xr-var-data-in + label,
+.xr-index-data-in + label {
+  padding: 0 1px;
+}
+
+.xr-var-attrs-in:checked ~ .xr-var-attrs,
+.xr-var-data-in:checked ~ .xr-var-data,
+.xr-index-data-in:checked ~ .xr-index-data {
+  display: block;
+}
+
+.xr-var-data > table {
+  float: right;
+}
+
+.xr-var-data > pre,
+.xr-index-data > pre,
+.xr-var-data > table > tbody > tr {
+  background-color: transparent !important;
+}
+
+.xr-var-name span,
+.xr-var-data,
+.xr-index-name div,
+.xr-index-data,
+.xr-attrs {
+  padding-left: 25px !important;
+}
+
+.xr-attrs,
+.xr-var-attrs,
+.xr-var-data,
+.xr-index-data {
+  grid-column: 1 / -1;
+}
+
+dl.xr-attrs {
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 125px auto;
+}
+
+.xr-attrs dt,
+.xr-attrs dd {
+  padding: 0;
+  margin: 0;
+  float: left;
+  padding-right: 10px;
+  width: auto;
+}
+
+.xr-attrs dt {
+  font-weight: normal;
+  grid-column: 1;
+}
+
+.xr-attrs dt:hover span {
+  display: inline-block;
+  background: var(--xr-background-color);
+  padding-right: 10px;
+}
+
+.xr-attrs dd {
+  grid-column: 2;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.xr-icon-database,
+.xr-icon-file-text2,
+.xr-no-icon {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1em;
+  height: 1.5em !important;
+  stroke-width: 0;
+  stroke: currentColor;
+  fill: currentColor;
+}
+
+.xr-var-attrs-in:checked + label > .xr-icon-file-text2,
+.xr-var-data-in:checked + label > .xr-icon-database,
+.xr-index-data-in:checked + label > .xr-icon-database {
+  color: var(--xr-font-color0);
+  filter: drop-shadow(1px 1px 5px var(--xr-font-color2));
+  stroke-width: 0.8px;
+}
+</style><pre class='xr-text-repr-fallback'>&lt;xarray.Dataset&gt; Size: 8MB
+Dimensions:           (latitude: 721, longitude: 1440)
+Coordinates:
+  * latitude          (latitude) float64 6kB 90.0 89.75 89.5 ... -89.75 -90.0
+  * longitude         (longitude) float64 12kB 0.0 0.25 0.5 ... 359.5 359.8
+    surface_altitude  (latitude, longitude) float32 4MB 0.05937 ... 2.775e+03
+Data variables:
+    2t                (latitude, longitude) float32 4MB -17.29 -17.29 ... -39.52
+Attributes:
+    Conventions:  CF-1.8
+    institution:  ECMWF</pre><div class='xr-wrap' style='display:none'><div class='xr-header'><div class='xr-obj-type'>xarray.Dataset</div></div><ul class='xr-sections'><li class='xr-section-item'><input id='section-353dff07-3a57-47bb-85fe-97cc0cdbef01' class='xr-section-summary-in' type='checkbox' disabled /><label for='section-353dff07-3a57-47bb-85fe-97cc0cdbef01' class='xr-section-summary'>Dimensions:</label><div class='xr-section-inline-details'><ul class='xr-dim-list'><li><span class='xr-has-index'>latitude</span>: 721</li><li><span class='xr-has-index'>longitude</span>: 1440</li></ul></div></li><li class='xr-section-item'><input id='section-36da0eed-0ec8-4692-9d39-266aa831efa9' class='xr-section-summary-in' type='checkbox' checked /><label for='section-36da0eed-0ec8-4692-9d39-266aa831efa9' class='xr-section-summary' title='Expand/collapse section'>Coordinates: <span>(3)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><ul class='xr-var-list'><li class='xr-var-item'><div class='xr-var-name'><span class='xr-has-index'>latitude</span></div><div class='xr-var-dims'>(latitude)</div><div class='xr-var-dtype'>float64</div><div class='xr-var-preview xr-preview'>90.0 89.75 89.5 ... -89.75 -90.0</div><input id='attrs-2d1ed5db-4e33-4e59-8f54-a2b11a1519ea' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-2d1ed5db-4e33-4e59-8f54-a2b11a1519ea' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-ccc9f423-4a85-416d-a5d8-48d58e10e4f0' class='xr-var-data-in' type='checkbox'><label for='data-ccc9f423-4a85-416d-a5d8-48d58e10e4f0' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>units :</span></dt><dd>degrees_north</dd><dt><span>standard_name :</span></dt><dd>latitude</dd><dt><span>long_name :</span></dt><dd>latitude</dd></dl></div><div class='xr-var-data'><pre>array([ 90.  ,  89.75,  89.5 , ..., -89.5 , -89.75, -90.  ], shape=(721,))</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span class='xr-has-index'>longitude</span></div><div class='xr-var-dims'>(longitude)</div><div class='xr-var-dtype'>float64</div><div class='xr-var-preview xr-preview'>0.0 0.25 0.5 ... 359.2 359.5 359.8</div><input id='attrs-0d6a4a91-faed-4b82-bc2d-45528a514d72' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-0d6a4a91-faed-4b82-bc2d-45528a514d72' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-16aa7ab4-436d-441a-9d74-19a50cc0f707' class='xr-var-data-in' type='checkbox'><label for='data-16aa7ab4-436d-441a-9d74-19a50cc0f707' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>units :</span></dt><dd>degrees_east</dd><dt><span>standard_name :</span></dt><dd>longitude</dd><dt><span>long_name :</span></dt><dd>longitude</dd></dl></div><div class='xr-var-data'><pre>array([0.0000e+00, 2.5000e-01, 5.0000e-01, ..., 3.5925e+02, 3.5950e+02,
+       3.5975e+02], shape=(1440,))</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span>surface_altitude</span></div><div class='xr-var-dims'>(latitude, longitude)</div><div class='xr-var-dtype'>float32</div><div class='xr-var-preview xr-preview'>0.05937 0.05937 ... 2.775e+03</div><input id='attrs-2bbda7ce-3795-4a8e-83f2-a06ebe7e840b' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-2bbda7ce-3795-4a8e-83f2-a06ebe7e840b' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-ee8bd6d4-ca92-42c0-ba45-00f76ddd592d' class='xr-var-data-in' type='checkbox'><label for='data-ee8bd6d4-ca92-42c0-ba45-00f76ddd592d' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>standard_name :</span></dt><dd>geopotential_height</dd><dt><span>long_name :</span></dt><dd>Orography</dd><dt><span>units :</span></dt><dd>m</dd><dt><span>level_type :</span></dt><dd>surface</dd><dt><span>_earthkit :</span></dt><dd>{&quot;message&quot;: {&quot;__bytes_b64__&quot;: &quot;R1JJQv//AAIAAAAAAAAA0QAAABUBAAcAAAIBAQfqCwYAAAAAAQAAAEgDAAAP16AAAAAABgAAAAAAAAAAAAAAAAAAAAAABaAAAALRAAAAAP////8FXUqAAAAAADCFXUqAFXFZcAAD0JAAA9CQAAAAACIEAAAAAAMFAgBgAAAAAQAAAAwBAAAAAAD/AAAAAAAAAAAxBQAP16AAA0OIgAAAAAAAAAABAGJY0ZoAAAAAAAAAAQAAAAAB8AEAAAHwAAEBAAAABgb/AAAABwcAADc3Nzc=&quot;}, &quot;bitsPerValue&quot;: 16, &quot;grid_spec&quot;: {&quot;grid&quot;: [0.25, 0.25]}}</dd></dl></div><div class='xr-var-data'><pre>array([[5.9374999e-02, 5.9374999e-02, 5.9374999e-02, ..., 5.9374999e-02,
+        5.9374999e-02, 5.9374999e-02],
+       [5.9374999e-02, 5.9374999e-02, 5.9374999e-02, ..., 5.9374999e-02,
+        5.9374999e-02, 5.9374999e-02],
+       [5.9374999e-02, 5.9374999e-02, 5.9374999e-02, ..., 5.9374999e-02,
+        5.9374999e-02, 5.9374999e-02],
+       ...,
+       [2.7501394e+03, 2.7506194e+03, 2.7509395e+03, ..., 2.7491794e+03,
+        2.7494993e+03, 2.7498193e+03],
+       [2.7730193e+03, 2.7731794e+03, 2.7734993e+03, ..., 2.7725393e+03,
+        2.7726995e+03, 2.7728594e+03],
+       [2.7754194e+03, 2.7754194e+03, 2.7754194e+03, ..., 2.7754194e+03,
+        2.7754194e+03, 2.7754194e+03]], shape=(721, 1440), dtype=float32)</pre></div></li></ul></div></li><li class='xr-section-item'><input id='section-96898376-28f5-45b7-97a9-15a9e5e2c53a' class='xr-section-summary-in' type='checkbox' checked /><label for='section-96898376-28f5-45b7-97a9-15a9e5e2c53a' class='xr-section-summary' title='Expand/collapse section'>Data variables: <span>(1)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><ul class='xr-var-list'><li class='xr-var-item'><div class='xr-var-name'><span>2t</span></div><div class='xr-var-dims'>(latitude, longitude)</div><div class='xr-var-dtype'>float32</div><div class='xr-var-preview xr-preview'>-17.29 -17.29 ... -39.52 -39.52</div><input id='attrs-6f231b09-5d8f-424d-9b68-83283ac54b00' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-6f231b09-5d8f-424d-9b68-83283ac54b00' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-b558a962-835b-4883-ab06-791c151ea33a' class='xr-var-data-in' type='checkbox'><label for='data-b558a962-835b-4883-ab06-791c151ea33a' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>standard_name :</span></dt><dd>air_temperature</dd><dt><span>long_name :</span></dt><dd>2 metre temperature</dd><dt><span>units :</span></dt><dd>degC</dd><dt><span>level_type :</span></dt><dd>height_above_ground_level</dd><dt><span>_earthkit :</span></dt><dd>{&quot;message&quot;: {&quot;__bytes_b64__&quot;: &quot;R1JJQv//AAIAAAAAAAAA0QAAABUBAAcAAAIBAQfqCwYAAAAAAQAAAEgDAAAP16AAAAAABgAAAAAAAAAAAAAAAAAAAAAABaAAAALRAAAAAP////8FXUqAAAAAADCFXUqAFXFZcAAD0JAAA9CQAAAAACIEAAAAAAAAAgBgAAAAAQAAAAxnAAAAAAL/AAAAAAAAAAAxBQAP16AAA0OIgAAAAAAAAAABAGJY0ZoAAAAAAAAAAQAAAAAB8AEAAAHwAAEBAAAABgb/AAAABwcAADc3Nzc=&quot;}, &quot;bitsPerValue&quot;: 13, &quot;grid_spec&quot;: {&quot;grid&quot;: [0.25, 0.25]}}</dd></dl></div><div class='xr-var-data'><pre>array([[-17.28955 , -17.28955 , -17.28955 , ..., -17.28955 , -17.28955 ,
+        -17.28955 ],
+       [-21.299545, -21.299545, -21.299545, ..., -21.30954 , -21.30954 ,
+        -21.299545],
+       [-21.829544, -21.829544, -21.829544, ..., -21.839539, -21.839539,
+        -21.839539],
+       ...,
+       [-38.519547, -38.519547, -38.519547, ..., -38.52954 , -38.52954 ,
+        -38.519547],
+       [-38.989548, -38.979538, -38.979538, ..., -38.989548, -38.989548,
+        -38.989548],
+       [-39.519547, -39.519547, -39.519547, ..., -39.519547, -39.519547,
+        -39.519547]], shape=(721, 1440), dtype=float32)</pre></div></li></ul></div></li><li class='xr-section-item'><input id='section-b5280921-fee9-4d18-a68b-d8fa9aec1e42' class='xr-section-summary-in' type='checkbox' checked /><label for='section-b5280921-fee9-4d18-a68b-d8fa9aec1e42' class='xr-section-summary' title='Expand/collapse section'>Attributes: <span>(2)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><dl class='xr-attrs'><dt><span>Conventions :</span></dt><dd>CF-1.8</dd><dt><span>institution :</span></dt><dd>ECMWF</dd></dl></div></li></ul></div></div></div></div>
+</div>
+</section>
+<section id="stations-and-observations">
+<h2>Stations and observations<a class="headerlink" href="#stations-and-observations" title="Link to this heading">#</a></h2>
+<p>The stations and their observations come from the Global Historical Climatology Network hourly (GHCNh)
+of NOAA NCEI, which collects SYNOP and METAR reports worldwide. Its station list provides the coordinates
+and the altitude used by <code class="docutils literal notranslate"><span class="pre">temp</span></code>. Instead of renaming its columns, the environment variables set in the
+setup cell adapt the <code class="docutils literal notranslate"><span class="pre">grid_process</span></code> data model: the <code class="docutils literal notranslate"><span class="pre">GHCN_ID</span></code> column becomes the <code class="docutils literal notranslate"><span class="pre">poi</span></code> coordinate of the
+output and <code class="docutils literal notranslate"><span class="pre">ELEVATION</span></code> gives the altitude.</p>
+<p>The observation is the 2 m temperature report closest to the valid time, within one hour: some stations
+do not report every hour (e.g. the South Pole only at the main synoptic hours, while GHCNh lacks some of
+these hours for Jungfraujoch and Säntis). Values flagged by the quality control of GHCNh (suspect or
+erroneous) are discarded, and stations without a valid report are left out.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">GHCNH_URL</span> <span class="o">=</span> <span class="s2">"https://www.ncei.noaa.gov/oa/global-historical-climatology-network/hourly"</span>
+<span class="n">FAILED_QC</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"2"</span><span class="p">,</span> <span class="s2">"3"</span><span class="p">,</span> <span class="s2">"6"</span><span class="p">,</span> <span class="s2">"7"</span><span class="p">)</span>  <span class="c1"># legacy codes: suspect or erroneous; lower case letters: failed checks</span>
+
+<span class="n">stations</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">GHCNH_URL</span><span class="si">}</span><span class="s2">/doc/ghcnh-station-list.csv"</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"GHCN_ID"</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">stations</span> <span class="o">=</span> <span class="n">stations</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">STATIONS</span><span class="p">)]</span>
+<span class="n">stations</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">STATIONS</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+<span class="n">stations</span><span class="p">[</span><span class="s2">"terrain"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">terrain</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">terrain</span> <span class="ow">in</span> <span class="n">STATIONS</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">observation</span><span class="p">(</span><span class="n">ghcn_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Valid 2 m temperature report closest to the valid time (within one hour), NaN if there is none."""</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">GHCNH_URL</span><span class="si">}</span><span class="s2">/access/by-year/</span><span class="si">{</span><span class="n">valid_time</span><span class="o">.</span><span class="n">year</span><span class="si">}</span><span class="s2">/psv/GHCNh_</span><span class="si">{</span><span class="n">ghcn_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">valid_time</span><span class="o">.</span><span class="n">year</span><span class="si">}</span><span class="s2">.psv"</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">requests</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">allow_redirects</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>  <span class="c1"># no data this year</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="c1"># the yearly files are downloaded once into the earthkit cache (hide the progress bar on stderr)</span>
+    <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">redirect_stderr</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">download_and_cache</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"DATE"</span><span class="p">,</span> <span class="s2">"temperature"</span><span class="p">,</span> <span class="s2">"temperature_Quality_Code"</span><span class="p">]</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">"|"</span><span class="p">,</span> <span class="n">usecols</span><span class="o">=</span><span class="n">columns</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="p">{</span><span class="s2">"temperature_Quality_Code"</span><span class="p">:</span> <span class="nb">str</span><span class="p">})</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">"temperature_Quality_Code"</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">"temperature"</span><span class="p">]</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">code</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">FAILED_QC</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">code</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">islower</span><span class="p">()]</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"DATE"</span><span class="p">])</span> <span class="o">-</span> <span class="n">valid_time</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">offset</span> <span class="o">&lt;=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">empty</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">offset</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">idxmin</span><span class="p">(),</span> <span class="s2">"temperature"</span><span class="p">])</span>
+
+
+<span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"observation"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">executor</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">observation</span><span class="p">,</span> <span class="n">stations</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+
+<span class="n">missing</span> <span class="o">=</span> <span class="n">stations</span><span class="p">[</span><span class="n">stations</span><span class="p">[</span><span class="s2">"observation"</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No valid observation at </span><span class="si">{</span><span class="n">valid_time</span><span class="si">:</span><span class="s2">%Y-%m-%d %H:%M</span><span class="si">}</span><span class="s2"> UTC for: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing</span><span class="p">[</span><span class="s1">'name'</span><span class="p">])</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'none'</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">stations</span> <span class="o">=</span> <span class="n">stations</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">"observation"</span><span class="p">])</span>
+<span class="n">pois</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span>
+    <span class="n">stations</span><span class="p">,</span> <span class="n">geometry</span><span class="o">=</span><span class="n">gpd</span><span class="o">.</span><span class="n">points_from_xy</span><span class="p">(</span><span class="n">stations</span><span class="p">[</span><span class="s2">"LONGITUDE"</span><span class="p">],</span> <span class="n">stations</span><span class="p">[</span><span class="s2">"LATITUDE"</span><span class="p">]),</span> <span class="n">crs</span><span class="o">=</span><span class="s2">"EPSG:4326"</span>
+<span class="p">)</span>
+<span class="n">pois</span><span class="p">[[</span><span class="s2">"name"</span><span class="p">,</span> <span class="s2">"terrain"</span><span class="p">,</span> <span class="s2">"LATITUDE"</span><span class="p">,</span> <span class="s2">"LONGITUDE"</span><span class="p">,</span> <span class="s2">"ELEVATION"</span><span class="p">,</span> <span class="s2">"observation"</span><span class="p">]]</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>No valid observation at 2026-11-06 12:00 UTC for: none
+</pre></div>
+</div>
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>name</th>
+      <th>terrain</th>
+      <th>LATITUDE</th>
+      <th>LONGITUDE</th>
+      <th>ELEVATION</th>
+      <th>observation</th>
+    </tr>
+    <tr>
+      <th>GHCN_ID</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>SZM00006730</th>
+      <td>Jungfraujoch</td>
+      <td>high mountain</td>
+      <td>46.5500</td>
+      <td>7.9833</td>
+      <td>3576.0</td>
+      <td>-6.50</td>
+    </tr>
+    <tr>
+      <th>SZM00006680</th>
+      <td>Säntis</td>
+      <td>high mountain</td>
+      <td>47.2500</td>
+      <td>9.3500</td>
+      <td>2500.0</td>
+      <td>-0.20</td>
+    </tr>
+    <tr>
+      <th>AUM00011343</th>
+      <td>Sonnblick</td>
+      <td>high mountain</td>
+      <td>47.0500</td>
+      <td>12.9500</td>
+      <td>3113.8</td>
+      <td>-2.80</td>
+    </tr>
+    <tr>
+      <th>USW00021514</th>
+      <td>Mauna Loa</td>
+      <td>high mountain</td>
+      <td>19.5353</td>
+      <td>-155.5761</td>
+      <td>3407.4</td>
+      <td>7.10</td>
+    </tr>
+    <tr>
+      <th>BLI0000SLLP</th>
+      <td>El Alto</td>
+      <td>high mountain</td>
+      <td>-16.5133</td>
+      <td>-68.1923</td>
+      <td>4061.5</td>
+      <td>10.00</td>
+    </tr>
+    <tr>
+      <th>MXI0000MMMX</th>
+      <td>Mexico City</td>
+      <td>high city</td>
+      <td>19.4363</td>
+      <td>-99.0721</td>
+      <td>2229.9</td>
+      <td>10.00</td>
+    </tr>
+    <tr>
+      <th>COI0000SKBO</th>
+      <td>Bogotá</td>
+      <td>high city</td>
+      <td>4.7016</td>
+      <td>-74.1469</td>
+      <td>2548.4</td>
+      <td>12.00</td>
+    </tr>
+    <tr>
+      <th>ECI0000SEQM</th>
+      <td>Quito</td>
+      <td>high city</td>
+      <td>-0.1167</td>
+      <td>-78.3667</td>
+      <td>2400.0</td>
+      <td>13.00</td>
+    </tr>
+    <tr>
+      <th>KEI0000HKJK</th>
+      <td>Nairobi</td>
+      <td>high city</td>
+      <td>-1.3192</td>
+      <td>36.9278</td>
+      <td>1623.7</td>
+      <td>24.00</td>
+    </tr>
+    <tr>
+      <th>SFI0000FAOR</th>
+      <td>Johannesburg</td>
+      <td>high city</td>
+      <td>-26.1392</td>
+      <td>28.2460</td>
+      <td>1694.1</td>
+      <td>29.00</td>
+    </tr>
+    <tr>
+      <th>USW00003017</th>
+      <td>Denver</td>
+      <td>high city</td>
+      <td>39.8467</td>
+      <td>-104.6561</td>
+      <td>1647.1</td>
+      <td>4.40</td>
+    </tr>
+    <tr>
+      <th>USW00024127</th>
+      <td>Salt Lake City</td>
+      <td>high city</td>
+      <td>40.7706</td>
+      <td>-111.9650</td>
+      <td>1288.4</td>
+      <td>3.90</td>
+    </tr>
+    <tr>
+      <th>MGI0000ZMUB</th>
+      <td>Ulaanbaatar</td>
+      <td>high city</td>
+      <td>47.8431</td>
+      <td>106.7666</td>
+      <td>1330.1</td>
+      <td>-3.00</td>
+    </tr>
+    <tr>
+      <th>AGI0000DAAT</th>
+      <td>Tamanrasset</td>
+      <td>high city</td>
+      <td>22.8115</td>
+      <td>5.4511</td>
+      <td>1377.1</td>
+      <td>27.00</td>
+    </tr>
+    <tr>
+      <th>AUI0000LOWI</th>
+      <td>Innsbruck</td>
+      <td>valley</td>
+      <td>47.2602</td>
+      <td>11.3440</td>
+      <td>580.9</td>
+      <td>10.00</td>
+    </tr>
+    <tr>
+      <th>SZI0000LSGS</th>
+      <td>Sion</td>
+      <td>valley</td>
+      <td>46.2196</td>
+      <td>7.3268</td>
+      <td>481.9</td>
+      <td>10.00</td>
+    </tr>
+    <tr>
+      <th>NPI0000VNKT</th>
+      <td>Kathmandu</td>
+      <td>valley</td>
+      <td>27.6966</td>
+      <td>85.3592</td>
+      <td>1338.1</td>
+      <td>19.00</td>
+    </tr>
+    <tr>
+      <th>CIN00330021</th>
+      <td>Santiago</td>
+      <td>valley</td>
+      <td>-33.3783</td>
+      <td>-70.7964</td>
+      <td>482.0</td>
+      <td>12.00</td>
+    </tr>
+    <tr>
+      <th>FJI0000NFFN</th>
+      <td>Nadi</td>
+      <td>coast/island</td>
+      <td>-17.7554</td>
+      <td>177.4434</td>
+      <td>18.0</td>
+      <td>24.00</td>
+    </tr>
+    <tr>
+      <th>TNI0000NFTF</th>
+      <td>Fua'amotu</td>
+      <td>coast/island</td>
+      <td>-21.2412</td>
+      <td>-175.1496</td>
+      <td>38.4</td>
+      <td>22.00</td>
+    </tr>
+    <tr>
+      <th>AQW00061705</th>
+      <td>Pago Pago</td>
+      <td>coast/island</td>
+      <td>-14.3306</td>
+      <td>-170.7136</td>
+      <td>3.7</td>
+      <td>25.70</td>
+    </tr>
+    <tr>
+      <th>USW00022521</th>
+      <td>Honolulu</td>
+      <td>coast/island</td>
+      <td>21.3239</td>
+      <td>-157.9394</td>
+      <td>1.8</td>
+      <td>26.00</td>
+    </tr>
+    <tr>
+      <th>SGI0000GOOY</th>
+      <td>Dakar</td>
+      <td>coast/island</td>
+      <td>14.7397</td>
+      <td>-17.4902</td>
+      <td>25.9</td>
+      <td>31.00</td>
+    </tr>
+    <tr>
+      <th>JAI0000RJTT</th>
+      <td>Tokyo</td>
+      <td>coast/island</td>
+      <td>35.5523</td>
+      <td>139.7797</td>
+      <td>10.7</td>
+      <td>20.00</td>
+    </tr>
+    <tr>
+      <th>ARI0000SAWH</th>
+      <td>Ushuaia</td>
+      <td>coast/island</td>
+      <td>-54.8433</td>
+      <td>-68.2958</td>
+      <td>21.6</td>
+      <td>8.00</td>
+    </tr>
+    <tr>
+      <th>NZI0000NZCH</th>
+      <td>Christchurch</td>
+      <td>coast/island</td>
+      <td>-43.4894</td>
+      <td>172.5322</td>
+      <td>37.5</td>
+      <td>20.00</td>
+    </tr>
+    <tr>
+      <th>UKI0000EGLL</th>
+      <td>London</td>
+      <td>coast/island</td>
+      <td>51.4775</td>
+      <td>-0.4614</td>
+      <td>25.3</td>
+      <td>11.22</td>
+    </tr>
+    <tr>
+      <th>BRM00081730</th>
+      <td>Manaus</td>
+      <td>lowland/desert</td>
+      <td>-3.1333</td>
+      <td>-59.9500</td>
+      <td>68.5</td>
+      <td>24.00</td>
+    </tr>
+    <tr>
+      <th>ASI0000YBAS</th>
+      <td>Alice Springs</td>
+      <td>lowland/desert</td>
+      <td>-23.8067</td>
+      <td>133.9022</td>
+      <td>545.3</td>
+      <td>26.00</td>
+    </tr>
+    <tr>
+      <th>AYU089009-1</th>
+      <td>South Pole</td>
+      <td>polar</td>
+      <td>-90.0000</td>
+      <td>0.0000</td>
+      <td>2835.0</td>
+      <td>-49.40</td>
+    </tr>
+    <tr>
+      <th>CAMU0019939</th>
+      <td>Alert</td>
+      <td>polar</td>
+      <td>82.5000</td>
+      <td>-62.3300</td>
+      <td>62.0</td>
+      <td>-14.70</td>
+    </tr>
+    <tr>
+      <th>USW00027502</th>
+      <td>Utqiaġvik</td>
+      <td>polar</td>
+      <td>71.2869</td>
+      <td>-156.7394</td>
+      <td>8.2</td>
+      <td>-3.00</td>
+    </tr>
+    <tr>
+      <th>SVI0000ENSB</th>
+      <td>Longyearbyen</td>
+      <td>polar</td>
+      <td>78.2461</td>
+      <td>15.4656</td>
+      <td>26.8</td>
+      <td>-4.00</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
+</div>
+</section>
+<section id="interpolation">
+<h2>Interpolation<a class="headerlink" href="#interpolation" title="Link to this heading">#</a></h2>
+<p>Each method is called once, and the duration of this first call is kept for the benchmark below.</p>
+<p>The grid and the stations are both in latitude/longitude, and the stations are far beyond the range of
+the Swiss coordinates LV95 (<code class="docutils literal notranslate"><span class="pre">lv95_max_offset</span></code>): <code class="docutils literal notranslate"><span class="pre">nearest</span></code> and <code class="docutils literal notranslate"><span class="pre">temp</span></code> search their neighbors in ECEF
+coordinates. <code class="docutils literal notranslate"><span class="pre">linear</span></code> cannot triangulate points on a sphere in ECEF and raises an error with the generic
+path (<code class="docutils literal notranslate"><span class="pre">try_reg=False</span></code>), as shown below. On a regular grid like GFS, it uses the regular grid
+interpolation instead (<code class="docutils literal notranslate"><span class="pre">try_reg=True</span></code>, the default), bilinear in latitude and longitude. For the
+benchmark, <code class="docutils literal notranslate"><span class="pre">nearest</span></code> is also run through the regular grid interpolation (<code class="docutils literal notranslate"><span class="pre">try_reg=True</span></code>).</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">first_call</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">kwargs</span> <span class="ow">in</span> <span class="n">METHODS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="n">results</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">gri</span><span class="o">.</span><span class="n">interp2poi</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">pois</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">first_call</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+    <span class="n">pois</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">label</span><span class="p">][</span><span class="s2">"2t"</span><span class="p">]</span><span class="o">.</span><span class="n">to_series</span><span class="p">()</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">gri</span><span class="o">.</span><span class="n">interp2poi</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">pois</span><span class="p">,</span> <span class="s2">"linear"</span><span class="p">,</span> <span class="n">try_reg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"linear with try_reg=False: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="c1"># nearest through the regular grid interpolation, for the benchmark</span>
+<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+<span class="n">nearest_reg</span> <span class="o">=</span> <span class="n">gri</span><span class="o">.</span><span class="n">interp2poi</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">pois</span><span class="p">,</span> <span class="s2">"nearest"</span><span class="p">,</span> <span class="n">try_reg</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">first_call</span><span class="p">[</span><span class="s2">"nearest (try_reg=True)"</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+<span class="n">n_diff</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">nearest_reg</span><span class="p">[</span><span class="s2">"2t"</span><span class="p">]</span> <span class="o">!=</span> <span class="n">results</span><span class="p">[</span><span class="s2">"nearest"</span><span class="p">][</span><span class="s2">"2t"</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"nearest, try_reg=True vs. False: </span><span class="si">{</span><span class="n">n_diff</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pois</span><span class="p">)</span><span class="si">}</span><span class="s2"> stations differ"</span><span class="p">)</span>
+
+<span class="c1"># model altitude at the nearest grid point, to compare with the station altitude</span>
+<span class="n">alt</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s2">"surface_altitude"</span><span class="p">]</span><span class="o">.</span><span class="n">reset_coords</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">to_dataset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"alt"</span><span class="p">)</span>
+<span class="n">pois</span><span class="p">[</span><span class="s2">"model altitude"</span><span class="p">]</span> <span class="o">=</span> <span class="n">gri</span><span class="o">.</span><span class="n">interp2poi</span><span class="p">(</span><span class="n">alt</span><span class="p">,</span> <span class="n">pois</span><span class="p">,</span> <span class="s2">"nearest"</span><span class="p">,</span> <span class="n">try_reg</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="s2">"alt"</span><span class="p">]</span><span class="o">.</span><span class="n">to_series</span><span class="p">()</span>
+<span class="n">results</span><span class="p">[</span><span class="s2">"temp"</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>linear with try_reg=False: Method 'linear' is not supported for geographic grids beyond 700 km of the Swiss LV95 central northing, which are interpolated in earth-centered earth-fixed (ECEF) coordinates: a Delaunay triangulation of points close to the Earth's surface is degenerate in ECEF. Use e.g. method='idw' instead, or try_reg=True for a regular grid with 1D coordinates (or adjust GRID_PROCESS__lv95_max_offset).
+nearest, try_reg=True vs. False: 0 of 33 stations differ
+</pre></div>
+</div>
+<div class="output text_html"><div><svg style="position: absolute; width: 0; height: 0; overflow: hidden">
+<defs>
+<symbol id="icon-database" viewBox="0 0 32 32">
+<path d="M16 0c-8.837 0-16 2.239-16 5v4c0 2.761 7.163 5 16 5s16-2.239 16-5v-4c0-2.761-7.163-5-16-5z"></path>
+<path d="M16 17c-8.837 0-16-2.239-16-5v6c0 2.761 7.163 5 16 5s16-2.239 16-5v-6c0 2.761-7.163 5-16 5z"></path>
+<path d="M16 26c-8.837 0-16-2.239-16-5v6c0 2.761 7.163 5 16 5s16-2.239 16-5v-6c0 2.761-7.163 5-16 5z"></path>
+</symbol>
+<symbol id="icon-file-text2" viewBox="0 0 32 32">
+<path d="M28.681 7.159c-0.694-0.947-1.662-2.053-2.724-3.116s-2.169-2.030-3.116-2.724c-1.612-1.182-2.393-1.319-2.841-1.319h-15.5c-1.378 0-2.5 1.121-2.5 2.5v27c0 1.378 1.122 2.5 2.5 2.5h23c1.378 0 2.5-1.122 2.5-2.5v-19.5c0-0.448-0.137-1.23-1.319-2.841zM24.543 5.457c0.959 0.959 1.712 1.825 2.268 2.543h-4.811v-4.811c0.718 0.556 1.584 1.309 2.543 2.268zM28 29.5c0 0.271-0.229 0.5-0.5 0.5h-23c-0.271 0-0.5-0.229-0.5-0.5v-27c0-0.271 0.229-0.5 0.5-0.5 0 0 15.499-0 15.5 0v7c0 0.552 0.448 1 1 1h7v19.5z"></path>
+<path d="M23 26h-14c-0.552 0-1-0.448-1-1s0.448-1 1-1h14c0.552 0 1 0.448 1 1s-0.448 1-1 1z"></path>
+<path d="M23 22h-14c-0.552 0-1-0.448-1-1s0.448-1 1-1h14c0.552 0 1 0.448 1 1s-0.448 1-1 1z"></path>
+<path d="M23 18h-14c-0.552 0-1-0.448-1-1s0.448-1 1-1h14c0.552 0 1 0.448 1 1s-0.448 1-1 1z"></path>
+</symbol>
+</defs>
+</svg>
+<style>/* CSS stylesheet for displaying xarray objects in notebooks */
+
+:root {
+  --xr-font-color0: var(
+    --jp-content-font-color0,
+    var(--pst-color-text-base rgba(0, 0, 0, 1))
+  );
+  --xr-font-color2: var(
+    --jp-content-font-color2,
+    var(--pst-color-text-base, rgba(0, 0, 0, 0.54))
+  );
+  --xr-font-color3: var(
+    --jp-content-font-color3,
+    var(--pst-color-text-base, rgba(0, 0, 0, 0.38))
+  );
+  --xr-border-color: var(
+    --jp-border-color2,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 10))
+  );
+  --xr-disabled-color: var(
+    --jp-layout-color3,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 40))
+  );
+  --xr-background-color: var(
+    --jp-layout-color0,
+    var(--pst-color-on-background, white)
+  );
+  --xr-background-color-row-even: var(
+    --jp-layout-color1,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 5))
+  );
+  --xr-background-color-row-odd: var(
+    --jp-layout-color2,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 15))
+  );
+}
+
+html[theme="dark"],
+html[data-theme="dark"],
+body[data-theme="dark"],
+body.vscode-dark {
+  --xr-font-color0: var(
+    --jp-content-font-color0,
+    var(--pst-color-text-base, rgba(255, 255, 255, 1))
+  );
+  --xr-font-color2: var(
+    --jp-content-font-color2,
+    var(--pst-color-text-base, rgba(255, 255, 255, 0.54))
+  );
+  --xr-font-color3: var(
+    --jp-content-font-color3,
+    var(--pst-color-text-base, rgba(255, 255, 255, 0.38))
+  );
+  --xr-border-color: var(
+    --jp-border-color2,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 10))
+  );
+  --xr-disabled-color: var(
+    --jp-layout-color3,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 40))
+  );
+  --xr-background-color: var(
+    --jp-layout-color0,
+    var(--pst-color-on-background, #111111)
+  );
+  --xr-background-color-row-even: var(
+    --jp-layout-color1,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 5))
+  );
+  --xr-background-color-row-odd: var(
+    --jp-layout-color2,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 15))
+  );
+}
+
+.xr-wrap {
+  display: block !important;
+  min-width: 300px;
+  max-width: 700px;
+  line-height: 1.6;
+  padding-bottom: 4px;
+}
+
+.xr-text-repr-fallback {
+  /* fallback to plain text repr when CSS is not injected (untrusted notebook) */
+  display: none;
+}
+
+.xr-header {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.xr-header {
+  border-bottom: solid 1px var(--xr-border-color);
+  margin-bottom: 4px;
+}
+
+.xr-header > div,
+.xr-header > ul {
+  display: inline;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.xr-obj-type,
+.xr-obj-name {
+  margin-left: 2px;
+  margin-right: 10px;
+}
+
+.xr-obj-type,
+.xr-group-box-contents > label {
+  color: var(--xr-font-color2);
+  display: block;
+}
+
+.xr-sections {
+  padding-left: 0 !important;
+  display: grid;
+  grid-template-columns: 150px auto auto 1fr 0 20px 0 20px;
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
+
+.xr-section-item {
+  display: contents;
+}
+
+.xr-section-item > input,
+.xr-group-box-contents > input,
+.xr-array-wrap > input {
+  display: block;
+  opacity: 0;
+  height: 0;
+  margin: 0;
+}
+
+.xr-section-item > input + label,
+.xr-var-item > input + label {
+  color: var(--xr-disabled-color);
+}
+
+.xr-section-item > input:enabled + label,
+.xr-var-item > input:enabled + label,
+.xr-array-wrap > input:enabled + label,
+.xr-group-box-contents > input:enabled + label {
+  cursor: pointer;
+  color: var(--xr-font-color2);
+}
+
+.xr-section-item > input:focus-visible + label,
+.xr-var-item > input:focus-visible + label,
+.xr-array-wrap > input:focus-visible + label,
+.xr-group-box-contents > input:focus-visible + label {
+  outline: auto;
+}
+
+.xr-section-item > input:enabled + label:hover,
+.xr-var-item > input:enabled + label:hover,
+.xr-array-wrap > input:enabled + label:hover,
+.xr-group-box-contents > input:enabled + label:hover {
+  color: var(--xr-font-color0);
+}
+
+.xr-section-summary {
+  grid-column: 1;
+  color: var(--xr-font-color2);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.xr-section-summary > em {
+  font-weight: normal;
+}
+
+.xr-span-grid {
+  grid-column-end: -1;
+}
+
+.xr-section-summary > span {
+  display: inline-block;
+  padding-left: 0.3em;
+}
+
+.xr-group-box-contents > input:checked + label > span {
+  display: inline-block;
+  padding-left: 0.6em;
+}
+
+.xr-section-summary-in:disabled + label {
+  color: var(--xr-font-color2);
+}
+
+.xr-section-summary-in + label:before {
+  display: inline-block;
+  content: "►";
+  font-size: 11px;
+  width: 15px;
+  text-align: center;
+}
+
+.xr-section-summary-in:disabled + label:before {
+  color: var(--xr-disabled-color);
+}
+
+.xr-section-summary-in:checked + label:before {
+  content: "▼";
+}
+
+.xr-section-summary-in:checked + label > span {
+  display: none;
+}
+
+.xr-section-summary,
+.xr-section-inline-details,
+.xr-group-box-contents > label {
+  padding-top: 4px;
+}
+
+.xr-section-inline-details {
+  grid-column: 2 / -1;
+}
+
+.xr-section-details {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  margin-bottom: 5px;
+}
+
+.xr-section-summary-in ~ .xr-section-details {
+  display: none;
+}
+
+.xr-section-summary-in:checked ~ .xr-section-details {
+  display: contents;
+}
+
+.xr-children {
+  display: inline-grid;
+  grid-template-columns: 100%;
+  grid-column: 1 / -1;
+  padding-top: 4px;
+}
+
+.xr-group-box {
+  display: inline-grid;
+  grid-template-columns: 0px 30px auto;
+}
+
+.xr-group-box-vline {
+  grid-column-start: 1;
+  border-right: 0.2em solid;
+  border-color: var(--xr-border-color);
+  width: 0px;
+}
+
+.xr-group-box-hline {
+  grid-column-start: 2;
+  grid-row-start: 1;
+  height: 1em;
+  width: 26px;
+  border-bottom: 0.2em solid;
+  border-color: var(--xr-border-color);
+}
+
+.xr-group-box-contents {
+  grid-column-start: 3;
+  padding-bottom: 4px;
+}
+
+.xr-group-box-contents > label::before {
+  content: "📂";
+  padding-right: 0.3em;
+}
+
+.xr-group-box-contents > input:checked + label::before {
+  content: "📁";
+}
+
+.xr-group-box-contents > input:checked + label {
+  padding-bottom: 0px;
+}
+
+.xr-group-box-contents > input:checked ~ .xr-sections {
+  display: none;
+}
+
+.xr-group-box-contents > input + label > span {
+  display: none;
+}
+
+.xr-group-box-ellipsis {
+  font-size: 1.4em;
+  font-weight: 900;
+  color: var(--xr-font-color2);
+  letter-spacing: 0.15em;
+  cursor: default;
+}
+
+.xr-array-wrap {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 20px auto;
+}
+
+.xr-array-wrap > label {
+  grid-column: 1;
+  vertical-align: top;
+}
+
+.xr-preview {
+  color: var(--xr-font-color3);
+}
+
+.xr-array-preview,
+.xr-array-data {
+  padding: 0 5px !important;
+  grid-column: 2;
+}
+
+.xr-array-data,
+.xr-array-in:checked ~ .xr-array-preview {
+  display: none;
+}
+
+.xr-array-in:checked ~ .xr-array-data,
+.xr-array-preview {
+  display: inline-block;
+}
+
+.xr-dim-list {
+  display: inline-block !important;
+  list-style: none;
+  padding: 0 !important;
+  margin: 0;
+}
+
+.xr-dim-list li {
+  display: inline-block;
+  padding: 0;
+  margin: 0;
+}
+
+.xr-dim-list:before {
+  content: "(";
+}
+
+.xr-dim-list:after {
+  content: ")";
+}
+
+.xr-dim-list li:not(:last-child):after {
+  content: ",";
+  padding-right: 5px;
+}
+
+.xr-has-index {
+  font-weight: bold;
+}
+
+.xr-var-list,
+.xr-var-item {
+  display: contents;
+}
+
+.xr-var-item > div,
+.xr-var-item label,
+.xr-var-item > .xr-var-name span {
+  background-color: var(--xr-background-color-row-even);
+  border-color: var(--xr-background-color-row-odd);
+  margin-bottom: 0;
+  padding-top: 2px;
+}
+
+.xr-var-item > .xr-var-name:hover span {
+  padding-right: 5px;
+}
+
+.xr-var-list > li:nth-child(odd) > div,
+.xr-var-list > li:nth-child(odd) > label,
+.xr-var-list > li:nth-child(odd) > .xr-var-name span {
+  background-color: var(--xr-background-color-row-odd);
+  border-color: var(--xr-background-color-row-even);
+}
+
+.xr-var-name {
+  grid-column: 1;
+}
+
+.xr-var-dims {
+  grid-column: 2;
+}
+
+.xr-var-dtype {
+  grid-column: 3;
+  text-align: right;
+  color: var(--xr-font-color2);
+}
+
+.xr-var-preview {
+  grid-column: 4;
+}
+
+.xr-index-preview {
+  grid-column: 2 / 5;
+  color: var(--xr-font-color2);
+}
+
+.xr-var-name,
+.xr-var-dims,
+.xr-var-dtype,
+.xr-preview,
+.xr-attrs dt {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 10px;
+}
+
+.xr-var-name:hover,
+.xr-var-dims:hover,
+.xr-var-dtype:hover,
+.xr-attrs dt:hover {
+  overflow: visible;
+  width: auto;
+  z-index: 1;
+}
+
+.xr-var-attrs,
+.xr-var-data,
+.xr-index-data {
+  display: none;
+  border-top: 2px dotted var(--xr-background-color);
+  padding-bottom: 20px !important;
+  padding-top: 10px !important;
+}
+
+.xr-var-attrs-in + label,
+.xr-var-data-in + label,
+.xr-index-data-in + label {
+  padding: 0 1px;
+}
+
+.xr-var-attrs-in:checked ~ .xr-var-attrs,
+.xr-var-data-in:checked ~ .xr-var-data,
+.xr-index-data-in:checked ~ .xr-index-data {
+  display: block;
+}
+
+.xr-var-data > table {
+  float: right;
+}
+
+.xr-var-data > pre,
+.xr-index-data > pre,
+.xr-var-data > table > tbody > tr {
+  background-color: transparent !important;
+}
+
+.xr-var-name span,
+.xr-var-data,
+.xr-index-name div,
+.xr-index-data,
+.xr-attrs {
+  padding-left: 25px !important;
+}
+
+.xr-attrs,
+.xr-var-attrs,
+.xr-var-data,
+.xr-index-data {
+  grid-column: 1 / -1;
+}
+
+dl.xr-attrs {
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 125px auto;
+}
+
+.xr-attrs dt,
+.xr-attrs dd {
+  padding: 0;
+  margin: 0;
+  float: left;
+  padding-right: 10px;
+  width: auto;
+}
+
+.xr-attrs dt {
+  font-weight: normal;
+  grid-column: 1;
+}
+
+.xr-attrs dt:hover span {
+  display: inline-block;
+  background: var(--xr-background-color);
+  padding-right: 10px;
+}
+
+.xr-attrs dd {
+  grid-column: 2;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.xr-icon-database,
+.xr-icon-file-text2,
+.xr-no-icon {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1em;
+  height: 1.5em !important;
+  stroke-width: 0;
+  stroke: currentColor;
+  fill: currentColor;
+}
+
+.xr-var-attrs-in:checked + label > .xr-icon-file-text2,
+.xr-var-data-in:checked + label > .xr-icon-database,
+.xr-index-data-in:checked + label > .xr-icon-database {
+  color: var(--xr-font-color0);
+  filter: drop-shadow(1px 1px 5px var(--xr-font-color2));
+  stroke-width: 0.8px;
+}
+</style><pre class='xr-text-repr-fallback'>&lt;xarray.Dataset&gt; Size: 2kB
+Dimensions:  (poi: 33)
+Coordinates:
+  * poi      (poi) &lt;U11 1kB &#x27;SZM00006730&#x27; &#x27;SZM00006680&#x27; ... &#x27;SVI0000ENSB&#x27;
+Data variables:
+    2t       (poi) float32 132B -7.609 2.084 -1.002 ... -20.62 -4.915 -5.307
+Attributes:
+    institution:  ECMWF</pre><div class='xr-wrap' style='display:none'><div class='xr-header'><div class='xr-obj-type'>xarray.Dataset</div></div><ul class='xr-sections'><li class='xr-section-item'><input id='section-926d9ece-9096-4260-b6fc-d0833545dd63' class='xr-section-summary-in' type='checkbox' disabled /><label for='section-926d9ece-9096-4260-b6fc-d0833545dd63' class='xr-section-summary'>Dimensions:</label><div class='xr-section-inline-details'><ul class='xr-dim-list'><li><span class='xr-has-index'>poi</span>: 33</li></ul></div></li><li class='xr-section-item'><input id='section-0059ad9e-2a35-4af4-98a3-3b613d10b04f' class='xr-section-summary-in' type='checkbox' checked /><label for='section-0059ad9e-2a35-4af4-98a3-3b613d10b04f' class='xr-section-summary' title='Expand/collapse section'>Coordinates: <span>(1)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><ul class='xr-var-list'><li class='xr-var-item'><div class='xr-var-name'><span class='xr-has-index'>poi</span></div><div class='xr-var-dims'>(poi)</div><div class='xr-var-dtype'>&lt;U11</div><div class='xr-var-preview xr-preview'>&#x27;SZM00006730&#x27; ... &#x27;SVI0000ENSB&#x27;</div><input id='attrs-b9075274-7177-4601-9572-88417e1c0ee5' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-b9075274-7177-4601-9572-88417e1c0ee5' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-1c5d4f0e-597f-4baa-aadf-3076878d0866' class='xr-var-data-in' type='checkbox'><label for='data-1c5d4f0e-597f-4baa-aadf-3076878d0866' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>array([&#x27;SZM00006730&#x27;, &#x27;SZM00006680&#x27;, &#x27;AUM00011343&#x27;, &#x27;USW00021514&#x27;,
+       &#x27;BLI0000SLLP&#x27;, &#x27;MXI0000MMMX&#x27;, &#x27;COI0000SKBO&#x27;, &#x27;ECI0000SEQM&#x27;,
+       &#x27;KEI0000HKJK&#x27;, &#x27;SFI0000FAOR&#x27;, &#x27;USW00003017&#x27;, &#x27;USW00024127&#x27;,
+       &#x27;MGI0000ZMUB&#x27;, &#x27;AGI0000DAAT&#x27;, &#x27;AUI0000LOWI&#x27;, &#x27;SZI0000LSGS&#x27;,
+       &#x27;NPI0000VNKT&#x27;, &#x27;CIN00330021&#x27;, &#x27;FJI0000NFFN&#x27;, &#x27;TNI0000NFTF&#x27;,
+       &#x27;AQW00061705&#x27;, &#x27;USW00022521&#x27;, &#x27;SGI0000GOOY&#x27;, &#x27;JAI0000RJTT&#x27;,
+       &#x27;ARI0000SAWH&#x27;, &#x27;NZI0000NZCH&#x27;, &#x27;UKI0000EGLL&#x27;, &#x27;BRM00081730&#x27;,
+       &#x27;ASI0000YBAS&#x27;, &#x27;AYU089009-1&#x27;, &#x27;CAMU0019939&#x27;, &#x27;USW00027502&#x27;,
+       &#x27;SVI0000ENSB&#x27;], dtype=&#x27;&lt;U11&#x27;)</pre></div></li></ul></div></li><li class='xr-section-item'><input id='section-bb340c5a-5377-47e6-8525-40b10e0fb560' class='xr-section-summary-in' type='checkbox' checked /><label for='section-bb340c5a-5377-47e6-8525-40b10e0fb560' class='xr-section-summary' title='Expand/collapse section'>Data variables: <span>(1)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><ul class='xr-var-list'><li class='xr-var-item'><div class='xr-var-name'><span>2t</span></div><div class='xr-var-dims'>(poi)</div><div class='xr-var-dtype'>float32</div><div class='xr-var-preview xr-preview'>-7.609 2.084 ... -4.915 -5.307</div><input id='attrs-77d6e08f-dc03-4f2e-bd83-5f5a4ae8c55e' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-77d6e08f-dc03-4f2e-bd83-5f5a4ae8c55e' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-e06273ad-efa0-4fac-9d0a-4bb28a296412' class='xr-var-data-in' type='checkbox'><label for='data-e06273ad-efa0-4fac-9d0a-4bb28a296412' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>standard_name :</span></dt><dd>air_temperature</dd><dt><span>long_name :</span></dt><dd>2 metre temperature</dd><dt><span>units :</span></dt><dd>degC</dd><dt><span>level_type :</span></dt><dd>height_above_ground_level</dd><dt><span>_earthkit :</span></dt><dd>{&quot;message&quot;: {&quot;__bytes_b64__&quot;: &quot;R1JJQv//AAIAAAAAAAAA0QAAABUBAAcAAAIBAQfqCwYAAAAAAQAAAEgDAAAP16AAAAAABgAAAAAAAAAAAAAAAAAAAAAABaAAAALRAAAAAP////8FXUqAAAAAADCFXUqAFXFZcAAD0JAAA9CQAAAAACIEAAAAAAAAAgBgAAAAAQAAAAxnAAAAAAL/AAAAAAAAAAAxBQAP16AAA0OIgAAAAAAAAAABAGJY0ZoAAAAAAAAAAQAAAAAB8AEAAAHwAAEBAAAABgb/AAAABwcAADc3Nzc=&quot;}, &quot;bitsPerValue&quot;: 13, &quot;grid_spec&quot;: {&quot;grid&quot;: [0.25, 0.25]}}</dd></dl></div><div class='xr-var-data'><pre>array([ -7.6088543,   2.0836914,  -1.0022163,   6.41576  ,   8.846681 ,
+        14.176436 ,  12.6699915,  13.25701  ,  23.711576 ,  31.482494 ,
+         5.098033 ,   6.741162 ,  -6.1800394,  27.89934  ,  10.542617 ,
+         8.61465  ,  15.316767 ,  11.886403 ,  23.81841  ,  21.822441 ,
+        25.550816 ,  25.223822 ,  34.952877 ,  19.759968 ,   7.7303944,
+        15.158102 ,  11.385732 ,  30.17535  ,  29.90962  , -39.87703  ,
+       -20.622908 ,  -4.9150214,  -5.30707  ], dtype=float32)</pre></div></li></ul></div></li><li class='xr-section-item'><input id='section-2fd0d189-834b-44a1-970a-172342550aac' class='xr-section-summary-in' type='checkbox' checked /><label for='section-2fd0d189-834b-44a1-970a-172342550aac' class='xr-section-summary' title='Expand/collapse section'>Attributes: <span>(1)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><dl class='xr-attrs'><dt><span>institution :</span></dt><dd>ECMWF</dd></dl></div></li></ul></div></div></div></div>
+</div>
+</section>
+<section id="visual-comparison">
+<h2>Visual comparison<a class="headerlink" href="#visual-comparison" title="Link to this heading">#</a></h2>
+<p>The maps show the observations and the difference between each method and the observation, on a common
+colour scale centred on zero. The table below lists the values per station, and the last figure relates
+the errors to the difference between the model altitude (at the nearest grid point) and the station
+altitude.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">diff</span> <span class="o">=</span> <span class="n">pois</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">METHODS</span><span class="p">)]</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pois</span><span class="p">[</span><span class="s2">"observation"</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">diff_lim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())))</span>
+<span class="n">obs_lim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">pois</span><span class="p">[</span><span class="s2">"observation"</span><span class="p">])))</span>
+<span class="n">panels</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">"observation"</span><span class="p">,</span> <span class="n">pois</span><span class="p">[</span><span class="s2">"observation"</span><span class="p">],</span> <span class="s2">"RdYlBu_r"</span><span class="p">,</span> <span class="o">-</span><span class="n">obs_lim</span><span class="p">,</span> <span class="n">obs_lim</span><span class="p">)]</span>
+<span class="n">panels</span> <span class="o">+=</span> <span class="p">[(</span><span class="sa">f</span><span class="s2">"method=</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> − observation"</span><span class="p">,</span> <span class="n">diff</span><span class="p">[</span><span class="n">label</span><span class="p">],</span> <span class="s2">"RdBu_r"</span><span class="p">,</span> <span class="o">-</span><span class="n">diff_lim</span><span class="p">,</span> <span class="n">diff_lim</span><span class="p">)</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">METHODS</span><span class="p">]</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+    <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mf">7.5</span><span class="p">),</span> <span class="n">layout</span><span class="o">=</span><span class="s2">"constrained"</span><span class="p">,</span> <span class="n">subplot_kw</span><span class="o">=</span><span class="p">{</span><span class="s2">"projection"</span><span class="p">:</span> <span class="n">ccrs</span><span class="o">.</span><span class="n">Robinson</span><span class="p">(</span><span class="n">central_longitude</span><span class="o">=</span><span class="mi">0</span><span class="p">)}</span>
+<span class="p">)</span>
+<span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span> <span class="n">panels</span><span class="p">):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_global</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="n">cfeature</span><span class="o">.</span><span class="n">COASTLINE</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"0.4"</span><span class="p">)</span>
+    <span class="n">scatter</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+        <span class="n">pois</span><span class="p">[</span><span class="s2">"LONGITUDE"</span><span class="p">],</span>
+        <span class="n">pois</span><span class="p">[</span><span class="s2">"LATITUDE"</span><span class="p">],</span>
+        <span class="n">c</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+        <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span>
+        <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span>
+        <span class="n">s</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span>
+        <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"0.2"</span><span class="p">,</span>
+        <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
+        <span class="n">transform</span><span class="o">=</span><span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">(),</span>
+    <span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">title</span> <span class="o">==</span> <span class="s2">"observation"</span><span class="p">:</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">scatter</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span> <span class="n">shrink</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"observed 2 m temperature [°C]"</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">scatter</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">,</span> <span class="n">shrink</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"model − observation [°C]"</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="sa">f</span><span class="s2">"GFS 0.25°, run </span><span class="si">{</span><span class="n">run</span><span class="si">:</span><span class="s2">%Y-%m-%d %H</span><span class="si">}</span><span class="s2"> UTC, valid </span><span class="si">{</span><span class="n">valid_time</span><span class="si">:</span><span class="s2">%Y-%m-%d %H:%M</span><span class="si">}</span><span class="s2"> UTC"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/bc7ece5e80230baa8e6769506456938d9eba0d029bb6cb2548fb95476d7e7d1e.png" src="../_images/bc7ece5e80230baa8e6769506456938d9eba0d029bb6cb2548fb95476d7e7d1e.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">table</span> <span class="o">=</span> <span class="n">pois</span><span class="p">[[</span><span class="s2">"name"</span><span class="p">,</span> <span class="s2">"terrain"</span><span class="p">,</span> <span class="s2">"ELEVATION"</span><span class="p">,</span> <span class="s2">"model altitude"</span><span class="p">,</span> <span class="s2">"observation"</span><span class="p">,</span> <span class="o">*</span><span class="n">METHODS</span><span class="p">]]</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+    <span class="n">columns</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"ELEVATION"</span><span class="p">:</span> <span class="s2">"station altitude [m]"</span><span class="p">,</span>
+        <span class="s2">"model altitude"</span><span class="p">:</span> <span class="s2">"model altitude [m]"</span><span class="p">,</span>
+        <span class="s2">"observation"</span><span class="p">:</span> <span class="s2">"observed [°C]"</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+<span class="n">table</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">astype</span><span class="p">({</span><span class="n">label</span><span class="p">:</span> <span class="s2">"float64"</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">METHODS</span><span class="p">})</span>  <span class="c1"># float32 values display with spurious digits</span>
+<span class="n">table</span><span class="o">.</span><span class="n">round</span><span class="p">({</span><span class="s2">"model altitude [m]"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"observed [°C]"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">METHODS</span><span class="p">,</span> <span class="mi">1</span><span class="p">)})</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>terrain</th>
+      <th>station altitude [m]</th>
+      <th>model altitude [m]</th>
+      <th>observed [°C]</th>
+      <th>nearest</th>
+      <th>linear</th>
+      <th>temp</th>
+    </tr>
+    <tr>
+      <th>name</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Jungfraujoch</th>
+      <td>high mountain</td>
+      <td>3576.0</td>
+      <td>2483.0</td>
+      <td>-6.5</td>
+      <td>-1.0</td>
+      <td>-0.1</td>
+      <td>-7.6</td>
+    </tr>
+    <tr>
+      <th>Säntis</th>
+      <td>high mountain</td>
+      <td>2500.0</td>
+      <td>1108.0</td>
+      <td>-0.2</td>
+      <td>7.4</td>
+      <td>7.9</td>
+      <td>2.1</td>
+    </tr>
+    <tr>
+      <th>Sonnblick</th>
+      <td>high mountain</td>
+      <td>3113.8</td>
+      <td>1945.0</td>
+      <td>-2.8</td>
+      <td>6.0</td>
+      <td>6.8</td>
+      <td>-1.0</td>
+    </tr>
+    <tr>
+      <th>Mauna Loa</th>
+      <td>high mountain</td>
+      <td>3407.4</td>
+      <td>2667.0</td>
+      <td>7.1</td>
+      <td>10.9</td>
+      <td>12.1</td>
+      <td>6.4</td>
+    </tr>
+    <tr>
+      <th>El Alto</th>
+      <td>high mountain</td>
+      <td>4061.5</td>
+      <td>4002.0</td>
+      <td>10.0</td>
+      <td>9.3</td>
+      <td>9.1</td>
+      <td>8.8</td>
+    </tr>
+    <tr>
+      <th>Mexico City</th>
+      <td>high city</td>
+      <td>2229.9</td>
+      <td>2276.0</td>
+      <td>10.0</td>
+      <td>15.9</td>
+      <td>14.5</td>
+      <td>14.2</td>
+    </tr>
+    <tr>
+      <th>Bogotá</th>
+      <td>high city</td>
+      <td>2548.4</td>
+      <td>2477.0</td>
+      <td>12.0</td>
+      <td>13.4</td>
+      <td>12.4</td>
+      <td>12.7</td>
+    </tr>
+    <tr>
+      <th>Quito</th>
+      <td>high city</td>
+      <td>2400.0</td>
+      <td>2978.0</td>
+      <td>13.0</td>
+      <td>10.7</td>
+      <td>10.4</td>
+      <td>13.3</td>
+    </tr>
+    <tr>
+      <th>Nairobi</th>
+      <td>high city</td>
+      <td>1623.7</td>
+      <td>1528.0</td>
+      <td>24.0</td>
+      <td>23.8</td>
+      <td>23.4</td>
+      <td>23.7</td>
+    </tr>
+    <tr>
+      <th>Johannesburg</th>
+      <td>high city</td>
+      <td>1694.1</td>
+      <td>1610.0</td>
+      <td>29.0</td>
+      <td>32.5</td>
+      <td>32.4</td>
+      <td>31.5</td>
+    </tr>
+    <tr>
+      <th>Denver</th>
+      <td>high city</td>
+      <td>1647.1</td>
+      <td>1675.0</td>
+      <td>4.4</td>
+      <td>4.8</td>
+      <td>4.7</td>
+      <td>5.1</td>
+    </tr>
+    <tr>
+      <th>Salt Lake City</th>
+      <td>high city</td>
+      <td>1288.4</td>
+      <td>1404.0</td>
+      <td>3.9</td>
+      <td>5.6</td>
+      <td>5.1</td>
+      <td>6.7</td>
+    </tr>
+    <tr>
+      <th>Ulaanbaatar</th>
+      <td>high city</td>
+      <td>1330.1</td>
+      <td>1424.0</td>
+      <td>-3.0</td>
+      <td>-6.2</td>
+      <td>-6.5</td>
+      <td>-6.2</td>
+    </tr>
+    <tr>
+      <th>Tamanrasset</th>
+      <td>high city</td>
+      <td>1377.1</td>
+      <td>1360.0</td>
+      <td>27.0</td>
+      <td>28.1</td>
+      <td>27.7</td>
+      <td>27.9</td>
+    </tr>
+    <tr>
+      <th>Innsbruck</th>
+      <td>valley</td>
+      <td>580.9</td>
+      <td>1540.0</td>
+      <td>10.0</td>
+      <td>9.5</td>
+      <td>9.9</td>
+      <td>10.5</td>
+    </tr>
+    <tr>
+      <th>Sion</th>
+      <td>valley</td>
+      <td>481.9</td>
+      <td>1519.0</td>
+      <td>10.0</td>
+      <td>2.5</td>
+      <td>1.9</td>
+      <td>8.6</td>
+    </tr>
+    <tr>
+      <th>Kathmandu</th>
+      <td>valley</td>
+      <td>1338.1</td>
+      <td>1447.0</td>
+      <td>19.0</td>
+      <td>15.2</td>
+      <td>14.9</td>
+      <td>15.3</td>
+    </tr>
+    <tr>
+      <th>Santiago</th>
+      <td>valley</td>
+      <td>482.0</td>
+      <td>514.0</td>
+      <td>12.0</td>
+      <td>12.4</td>
+      <td>12.0</td>
+      <td>11.9</td>
+    </tr>
+    <tr>
+      <th>Nadi</th>
+      <td>coast/island</td>
+      <td>18.0</td>
+      <td>207.0</td>
+      <td>24.0</td>
+      <td>18.8</td>
+      <td>20.1</td>
+      <td>23.8</td>
+    </tr>
+    <tr>
+      <th>Fua'amotu</th>
+      <td>coast/island</td>
+      <td>38.4</td>
+      <td>5.0</td>
+      <td>22.0</td>
+      <td>22.2</td>
+      <td>22.2</td>
+      <td>21.8</td>
+    </tr>
+    <tr>
+      <th>Pago Pago</th>
+      <td>coast/island</td>
+      <td>3.7</td>
+      <td>30.0</td>
+      <td>25.7</td>
+      <td>25.6</td>
+      <td>25.5</td>
+      <td>25.6</td>
+    </tr>
+    <tr>
+      <th>Honolulu</th>
+      <td>coast/island</td>
+      <td>1.8</td>
+      <td>18.0</td>
+      <td>26.0</td>
+      <td>24.8</td>
+      <td>24.1</td>
+      <td>25.2</td>
+    </tr>
+    <tr>
+      <th>Dakar</th>
+      <td>coast/island</td>
+      <td>25.9</td>
+      <td>0.0</td>
+      <td>31.0</td>
+      <td>27.9</td>
+      <td>28.1</td>
+      <td>35.0</td>
+    </tr>
+    <tr>
+      <th>Tokyo</th>
+      <td>coast/island</td>
+      <td>10.7</td>
+      <td>6.0</td>
+      <td>20.0</td>
+      <td>19.6</td>
+      <td>19.6</td>
+      <td>19.8</td>
+    </tr>
+    <tr>
+      <th>Ushuaia</th>
+      <td>coast/island</td>
+      <td>21.6</td>
+      <td>443.0</td>
+      <td>8.0</td>
+      <td>4.0</td>
+      <td>4.4</td>
+      <td>7.7</td>
+    </tr>
+    <tr>
+      <th>Christchurch</th>
+      <td>coast/island</td>
+      <td>37.5</td>
+      <td>51.0</td>
+      <td>20.0</td>
+      <td>14.7</td>
+      <td>14.8</td>
+      <td>15.2</td>
+    </tr>
+    <tr>
+      <th>London</th>
+      <td>coast/island</td>
+      <td>25.3</td>
+      <td>43.0</td>
+      <td>11.2</td>
+      <td>11.2</td>
+      <td>11.2</td>
+      <td>11.4</td>
+    </tr>
+    <tr>
+      <th>Manaus</th>
+      <td>lowland/desert</td>
+      <td>68.5</td>
+      <td>21.0</td>
+      <td>24.0</td>
+      <td>29.0</td>
+      <td>29.6</td>
+      <td>30.2</td>
+    </tr>
+    <tr>
+      <th>Alice Springs</th>
+      <td>lowland/desert</td>
+      <td>545.3</td>
+      <td>571.0</td>
+      <td>26.0</td>
+      <td>29.6</td>
+      <td>29.7</td>
+      <td>29.9</td>
+    </tr>
+    <tr>
+      <th>South Pole</th>
+      <td>polar</td>
+      <td>2835.0</td>
+      <td>2775.0</td>
+      <td>-49.4</td>
+      <td>-39.5</td>
+      <td>-39.5</td>
+      <td>-39.9</td>
+    </tr>
+    <tr>
+      <th>Alert</th>
+      <td>polar</td>
+      <td>62.0</td>
+      <td>101.0</td>
+      <td>-14.7</td>
+      <td>-21.0</td>
+      <td>-21.0</td>
+      <td>-20.6</td>
+    </tr>
+    <tr>
+      <th>Utqiaġvik</th>
+      <td>polar</td>
+      <td>8.2</td>
+      <td>8.0</td>
+      <td>-3.0</td>
+      <td>-4.9</td>
+      <td>-4.7</td>
+      <td>-4.9</td>
+    </tr>
+    <tr>
+      <th>Longyearbyen</th>
+      <td>polar</td>
+      <td>26.8</td>
+      <td>249.0</td>
+      <td>-4.0</td>
+      <td>-8.5</td>
+      <td>-8.4</td>
+      <td>-5.3</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">COLORS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"nearest"</span><span class="p">:</span> <span class="s2">"#2a78d6"</span><span class="p">,</span> <span class="s2">"linear"</span><span class="p">:</span> <span class="s2">"#8c564b"</span><span class="p">,</span> <span class="s2">"temp"</span><span class="p">:</span> <span class="s2">"#eb6834"</span><span class="p">}</span>
+
+<span class="n">alt_diff</span> <span class="o">=</span> <span class="n">pois</span><span class="p">[</span><span class="s2">"model altitude"</span><span class="p">]</span> <span class="o">-</span> <span class="n">pois</span><span class="p">[</span><span class="s2">"ELEVATION"</span><span class="p">]</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mf">5.5</span><span class="p">),</span> <span class="n">layout</span><span class="o">=</span><span class="s2">"constrained"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">METHODS</span><span class="p">:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">alt_diff</span><span class="p">,</span> <span class="n">diff</span><span class="p">[</span><span class="n">label</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">COLORS</span><span class="p">[</span><span class="n">label</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pois</span><span class="p">[</span><span class="s2">"name"</span><span class="p">],</span> <span class="n">alt_diff</span><span class="p">,</span> <span class="n">diff</span><span class="p">[</span><span class="s2">"nearest"</span><span class="p">]):</span>
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">300</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">textcoords</span><span class="o">=</span><span class="s2">"offset points"</span><span class="p">,</span> <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.5"</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.5"</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"model altitude − station altitude [m]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"model − observation [°C]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Error against the altitude difference between the model grid and the station"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/80c4dc2f773d42f350914b768029b5cd20377cd90041017ede58ae7ae7894747.png" src="../_images/80c4dc2f773d42f350914b768029b5cd20377cd90041017ede58ae7ae7894747.png" />
+</div>
+</div>
+</section>
+<section id="performance-benchmark">
+<h2>Performance benchmark<a class="headerlink" href="#performance-benchmark" title="Link to this heading">#</a></h2>
+<p>The first call includes building the neighbor search structures, which <code class="docutils literal notranslate"><span class="pre">grid_process</span></code> caches.
+Subsequent calls on the same grid and stations (e.g. for other variables or runs) reuse them: their
+runtime is the mean ± standard deviation over 5 repetitions.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">benchmark</span><span class="p">(</span>
+    <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">],</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">target</span><span class="p">:</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span> <span class="o">|</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">methods</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="n">first_call_times</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="n">repeat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Runtime of the first call and mean ± standard deviation of the subsequent calls of each method."""</span>
+    <span class="n">rows</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">method</span><span class="p">,</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">methods</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">timeit</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">),</span> <span class="n">number</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">repeat</span><span class="p">))</span>
+        <span class="n">rows</span><span class="p">[</span><span class="n">method</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"first call [s]"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">first_call_times</span><span class="p">[</span><span class="n">method</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="s2">"subsequent calls [s]"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">times</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">times</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">"index"</span><span class="p">)</span><span class="o">.</span><span class="n">rename_axis</span><span class="p">(</span><span class="s2">"method"</span><span class="p">)</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ds</span><span class="o">.</span><span class="n">latitude</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> × </span><span class="si">{</span><span class="n">ds</span><span class="o">.</span><span class="n">longitude</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> grid points -&gt; </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pois</span><span class="p">)</span><span class="si">}</span><span class="s2"> stations"</span><span class="p">)</span>
+<span class="n">runs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"nearest"</span><span class="p">:</span> <span class="n">METHODS</span><span class="p">[</span><span class="s2">"nearest"</span><span class="p">],</span> <span class="s2">"nearest (try_reg=True)"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"method"</span><span class="p">:</span> <span class="s2">"nearest"</span><span class="p">,</span> <span class="s2">"try_reg"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}}</span>
+<span class="n">runs</span> <span class="o">|=</span> <span class="p">{</span><span class="n">label</span><span class="p">:</span> <span class="n">kwargs</span> <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">kwargs</span> <span class="ow">in</span> <span class="n">METHODS</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">label</span> <span class="o">!=</span> <span class="s2">"nearest"</span><span class="p">}</span>
+<span class="n">benchmark</span><span class="p">(</span><span class="n">gri</span><span class="o">.</span><span class="n">interp2poi</span><span class="p">,</span> <span class="n">ds</span><span class="p">,</span> <span class="n">pois</span><span class="p">,</span> <span class="n">runs</span><span class="p">,</span> <span class="n">first_call</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="p">{</span><span class="s2">"nearest"</span><span class="p">:</span> <span class="s2">"nearest (try_reg=False)"</span><span class="p">})</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>721 × 1440 grid points -&gt; 33 stations
+</pre></div>
+</div>
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>first call [s]</th>
+      <th>subsequent calls [s]</th>
+    </tr>
+    <tr>
+      <th>method</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>nearest (try_reg=False)</th>
+      <td>0.627</td>
+      <td>0.165 ± 0.005</td>
+    </tr>
+    <tr>
+      <th>nearest (try_reg=True)</th>
+      <td>0.006</td>
+      <td>0.004 ± 0.000</td>
+    </tr>
+    <tr>
+      <th>linear</th>
+      <td>0.013</td>
+      <td>0.004 ± 0.000</td>
+    </tr>
+    <tr>
+      <th>temp</th>
+      <td>0.653</td>
+      <td>0.215 ± 0.006</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
+</div>
+</section>
+<section id="takeaways">
+<h2>Takeaways<a class="headerlink" href="#takeaways" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>At 0.25° the model orography smooths out the mountains: on Säntis, Sonnblick, Jungfraujoch and Mauna Loa
+the nearest grid point is 700 to 1400 m below the station, and <code class="docutils literal notranslate"><span class="pre">nearest</span></code> and <code class="docutils literal notranslate"><span class="pre">linear</span></code> are about 4 to 10 °C
+too warm. In the valley of Sion the grid point is 1000 m above the station, and they are about 8 °C too cold.
+<code class="docutils literal notranslate"><span class="pre">temp</span></code> corrects most of these differences: its errors stay within about 2.5 °C at these stations.</p></li>
+<li><p>Where the model altitude is close to the station altitude, the three methods agree. The remaining
+differences to the observations (e.g. in Mexico City, Manaus, Christchurch or at the South Pole) come from
+the model itself, not from the interpolation. Observations taken up to an hour from the valid time also
+add some differences.</p></li>
+<li><p>Coastal stations are more mixed: the neighborhood of <code class="docutils literal notranslate"><span class="pre">temp</span></code> contains land and sea grid points. At Nadi it
+removes most of the error of <code class="docutils literal notranslate"><span class="pre">nearest</span></code>, while at Dakar it is warmer than the observation. If needed, the
+sea grid points can be masked, e.g. with <code class="docutils literal notranslate"><span class="pre">ds.where(land_fraction</span> <span class="pre">&gt;</span> <span class="pre">0.5)</span></code> and the GFS land-sea mask
+(<code class="docutils literal notranslate"><span class="pre">LAND</span></code>): grid points that are NaN for all variables are ignored in the neighbor search.</p></li>
+<li><p>The ECEF neighbor search handles the stations next to the antimeridian (Nadi, Fua’amotu, Pago Pago) and
+close to the poles like any other. At the South Pole, all neighbors are the same pole point repeated in the
+first grid row: <code class="docutils literal notranslate"><span class="pre">temp</span></code> cannot fit a sounding and falls back to a fixed lapse rate.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">linear</span></code> is not available in ECEF: on a regular latitude/longitude grid such as GFS it goes through the
+regular grid interpolation (<code class="docutils literal notranslate"><span class="pre">try_reg=True</span></code>, the default), which also handles the 0..360° longitudes of GFS
+and the stations across its 360° seam.</p></li>
+<li><p>The first call of <code class="docutils literal notranslate"><span class="pre">nearest</span></code> (<code class="docutils literal notranslate"><span class="pre">try_reg=False</span></code>) and <code class="docutils literal notranslate"><span class="pre">temp</span></code> includes converting the 1 million grid points to
+ECEF and building the neighbor search, about 0.6 s. Subsequent calls take about 0.2 s. On a regular grid
+such as GFS, the regular grid interpolation (<code class="docutils literal notranslate"><span class="pre">try_reg=True</span></code>) is 40 to 100 times faster: <code class="docutils literal notranslate"><span class="pre">nearest</span></code> and
+<code class="docutils literal notranslate"><span class="pre">linear</span></code> take a few milliseconds, and <code class="docutils literal notranslate"><span class="pre">nearest</span></code> picks the same grid point as in ECEF at all stations. The
+ECEF neighbor search remains needed by the methods using a neighborhood, such as <code class="docutils literal notranslate"><span class="pre">temp</span></code>, and by
+unstructured grids.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="04_interp2grid_valais_temperature.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Regridding: IFS-HRES and ICON-CH2 2 m temperature on a 200 m grid over Valais</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="06_interp2grid_era5_global_temperature.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Regridding: ERA5 2 m temperature on the global IFS 0.1° grid</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#source-data">Source data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stations-and-observations">Stations and observations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#interpolation">Interpolation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#visual-comparison">Visual comparison</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#performance-benchmark">Performance benchmark</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#takeaways">Takeaways</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item"><!-- This will display the version of the docs -->
+grid-process, version: dev-e479e16</div>
+      
+        <div class="footer-item"><p class="last-updated">
+  Last updated on 11.11.2026.
+  <br/>
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, MeteoSwiss.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

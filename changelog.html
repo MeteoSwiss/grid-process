@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=1de118f2"></script>
+    <script src="_static/documentation_options.js?v=e0d173ce"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'changelog';</script>
@@ -54,11 +54,11 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="API Reference" href="autoapi/index.html" />
-    <link rel="prev" title="Regridding: IFS-HRES and ICON-CH2 2 m temperature on a 200 m grid over Valais" href="examples/04_interp2grid_valais_temperature.html" />
+    <link rel="prev" title="Regridding: ERA5 2 m temperature on the global IFS 0.1° grid" href="examples/06_interp2grid_era5_global_temperature.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="04.11.2026"/>
+    <meta name="docbuild:last-update" content="11.11.2026"/>
   </head>
   
   
@@ -404,11 +404,47 @@
 <ul class="simple">
 <li><p>added a <code class="docutils literal notranslate"><span class="pre">py.typed</span></code> marker so that type checkers use the inline type hints of <code class="docutils literal notranslate"><span class="pre">grid-process</span></code> (PEP 561)</p></li>
 <li><p>added example notebooks to the documentation illustrating <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> with open data, with
-their dependencies in the optional <code class="docutils literal notranslate"><span class="pre">example</span></code> dependency group</p></li>
+their dependencies in the optional <code class="docutils literal notranslate"><span class="pre">example</span></code> dependency group. Two of them are global: GFS 2 m temperature to
+stations worldwide (compared with GHCN-hourly observations) and ERA5 2 m temperature to the IFS 0.1° grid</p></li>
 <li><p>fixed <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> truncating reprojected coordinates when the grid coordinates are
 integers (e.g. an LV95 destination grid built with <code class="docutils literal notranslate"><span class="pre">np.arange</span></code>), which gave wrong values or NaN</p></li>
 <li><p>fixed <code class="docutils literal notranslate"><span class="pre">create_dst_grid</span></code> with <code class="docutils literal notranslate"><span class="pre">topright</span></code> and <code class="docutils literal notranslate"><span class="pre">resolution</span></code>: the resolution is now exact and <code class="docutils literal notranslate"><span class="pre">topright</span></code>
 a closed upper bound, instead of the grid spacing being stretched to end exactly on <code class="docutils literal notranslate"><span class="pre">topright</span></code></p></li>
+<li><p>fixed <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> (outside of the regular grid interpolation) searching nearest neighbors
+and triangulating (<code class="docutils literal notranslate"><span class="pre">linear</span></code>, <code class="docutils literal notranslate"><span class="pre">cubic</span></code>) in latitude/longitude degrees, where a degree of longitude is shorter
+than a degree of latitude (about 0.68 times in Switzerland). Distances are now always in meters: native
+coordinates projected in meters are used even if latitude/longitude coordinates are present (e.g. LV95 grids),
+and latitude/longitude grids are converted to Swiss LV95, or to earth-centered earth-fixed coordinates (ECEF) far
+from Switzerland. Neighbors, IDW weights and <code class="docutils literal notranslate"><span class="pre">linear</span></code>/<code class="docutils literal notranslate"><span class="pre">cubic</span></code> results change slightly for grids that were
+searched in latitude/longitude, including native LV95 grids with latitude/longitude coordinates</p></li>
+<li><p>fixed the reprojection of grids in rotated pole (or latitude/longitude) on a sphere without datum, e.g. from a CF
+grid mapping with <code class="docutils literal notranslate"><span class="pre">earth_radius</span></code>: their latitudes and longitudes are now considered as WGS84 ones, as their
+latitude/longitude coordinates usually are. The datum shift to Swiss coordinates (about 180 m) was left out.
+<code class="docutils literal notranslate"><span class="pre">parse_grid_mapping</span></code> (and <code class="docutils literal notranslate"><span class="pre">get_grid_crs</span></code>) now return such CF mappings directly on WGS84, without
+<code class="docutils literal notranslate"><span class="pre">pyproj.CRS.from_cf</span></code>, which took about 0.3 s for a rotated pole; other mappings parsed by <code class="docutils literal notranslate"><span class="pre">from_cf</span></code> are cached</p></li>
+<li><p>added the support of global and other non-Swiss latitude/longitude grids by <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code>
+(except <code class="docutils literal notranslate"><span class="pre">linear</span></code>, <code class="docutils literal notranslate"><span class="pre">linear_3D</span></code> and <code class="docutils literal notranslate"><span class="pre">cubic</span></code>, which raise an error), with nearest neighbor searches in ECEF
+coordinates. The maximum distance of the destination to the LV95 central northing for using LV95 is set by the
+new setting <code class="docutils literal notranslate"><span class="pre">lv95_max_offset</span></code> (environment variable <code class="docutils literal notranslate"><span class="pre">GRID_PROCESS__lv95_max_offset</span></code>, default 700 km)</p></li>
+<li><p>changed the methods with altitude, which no longer reproject to Swiss coordinates when the source grid or the
+destination has another CRS projected in meters (e.g. UTM)</p></li>
+<li><p>added an explicit error when the destination grid of <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> is unstructured, which is not supported</p></li>
+<li><p>fixed <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> with latitude/longitude source grids whose longitude convention
+(0..360 or -180..180) differs from the one of the POIs or destination grid: the source was sliced to the
+wrong longitudes (wrong values in the generic path, e.g. for a global destination grid) and the regular grid
+interpolation (<code class="docutils literal notranslate"><span class="pre">try_reg=True</span></code>) returned NaN. Global latitude/longitude grids are also interpolated across
+their 360 degree seam. When slicing a latitude/longitude source grid, the longitude buffer is widened by
+1 / cos(latitude) (as nearest neighbors are now searched in meters) and all longitudes are kept close to the
+poles</p></li>
+<li><p>changed the <code class="docutils literal notranslate"><span class="pre">temp</span></code> method of <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code>: POIs whose nearest grid points all have the same altitude (e.g.
+close to the poles of a latitude/longitude grid, whose pole rows repeat the same point, or on flat orography)
+use the fixed lapse rate fallback (as POIs far above or below their neighborhood) instead of raising an error</p></li>
+<li><p>fixed <code class="docutils literal notranslate"><span class="pre">create_dst_grid_from_src</span></code>: the destination grid now spans exactly the bounding box of the source domain
+reprojected in the destination CRS (from native coordinates projected in meters when available), instead of the
+reprojected corners of its latitude/longitude bounding box, which could be much larger (e.g. +80 km for ICON-CH2
+in LV95) or miss parts of the domain (e.g. 28 km for IFS in LV95)</p></li>
+<li><p>fixed <code class="docutils literal notranslate"><span class="pre">set_grid_mapping</span></code> with CF grid mappings holding numpy arrays or non-float64 numpy values (e.g. a
+<code class="docutils literal notranslate"><span class="pre">standard_parallel</span></code> array read from a netCDF file), which raised a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code></p></li>
 </ul>
 </section>
 <section id="id1">
@@ -435,12 +471,12 @@ a closed upper bound, instead of the grid spacing being stretched to end exactly
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="examples/04_interp2grid_valais_temperature.html"
+       href="examples/06_interp2grid_era5_global_temperature.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Regridding: IFS-HRES and ICON-CH2 2 m temperature on a 200 m grid over Valais</p>
+        <p class="prev-next-title">Regridding: ERA5 2 m temperature on the global IFS 0.1° grid</p>
       </div>
     </a>
     <a class="right-next"
@@ -498,10 +534,10 @@ a closed upper bound, instead of the grid spacing being stretched to end exactly
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-3d57771</div>
+grid-process, version: dev-e479e16</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 04.11.2026.
+  Last updated on 11.11.2026.
   <br/>
 </p></div>
       

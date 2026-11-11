@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=1de118f2"></script>
+    <script src="../../_static/documentation_options.js?v=e0d173ce"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/grid_process/data_model';</script>
@@ -55,7 +55,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="04.11.2026"/>
+    <meta name="docbuild:last-update" content="11.11.2026"/>
   </head>
   
   
@@ -408,12 +408,15 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">lru_cache</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">overload</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArray</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pyproj</span><span class="w"> </span><span class="kn">import</span> <span class="n">CRS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyproj.crs</span><span class="w"> </span><span class="kn">import</span> <span class="n">DerivedGeographicCRS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyproj.crs.coordinate_operation</span><span class="w"> </span><span class="kn">import</span> <span class="n">PoleRotationNetCDFCFConversion</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 
@@ -624,12 +627,6 @@
 <span class="sd">    data variable encoding the grid mapping is removed.</span>
 <span class="sd">    """</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">serializable_mapping</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="p">{</span>
-            <span class="n">key</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">)</span> <span class="k">else</span> <span class="n">value</span>
-            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">ds_out</span><span class="p">[</span><span class="n">mapname</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-        <span class="p">}</span>
-
     <span class="n">ds_out</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">grid_map</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">varname</span><span class="p">,</span> <span class="n">da</span> <span class="ow">in</span> <span class="n">ds_out</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -645,7 +642,7 @@
 
     <span class="n">mapname</span> <span class="o">=</span> <span class="n">grid_map</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
     <span class="k">if</span> <span class="p">{</span><span class="s2">"grid_mapping"</span><span class="p">,</span> <span class="s2">"crs"</span><span class="p">}</span><span class="o">.</span><span class="n">isdisjoint</span><span class="p">(</span><span class="n">ds_out</span><span class="o">.</span><span class="n">attrs</span><span class="p">)</span> <span class="ow">and</span> <span class="n">mapname</span> <span class="ow">in</span> <span class="n">ds_out</span><span class="p">:</span>
-        <span class="n">ds_out</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"grid_mapping"</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">serializable_mapping</span><span class="p">())</span>
+        <span class="n">ds_out</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"grid_mapping"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_grid_mapping_json</span><span class="p">(</span><span class="n">ds_out</span><span class="p">[</span><span class="n">mapname</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">ds_out</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span><span class="n">mapname</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span></div>
 
@@ -900,26 +897,112 @@
 <span class="sd">    See also</span>
 <span class="sd">    --------</span>
 <span class="sd">    :func:`get_grid_crs`</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    CF ``latitude_longitude`` and ``rotated_latitude_longitude`` mappings without ellipsoid parameters other than</span>
+<span class="sd">    ``earth_radius`` (as NWP models on a sphere) are built directly on WGS84, which is much faster than</span>
+<span class="sd">    pyproj.CRS.from_cf(). The result is the same as ``sphere_as_wgs84(pyproj.CRS.from_cf(grid_mapping))``, see</span>
+<span class="sd">    :func:`~grid_process.helpers.sphere_as_wgs84`.</span>
 <span class="sd">    """</span>
 
+    <span class="c1"># pyproj.CRS.from_cf() takes ~0.3 s for mappings with ellipsoid parameters (custom datum): cached on the JSON</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="n">grid_mapping</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">)</span>
-    <span class="k">if</span> <span class="s2">"epsg_code"</span> <span class="ow">in</span> <span class="n">grid_mapping</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">[</span><span class="s2">"epsg_code"</span><span class="p">])</span>  <span class="c1"># type: ignore[index]</span>
+        <span class="k">return</span> <span class="n">_parse_grid_mapping_str</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_parse_grid_mapping_str</span><span class="p">(</span><span class="n">_grid_mapping_json</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>  <span class="c1"># not serializable: parse without cache</span>
+        <span class="k">return</span> <span class="n">_parse_grid_mapping_dict</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">)</span></div>
 
-    <span class="k">return</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_cf</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_grid_mapping_json</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    JSON string of a grid mapping dictionary, with sorted keys and numpy scalars and arrays (e.g. attributes read</span>
+<span class="sd">    from a netCDF file such as "standard_parallel") converted to numbers and lists.</span>
+<span class="sd">    """</span>
+
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="k">lambda</span> <span class="n">value</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+
+
+<span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_grid_mapping_str</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CRS</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Cached parsing of a JSON "grid_mapping" attribute, see :func:`parse_grid_mapping`.</span>
+<span class="sd">    """</span>
+
+    <span class="k">return</span> <span class="n">_parse_grid_mapping_dict</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_grid_mapping_dict</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">CRS</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Parsing of a "grid_mapping" dictionary, see :func:`parse_grid_mapping`.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="s2">"epsg_code"</span> <span class="ow">in</span> <span class="n">grid_mapping</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">[</span><span class="s2">"epsg_code"</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">_ELLIPSOID_KEYS</span><span class="o">.</span><span class="n">isdisjoint</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">):</span>
+        <span class="n">mapping_name</span> <span class="o">=</span> <span class="n">grid_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"grid_mapping_name"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mapping_name</span> <span class="o">==</span> <span class="s2">"latitude_longitude"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_epsg</span><span class="p">(</span><span class="mi">4326</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mapping_name</span> <span class="o">==</span> <span class="s2">"rotated_latitude_longitude"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">DerivedGeographicCRS</span><span class="p">(</span>
+                <span class="n">base_crs</span><span class="o">=</span><span class="n">CRS</span><span class="o">.</span><span class="n">from_epsg</span><span class="p">(</span><span class="mi">4326</span><span class="p">),</span>
+                <span class="n">conversion</span><span class="o">=</span><span class="n">PoleRotationNetCDFCFConversion</span><span class="p">(</span>
+                    <span class="n">grid_north_pole_latitude</span><span class="o">=</span><span class="n">grid_mapping</span><span class="p">[</span><span class="s2">"grid_north_pole_latitude"</span><span class="p">],</span>
+                    <span class="n">grid_north_pole_longitude</span><span class="o">=</span><span class="n">grid_mapping</span><span class="p">[</span><span class="s2">"grid_north_pole_longitude"</span><span class="p">],</span>
+                    <span class="n">north_pole_grid_longitude</span><span class="o">=</span><span class="n">grid_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"north_pole_grid_longitude"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_cf</span><span class="p">(</span><span class="n">grid_mapping</span><span class="p">)</span>
+
+
+<span class="c1"># CF grid mapping attributes defining the ellipsoid or datum (other than earth_radius for a sphere)</span>
+<span class="n">_ELLIPSOID_KEYS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">(</span>
+        <span class="s2">"semi_major_axis"</span><span class="p">,</span>
+        <span class="s2">"semi_minor_axis"</span><span class="p">,</span>
+        <span class="s2">"inverse_flattening"</span><span class="p">,</span>
+        <span class="s2">"reference_ellipsoid_name"</span><span class="p">,</span>
+        <span class="s2">"horizontal_datum_name"</span><span class="p">,</span>
+        <span class="s2">"geographic_crs_name"</span><span class="p">,</span>
+        <span class="s2">"prime_meridian_name"</span><span class="p">,</span>
+        <span class="s2">"longitude_of_prime_meridian"</span><span class="p">,</span>
+        <span class="s2">"towgs84"</span><span class="p">,</span>
+        <span class="s2">"crs_wkt"</span><span class="p">,</span>
+        <span class="s2">"spatial_ref"</span><span class="p">,</span>  <span class="c1"># WKT written by GDAL</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="is_metric_crs">
+<a class="viewcode-back" href="../../autoapi/grid_process/data_model/index.html#grid_process.data_model.is_metric_crs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_metric_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">:</span> <span class="n">CRS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Whether ``crs`` is a projected CRS with all axes in meters (e.g. LV95, LV03 or UTM), i.e. in which euclidean</span>
+<span class="sd">    distances can be computed directly from the coordinates. The axis units are compared by their conversion factor</span>
+<span class="sd">    to the meter, so that units written with another name (e.g. "m" or "Meter" in a WKT without authority) are</span>
+<span class="sd">    recognized, while kilometers or feet are not.</span>
+<span class="sd">    """</span>
+
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">crs</span><span class="o">.</span><span class="n">is_projected</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">unit_conversion_factor</span> <span class="o">==</span> <span class="mf">1.0</span> <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="n">crs</span><span class="o">.</span><span class="n">axis_info</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="get_coords_name_crs">
 <a class="viewcode-back" href="../../autoapi/grid_process/data_model/index.html#grid_process.data_model.get_coords_name_crs">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_coords_name_crs</span><span class="p">(</span>
-    <span class="n">grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span> <span class="o">|</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span> <span class="o">|</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span>
+    <span class="n">spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">prefer_projected</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">CRS</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Get correct coordinate names and CRS according to supported conventions. When</span>
 <span class="sd">    non-dimensional longitude and latitude coordinates arrays are present, these</span>
-<span class="sd">    are used instead of the native spatial dimension coordinates.</span>
+<span class="sd">    are used instead of the native spatial dimension coordinates, unless ``prefer_projected``</span>
+<span class="sd">    is True and the native CRS is projected with axes in meters.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -931,6 +1014,10 @@
 <span class="sd">        name of the ``grid`` spatial dimension(s). Has size one in case of</span>
 <span class="sd">        unstructured grid otherwise contains dimension names in the order (y, x).</span>
 <span class="sd">        If not provided, calls :func:`~grid_process.helpers.get_spatial_dims`</span>
+<span class="sd">    prefer_projected : bool, optional</span>
+<span class="sd">        If True, return the native spatial coordinates when their CRS is projected with axes in meters (e.g. LV95),</span>
+<span class="sd">        even if longitude and latitude coordinates are also present. Native coordinates in degrees (e.g. rotated</span>
+<span class="sd">        pole) still give the longitude and latitude coordinates when present. Default is False.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -941,6 +1028,13 @@
 <span class="sd">    grid_crs : pyproj CRS</span>
 <span class="sd">        pyproj representation of input grid coordinate reference system</span>
 <span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">prefer_projected</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">get_spatial_dims</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+        <span class="n">native</span> <span class="o">=</span> <span class="n">_get_native_metric_coords</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">native</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">native</span>
 
     <span class="n">latlon</span> <span class="o">=</span> <span class="n">get_latlon_coords</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">latlon</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -960,6 +1054,35 @@
 
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Missing spatial coordinates"</span><span class="p">)</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_native_metric_coords</span><span class="p">(</span>
+    <span class="n">grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span> <span class="o">|</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">CRS</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Names of the native (y, x) spatial coordinates and their CRS if this CRS is projected with axes in meters,</span>
+<span class="sd">    otherwise None. Used by :func:`get_coords_name_crs` with ``prefer_projected=True``.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span> <span class="o">=</span> <span class="n">get_spatial_coords</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span> <span class="o">=</span> <span class="n">spatial_dims</span>
+        <span class="k">if</span> <span class="n">grid_y</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">grid</span><span class="o">.</span><span class="n">coords</span> <span class="ow">or</span> <span class="n">grid_x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">)</span> <span class="o">==</span> <span class="n">get_latlon_coords</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">nondim</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">crs</span> <span class="o">=</span> <span class="n">get_grid_crs</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>  <span class="c1"># no CRS attribute: only longitude and latitude can be used</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">,</span> <span class="n">crs</span><span class="p">)</span> <span class="k">if</span> <span class="n">is_metric_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
 
 
 <div class="viewcode-block" id="is_decreasing1d">
@@ -1025,10 +1148,10 @@
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-3d57771</div>
+grid-process, version: dev-e479e16</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 04.11.2026.
+  Last updated on 11.11.2026.
   <br/>
 </p></div>
       

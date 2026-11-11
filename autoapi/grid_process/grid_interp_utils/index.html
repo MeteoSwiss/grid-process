@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=1de118f2"></script>
+    <script src="../../../_static/documentation_options.js?v=e0d173ce"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/grid_interp_utils/index';</script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="04.11.2026"/>
+    <meta name="docbuild:last-update" content="11.11.2026"/>
   </head>
   
   
@@ -531,7 +531,9 @@ used directly.</p></li>
 </li>
 <li><p><strong>dst_grid_crs</strong> (<em>string, int, dict or a CRS object</em>) – Anything accepted by pyproj.crs.CRS.from_user_input:
 <a class="reference external" href="https://pyproj4.github.io/pyproj/dev/api/crs/crs.html#pyproj.crs.CRS.from_user_input">https://pyproj4.github.io/pyproj/dev/api/crs/crs.html#pyproj.crs.CRS.from_user_input</a>
-(e.g. EPSG:4326)</p></li>
+(e.g. EPSG:4326). The source domain must be representable in this CRS: a global source needs a
+geographic destination CRS (e.g. EPSG:4326), since a projected CRS (e.g. LV95 or UTM) cannot represent
+the whole globe.</p></li>
 <li><p><strong>add_latlon</strong> (<em>bool</em>) – If True, add latitude and longitude 2d arrays as coordinates</p></li>
 </ul>
 </dd>
@@ -629,10 +631,10 @@ used directly.</p></li>
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-3d57771</div>
+grid-process, version: dev-e479e16</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 04.11.2026.
+  Last updated on 11.11.2026.
   <br/>
 </p></div>
       

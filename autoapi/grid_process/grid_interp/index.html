@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=1de118f2"></script>
+    <script src="../../../_static/documentation_options.js?v=e0d173ce"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/grid_interp/index';</script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="04.11.2026"/>
+    <meta name="docbuild:last-update" content="11.11.2026"/>
   </head>
   
   
@@ -460,10 +460,22 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.SRC_ATTRS_KEEP" title="grid_process.grid_interp.SRC_ATTRS_KEEP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SRC_ATTRS_KEEP</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.SWISS_CRS" title="grid_process.grid_interp.SWISS_CRS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SWISS_CRS</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.LV95" title="grid_process.grid_interp.LV95"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LV95</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.LV95_NORTHING_CENTER" title="grid_process.grid_interp.LV95_NORTHING_CENTER"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LV95_NORTHING_CENTER</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.ECEF" title="grid_process.grid_interp.ECEF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ECEF</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.InterpMethods" title="grid_process.grid_interp.InterpMethods"><code class="xref py py-obj docutils literal notranslate"><span class="pre">InterpMethods</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.GRIDDATA_METHODS" title="grid_process.grid_interp.GRIDDATA_METHODS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GRIDDATA_METHODS</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.FLAT_NEIGHBORHOOD" title="grid_process.grid_interp.FLAT_NEIGHBORHOOD"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FLAT_NEIGHBORHOOD</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.HEIGHT_METHODS" title="grid_process.grid_interp.HEIGHT_METHODS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HEIGHT_METHODS</span></code></a></p></td>
@@ -576,8 +588,18 @@
 <dd></dd></dl>
 
 <dl class="py data">
-<dt class="sig sig-object py" id="grid_process.grid_interp.SWISS_CRS">
-<span class="sig-name descname"><span class="pre">SWISS_CRS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('EPSG:2056',</span> <span class="pre">'EPSG:21781')</span></em><a class="headerlink" href="#grid_process.grid_interp.SWISS_CRS" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="grid_process.grid_interp.LV95">
+<span class="sig-name descname"><span class="pre">LV95</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EPSG:Uninferable'</span></em><a class="headerlink" href="#grid_process.grid_interp.LV95" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.grid_interp.LV95_NORTHING_CENTER">
+<span class="sig-name descname"><span class="pre">LV95_NORTHING_CENTER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1200000.0</span></em><a class="headerlink" href="#grid_process.grid_interp.LV95_NORTHING_CENTER" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.grid_interp.ECEF">
+<span class="sig-name descname"><span class="pre">ECEF</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EPSG:Uninferable'</span></em><a class="headerlink" href="#grid_process.grid_interp.ECEF" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py data">
@@ -596,14 +618,14 @@ penalizes elevation differences for <code class="docutils literal notranslate"><
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>coords_flat</strong> (<em>numpy.ndarray, shape (n_grids, m)</em>) – array of flattened grid coordinates. n_grids is the number of model
-grid points, m the number of coordinates dimensions (i.e. 3)</p></li>
+grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)</p></li>
 <li><p><strong>data_flat</strong> (<em>numpy.ndarray, shape (n_grids, …)</em>) – array containing the flattened model data with various trailing
 dimensions</p></li>
 <li><p><strong>pois_coords</strong> (<em>numpy.ndarray , shape (n_pois, m)</em>) – array of POI coordinates. n_pois is the number of POIs, m the number of
-coordinates dimensions (i.e. 3)</p></li>
+coordinates dimensions (3 or 4, with the altitude as last column)</p></li>
 <li><p><strong>z_fact</strong> (<em>positive int, optional</em>) – factor to multiply the z coordinates to find nearest neighbors based on a
 non-euclidean distance that penalizes more altitude differences. Default
-value is 50. A value of 1 will use regular euclidean distances.</p></li>
+value is 25. A value of 1 will use regular euclidean distances.</p></li>
 <li><p><strong>k</strong> (<em>positive int, optional</em>) – number of considered nearest neighbors for the local sounding. Default
 is 36</p></li>
 <li><p><strong>weight_power</strong> (<em>positive float, optional</em>) – a weight vector is passed to the sounding fit according to
@@ -630,16 +652,17 @@ dimensions as the input <code class="docutils literal notranslate"><span class="
 <dd class="field-odd"><p>numpy.ndarray, shape (n_pois, …)</p>
 </dd>
 </dl>
-<p>:raises ValueError : Raised if the orography is flat, as no sounding can be estimated.:</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="#grid_process.grid_interp.interp2poi" title="grid_process.grid_interp.interp2poi"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2poi()</span></code></a></p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>For POIs with altitude higher than 300m above the highest gridpoint or lower
-than 500m below the lowest gridpoint in the local neighborhood used for the fit,
-the fixgrad method is used with default gradient of 0.006 [K / m].</p>
+<p>For POIs with altitude higher than 200m above the highest gridpoint or lower
+than 600m below the lowest gridpoint in the local neighborhood used for the fit,
+or whose neighbors all have the same altitude (no sounding can be fitted, e.g. at
+the poles of a latitude/longitude grid or on flat orography), the fixgrad method
+is used with default gradient of 0.006 [K / m].</p>
 </div>
 </dd></dl>
 
@@ -653,11 +676,11 @@ for altitude difference with a fixed gradient.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>coords_flat</strong> (<em>numpy.ndarray, shape (n_grids, m)</em>) – array of flattened grid coordinates. n_grids is the number of model
-grid points, m the number of coordinates dimensions (i.e. 3)</p></li>
+grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)</p></li>
 <li><p><strong>data_flat</strong> (<em>numpy.ndarray, shape (n_grids, …)</em>) – array containing the flattened model data with various trailing
 dimensions</p></li>
 <li><p><strong>pois_coords</strong> (<em>numpy.ndarray , shape (n_pois, m)</em>) – array of POI coordinates. n_pois is the number of POIs, m the number of
-coordinates dimensions (i.e. 3)</p></li>
+coordinates dimensions (3 or 4, with the altitude as last column)</p></li>
 <li><p><strong>r_search</strong> (<em>positive float, optional</em>) – radius in model gridpoints that define the number of neighbors included
 in the search. Default is 4</p></li>
 <li><p><strong>z_weight</strong> (<em>positive int, optional</em>) – weight for the z axis in the distance computation of the “most adequat”
@@ -692,11 +715,11 @@ are preferred. The grid does not need to be regular.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>coords_flat</strong> (<em>numpy.ndarray, shape (n_grids, m)</em>) – array of flattened grid coordinates. n_grids is the number of model
-grid points, m the number of coordinates dimensions (i.e. 3)</p></li>
+grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)</p></li>
 <li><p><strong>data_flat</strong> (<em>numpy.ndarray, shape (n_grids, …)</em>) – array containing the flattened model data with various trailing
 dimensions</p></li>
 <li><p><strong>pois_coords</strong> (<em>numpy.ndarray , shape (n_pois, m)</em>) – array of POI coordinates. n_pois is the number of POIs, m the number of
-coordinates dimensions (i.e. 3)</p></li>
+coordinates dimensions (3 or 4, with the altitude as last column)</p></li>
 <li><p><strong>r_search</strong> (<em>positive float, optional</em>) – radius in model gridpoints that define the number of neighbors included
 in the search. Default is 4</p></li>
 <li><p><strong>z_weight</strong> (<em>positive int, optional</em>) – weight for the z axis in the distance computation of the “most adequat”
@@ -727,11 +750,11 @@ weightning.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>coords_flat</strong> (<em>numpy.ndarray, shape (n_grids,m)</em>) – array of flattened grid coordinates. n_grids is the number of model
-grid points, m the number of coordinates dimensions (i.e. 2 or 3)</p></li>
+grid points, m the number of coordinates dimensions (2 to 4)</p></li>
 <li><p><strong>data_flat</strong> (<em>numpy.ndarray, shape (n_grids, …)</em>) – array containing the flattened model data with various trailing
 dimensions</p></li>
 <li><p><strong>pois_coords</strong> (<em>numpy.ndarray , shape (n_pois, m)</em>) – array of POI coordinates. n_pois is the number of POIs, m the number of
-coordinates dimensions (i.e. 2 or 3)</p></li>
+coordinates dimensions (2 to 4)</p></li>
 <li><p><strong>k</strong> (<em>positive int, optional</em>) – number of considered nearest neighbors. Default is 4</p></li>
 <li><p><strong>weight_power</strong> (<em>positive float, optional</em>) – the interpolated value is the weighted average of the k nearest grid
 points accordi g to <code class="docutils literal notranslate"><span class="pre">w</span> <span class="pre">=</span> <span class="pre">d^(-weight_power)</span></code>, with d being the
@@ -764,11 +787,11 @@ over the k nearest neighbors (e.g. upscaling).</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>coords_flat</strong> (<em>numpy.ndarray, shape (n_grids, m)</em>) – array of flattened grid coordinates. n_grids is the number of model
-grid points, m the number of coordinates dimensions (i.e. 2 or 3)</p></li>
+grid points, m the number of coordinates dimensions (2 to 4)</p></li>
 <li><p><strong>data_flat</strong> (<em>numpy.ndarray, shape (n_grids, …)</em>) – array containing the flattened model data with various trailing
 dimensions</p></li>
 <li><p><strong>pois_coords</strong> (<em>numpy.ndarray , shape (n_pois, m)</em>) – array of POI coordinates. n_pois is the number of POIs, m the number of
-coordinates dimensions (i.e. 2 or 3).</p></li>
+coordinates dimensions (2 to 4).</p></li>
 <li><p><strong>k</strong> (<em>positive int, optional</em>) – number of considered nearest neighbors. Default is 4</p></li>
 <li><p><strong>agg_func</strong> (<em>callable, optional</em>) – specify the spatial aggregation function to use (i.e. numpy.mean,
 numpy.max, numpy.min, numpy.std). Default is numpy.max.</p></li>
@@ -796,11 +819,11 @@ dimensions as the input <code class="docutils literal notranslate"><span class="
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>coords_flat</strong> (<em>numpy.ndarray, shape (n_grids, m)</em>) – array of flattened grid coordinates. n_grids is the number of model
-grid points, m the number of coordinates dimensions (i.e. 2 or 3).</p></li>
+grid points, m the number of coordinates dimensions (2 to 4).</p></li>
 <li><p><strong>data_flat</strong> (<em>numpy.ndarray, shape (n_grids, …)</em>) – array containing the flattened model data with various trailing
 dimensions</p></li>
 <li><p><strong>pois_coords</strong> (<em>numpy.ndarray , shape (n_pois, m)</em>) – array of POI coordinates. n_pois is the number of POIs, m the number of
-coordinates dimensions (i.e. 2 or 3).</p></li>
+coordinates dimensions (2 to 4).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -831,11 +854,11 @@ among the k nearest neighbors is taken.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>coords_flat</strong> (<em>numpy.ndarray, shape (n_grids, m)</em>) – array of flattened grid coordinates. n_grids is the number of model
-grid points, m the number of coordinates dimensions (i.e. 3)</p></li>
+grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)</p></li>
 <li><p><strong>data_flat</strong> (<em>numpy.ndarray, shape (n_grids, …)</em>) – Array containing the flattened model data with various trailing
 dimension.</p></li>
 <li><p><strong>pois_coords</strong> (<em>numpy.ndarray , shape (n_pois, m)</em>) – array of POI coordinates. n_pois is the number of POIs, m the number of
-coordinates dimensions (i.e. 3)</p></li>
+coordinates dimensions (3 or 4, with the altitude as last column)</p></li>
 <li><p><strong>k</strong> (<em>positive int</em>) – Number of considered nearest neighbors to check for altitude of NaN
 grid points.</p></li>
 <li><p><strong>d_max</strong> (<em>positive float</em>) – if all grid points within a radius of d_max meter from the POI are NaNs
@@ -941,11 +964,28 @@ The output POI dimension name can be overridden via GRID_PROCESS__data_model__po
 <p><a class="reference internal" href="#grid_process.grid_interp.interp_temp" title="grid_process.grid_interp.interp_temp"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_temp()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_temp_fixgrad" title="grid_process.grid_interp.interp_temp_fixgrad"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_temp_fixgrad()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_nearest_alt" title="grid_process.grid_interp.interp_nearest_alt"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_nearest_alt()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_idw" title="grid_process.grid_interp.interp_idw"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_idw()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_upscaled" title="grid_process.grid_interp.interp_upscaled"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_upscaled()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_nearest" title="grid_process.grid_interp.interp_nearest"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_nearest()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_snowlim" title="grid_process.grid_interp.interp_snowlim"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_snowlim()</span></code></a>, <code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.interpolate.griddata()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">xarray.Dataset.interp()</span></code></p>
 </div>
 <p class="rubric">Notes</p>
-<ul class="simple">
+<ul>
 <li><p>Grid points containing only NaNs across all dimensions are excluded from interpolation, enabling easy masking
 (e.g., excluding water pixels with <cite>ds.where(ds.fr_land &gt; 0.5).interp2poi(…, try_reg=False)</cite>).</p></li>
 <li><p>For regular grid interpolation, all NaN grid points are kept.</p></li>
 <li><p>Environment variables allow flexible support for custom grid and POI data models.</p></li>
+<li><p>Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for ‘linear’,
+‘linear_3D’ and ‘cubic’ are done) with distances in meters, never in latitude/longitude degrees. The source
+grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and
+longitude coordinates are present, otherwise its latitude/longitude. The coordinates are converted to:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>the CRS projected in meters of the source grid or of the destination, if any (the one of the larger grid
+if both are);</p></li>
+<li><p>otherwise Swiss LV95 (EPSG:2056) if the destination is within <code class="docutils literal notranslate"><span class="pre">lv95_max_offset</span></code> meters (default 700 km,
+set with the environment variable GRID_PROCESS__lv95_max_offset) of the LV95 central northing
+(1 200 000 m), where the LV95 scale error is small (0.6 % at 700 km);</p></li>
+<li><p>otherwise earth-centered earth-fixed coordinates (ECEF, EPSG:4978), e.g. for global grids. The methods
+‘linear’, ‘linear_3D’ and ‘cubic’ are not supported in this case.</p></li>
+</ul>
+</div></blockquote>
+<p>Methods with altitude use it as an additional coordinate in meters.</p>
+</li>
 </ul>
 </dd></dl>
 
@@ -958,9 +998,9 @@ POIs.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>grid_coords</strong> (<em>numpy.ndarray, shape (n, m)</em>) – array of flattened grid coordinates. N is the number of model grid
-points, m the number of coordinates dimensions (i.e. 2 or 3)</p></li>
+points, m the number of coordinates dimensions (2 to 4)</p></li>
 <li><p><strong>points</strong> (<em>numpy.ndarray, shape (p, m)</em>) – array of POIs coordinates. P is the number of POIs, m the number of
-coordinates dimensions (i.e. 2 or 3)</p></li>
+coordinates dimensions (2 to 4)</p></li>
 <li><p><strong>k</strong> (<em>positive int</em>) – number of considered nearest neighbors</p></li>
 </ul>
 </dd>
@@ -1049,8 +1089,9 @@ used directly.</p></li>
 <p>For methods requiring altitude, ensure a surface altitude coordinate is present; extend supported names via
 GRID_PROCESS__data_model__grid__surf_alt.</p>
 </li>
-<li><p><strong>dst_grid</strong> (<em>xarray.Dataset</em>) – The destination grid to interpolate to. Same supported data models as the source grid, including conventions for
-dimensions and coordinates as well as spatial CRS.
+<li><p><strong>dst_grid</strong> (<em>xarray.Dataset</em>) – The destination grid to interpolate to. It must be a structured grid with two spatial dimensions (y, x):
+unstructured (1D) grids are only supported as source grid. Same supported data models as the source grid,
+including conventions for dimensions and coordinates as well as spatial CRS.
 For methods requiring altitude, ensure a surface altitude coordinate is also present.
 The destination dataset may contain only spatial coordinates or also data variables which will be ignored.</p></li>
 <li><p><strong>method</strong> (<em>str</em>) –</p>
@@ -1074,17 +1115,38 @@ so for small grids with many trailing dimensions.</p></li>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>xr.Dataset</p>
 </dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">dst_grid</span></code> is not a structured grid, or for the methods ‘linear’, ‘linear_3D’ and ‘cubic’ when the
+interpolation is done in ECEF coordinates (see notes).</p>
+</dd>
 </dl>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="#grid_process.grid_interp.interp_temp" title="grid_process.grid_interp.interp_temp"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_temp()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_temp_fixgrad" title="grid_process.grid_interp.interp_temp_fixgrad"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_temp_fixgrad()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_nearest_alt" title="grid_process.grid_interp.interp_nearest_alt"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_nearest_alt()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_idw" title="grid_process.grid_interp.interp_idw"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_idw()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_upscaled" title="grid_process.grid_interp.interp_upscaled"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_upscaled()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_nearest" title="grid_process.grid_interp.interp_nearest"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_nearest()</span></code></a>, <a class="reference internal" href="#grid_process.grid_interp.interp_snowlim" title="grid_process.grid_interp.interp_snowlim"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp_snowlim()</span></code></a>, <code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.interpolate.griddata()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">xarray.Dataset.interp()</span></code></p>
 </div>
 <p class="rubric">Notes</p>
-<ul class="simple">
+<ul>
 <li><p>Not all interpolation methods scale efficiently with large input datasets or and/or destination grids.</p></li>
 <li><p>Recommended methods: ‘nearest’, ‘linear’ (if the source grid is regular with 1D coordinates), ‘idw’ (with k=4),
 ‘temp_fixgrad’, ‘nearest_3D’, ‘nearest_alt’.</p></li>
 <li><p>Environment variables allow flexible support for custom grid data models.</p></li>
+<li><p>Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for ‘linear’,
+‘linear_3D’ and ‘cubic’ are done) with distances in meters, never in latitude/longitude degrees. The source
+grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and
+longitude coordinates are present, otherwise its latitude/longitude. The coordinates are converted to:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>the CRS projected in meters of the source grid or of the destination, if any (the one of the larger grid
+if both are);</p></li>
+<li><p>otherwise Swiss LV95 (EPSG:2056) if the destination is within <code class="docutils literal notranslate"><span class="pre">lv95_max_offset</span></code> meters (default 700 km,
+set with the environment variable GRID_PROCESS__lv95_max_offset) of the LV95 central northing
+(1 200 000 m), where the LV95 scale error is small (0.6 % at 700 km);</p></li>
+<li><p>otherwise earth-centered earth-fixed coordinates (ECEF, EPSG:4978), e.g. for global grids. The methods
+‘linear’, ‘linear_3D’ and ‘cubic’ are not supported in this case.</p></li>
+</ul>
+</div></blockquote>
+<p>Methods with altitude use it as an additional coordinate in meters.</p>
+</li>
 </ul>
 </dd></dl>
 
@@ -1101,6 +1163,16 @@ plus a buffer depending on the interpolation method and corresponding kwargs.</p
 <dd><p>Slice input dataset to the extend of the destination grid and coarsen it if the
 destination grid has lower resolution (downsampling).</p>
 </dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.grid_interp.GRIDDATA_METHODS">
+<span class="sig-name descname"><span class="pre">GRIDDATA_METHODS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('linear',</span> <span class="pre">'linear_3D',</span> <span class="pre">'cubic')</span></em><a class="headerlink" href="#grid_process.grid_interp.GRIDDATA_METHODS" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.grid_interp.FLAT_NEIGHBORHOOD">
+<span class="sig-name descname"><span class="pre">FLAT_NEIGHBORHOOD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1e-06</span></em><a class="headerlink" href="#grid_process.grid_interp.FLAT_NEIGHBORHOOD" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="grid_process.grid_interp.HEIGHT_METHODS">
@@ -1173,7 +1245,9 @@ destination grid has lower resolution (downsampling).</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.POI_DIM"><code class="docutils literal notranslate"><span class="pre">POI_DIM</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.POI_COORD_COL"><code class="docutils literal notranslate"><span class="pre">POI_COORD_COL</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.SRC_ATTRS_KEEP"><code class="docutils literal notranslate"><span class="pre">SRC_ATTRS_KEEP</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.SWISS_CRS"><code class="docutils literal notranslate"><span class="pre">SWISS_CRS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.LV95"><code class="docutils literal notranslate"><span class="pre">LV95</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.LV95_NORTHING_CENTER"><code class="docutils literal notranslate"><span class="pre">LV95_NORTHING_CENTER</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.ECEF"><code class="docutils literal notranslate"><span class="pre">ECEF</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.InterpMethods"><code class="docutils literal notranslate"><span class="pre">InterpMethods</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.interp_temp"><code class="docutils literal notranslate"><span class="pre">interp_temp()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.interp_temp_fixgrad"><code class="docutils literal notranslate"><span class="pre">interp_temp_fixgrad()</span></code></a></li>
@@ -1189,6 +1263,8 @@ destination grid has lower resolution (downsampling).</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.interp2grid"><code class="docutils literal notranslate"><span class="pre">interp2grid()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.slice_boundingbox"><code class="docutils literal notranslate"><span class="pre">slice_boundingbox()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.slice_coarsen"><code class="docutils literal notranslate"><span class="pre">slice_coarsen()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.GRIDDATA_METHODS"><code class="docutils literal notranslate"><span class="pre">GRIDDATA_METHODS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.FLAT_NEIGHBORHOOD"><code class="docutils literal notranslate"><span class="pre">FLAT_NEIGHBORHOOD</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.HEIGHT_METHODS"><code class="docutils literal notranslate"><span class="pre">HEIGHT_METHODS</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.INTERP_FUNC"><code class="docutils literal notranslate"><span class="pre">INTERP_FUNC</span></code></a></li>
 </ul>
@@ -1218,10 +1294,10 @@ destination grid has lower resolution (downsampling).</p>
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-3d57771</div>
+grid-process, version: dev-e479e16</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 04.11.2026.
+  Last updated on 11.11.2026.
   <br/>
 </p></div>
       

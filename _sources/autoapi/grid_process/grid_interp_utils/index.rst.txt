@@ -76,7 +76,9 @@ Module Contents
                     - If coordinates are named 'latitude'/'longitude' or 'lat'/'lon', WGS84 (EPSG:4326) is assumed.
                 * **dst_grid_crs** (*string, int, dict or a CRS object*) -- Anything accepted by pyproj.crs.CRS.from_user_input:
                   https://pyproj4.github.io/pyproj/dev/api/crs/crs.html#pyproj.crs.CRS.from_user_input
-                  (e.g. EPSG:4326)
+                  (e.g. EPSG:4326). The source domain must be representable in this CRS: a global source needs a
+                  geographic destination CRS (e.g. EPSG:4326), since a projected CRS (e.g. LV95 or UTM) cannot represent
+                  the whole globe.
                 * **add_latlon** (*bool*) -- If True, add latitude and longitude 2d arrays as coordinates
 
    :returns: **dst_grid** -- dataset with spatial horizontal coordinates and an associated crs attribute

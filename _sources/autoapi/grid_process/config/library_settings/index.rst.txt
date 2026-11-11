@@ -522,6 +522,12 @@ Module Contents
       :type:  DataModelSettings
 
 
+   .. py:attribute:: lv95_max_offset
+      :type:  float
+      :value: None
+
+
+
    .. py:method:: settings_customise_sources(settings_cls: type[pydantic_settings.BaseSettings], init_settings: pydantic_settings.PydanticBaseSettingsSource, env_settings: pydantic_settings.PydanticBaseSettingsSource, dotenv_settings: pydantic_settings.PydanticBaseSettingsSource, file_secret_settings: pydantic_settings.PydanticBaseSettingsSource) -> tuple[pydantic_settings.PydanticBaseSettingsSource, ...]
       :classmethod:
 

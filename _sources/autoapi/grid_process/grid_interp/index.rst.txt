@@ -20,8 +20,12 @@ Attributes
    grid_process.grid_interp.POI_DIM
    grid_process.grid_interp.POI_COORD_COL
    grid_process.grid_interp.SRC_ATTRS_KEEP
-   grid_process.grid_interp.SWISS_CRS
+   grid_process.grid_interp.LV95
+   grid_process.grid_interp.LV95_NORTHING_CENTER
+   grid_process.grid_interp.ECEF
    grid_process.grid_interp.InterpMethods
+   grid_process.grid_interp.GRIDDATA_METHODS
+   grid_process.grid_interp.FLAT_NEIGHBORHOOD
    grid_process.grid_interp.HEIGHT_METHODS
    grid_process.grid_interp.INTERP_FUNC
 
@@ -77,8 +81,16 @@ Module Contents
    :value: ('source', 'title', 'institution', 'history', 'references', 'comment')
 
 
-.. py:data:: SWISS_CRS
-   :value: ('EPSG:2056', 'EPSG:21781')
+.. py:data:: LV95
+   :value: 'EPSG:Uninferable'
+
+
+.. py:data:: LV95_NORTHING_CENTER
+   :value: 1200000.0
+
+
+.. py:data:: ECEF
+   :value: 'EPSG:Uninferable'
 
 
 .. py:data:: InterpMethods
@@ -91,14 +103,14 @@ Module Contents
    penalizes elevation differences for ``z_fact`` > 1.
 
    :Parameters: * **coords_flat** (*numpy.ndarray, shape (n_grids, m)*) -- array of flattened grid coordinates. n_grids is the number of model
-                  grid points, m the number of coordinates dimensions (i.e. 3)
+                  grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)
                 * **data_flat** (*numpy.ndarray, shape (n_grids, ...)*) -- array containing the flattened model data with various trailing
                   dimensions
                 * **pois_coords** (*numpy.ndarray , shape (n_pois, m)*) -- array of POI coordinates. n_pois is the number of POIs, m the number of
-                  coordinates dimensions (i.e. 3)
+                  coordinates dimensions (3 or 4, with the altitude as last column)
                 * **z_fact** (*positive int, optional*) -- factor to multiply the z coordinates to find nearest neighbors based on a
                   non-euclidean distance that penalizes more altitude differences. Default
-                  value is 50. A value of 1 will use regular euclidean distances.
+                  value is 25. A value of 1 will use regular euclidean distances.
                 * **k** (*positive int, optional*) -- number of considered nearest neighbors for the local sounding. Default
                   is 36
                 * **weight_power** (*positive float, optional*) -- a weight vector is passed to the sounding fit according to
@@ -120,15 +132,15 @@ Module Contents
              dimensions as the input ``data_flat`` array
    :rtype: numpy.ndarray, shape (n_pois, ...)
 
-   :raises ValueError : Raised if the orography is flat, as no sounding can be estimated.:
-
    .. seealso:: :func:`interp2poi`
 
    .. note::
 
-      For POIs with altitude higher than 300m above the highest gridpoint or lower
-      than 500m below the lowest gridpoint in the local neighborhood used for the fit,
-      the fixgrad method is used with default gradient of 0.006 [K / m].
+      For POIs with altitude higher than 200m above the highest gridpoint or lower
+      than 600m below the lowest gridpoint in the local neighborhood used for the fit,
+      or whose neighbors all have the same altitude (no sounding can be fitted, e.g. at
+      the poles of a latitude/longitude grid or on flat orography), the fixgrad method
+      is used with default gradient of 0.006 [K / m].
 
 
 .. py:function:: interp_temp_fixgrad(coords_flat: numpy.ndarray, data_flat: numpy.ndarray, pois_coords: numpy.ndarray, r_search: float = 2, z_weight: int = 200, grad: float = 0.006) -> numpy.ndarray
@@ -138,11 +150,11 @@ Module Contents
    for altitude difference with a fixed gradient.
 
    :Parameters: * **coords_flat** (*numpy.ndarray, shape (n_grids, m)*) -- array of flattened grid coordinates. n_grids is the number of model
-                  grid points, m the number of coordinates dimensions (i.e. 3)
+                  grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)
                 * **data_flat** (*numpy.ndarray, shape (n_grids, ...)*) -- array containing the flattened model data with various trailing
                   dimensions
                 * **pois_coords** (*numpy.ndarray , shape (n_pois, m)*) -- array of POI coordinates. n_pois is the number of POIs, m the number of
-                  coordinates dimensions (i.e. 3)
+                  coordinates dimensions (3 or 4, with the altitude as last column)
                 * **r_search** (*positive float, optional*) -- radius in model gridpoints that define the number of neighbors included
                   in the search. Default is 4
                 * **z_weight** (*positive int, optional*) -- weight for the z axis in the distance computation of the "most adequat"
@@ -166,11 +178,11 @@ Module Contents
    are preferred. The grid does not need to be regular.
 
    :Parameters: * **coords_flat** (*numpy.ndarray, shape (n_grids, m)*) -- array of flattened grid coordinates. n_grids is the number of model
-                  grid points, m the number of coordinates dimensions (i.e. 3)
+                  grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)
                 * **data_flat** (*numpy.ndarray, shape (n_grids, ...)*) -- array containing the flattened model data with various trailing
                   dimensions
                 * **pois_coords** (*numpy.ndarray , shape (n_pois, m)*) -- array of POI coordinates. n_pois is the number of POIs, m the number of
-                  coordinates dimensions (i.e. 3)
+                  coordinates dimensions (3 or 4, with the altitude as last column)
                 * **r_search** (*positive float, optional*) -- radius in model gridpoints that define the number of neighbors included
                   in the search. Default is 4
                 * **z_weight** (*positive int, optional*) -- weight for the z axis in the distance computation of the "most adequat"
@@ -190,11 +202,11 @@ Module Contents
    weightning.
 
    :Parameters: * **coords_flat** (*numpy.ndarray, shape (n_grids,m)*) -- array of flattened grid coordinates. n_grids is the number of model
-                  grid points, m the number of coordinates dimensions (i.e. 2 or 3)
+                  grid points, m the number of coordinates dimensions (2 to 4)
                 * **data_flat** (*numpy.ndarray, shape (n_grids, ...)*) -- array containing the flattened model data with various trailing
                   dimensions
                 * **pois_coords** (*numpy.ndarray , shape (n_pois, m)*) -- array of POI coordinates. n_pois is the number of POIs, m the number of
-                  coordinates dimensions (i.e. 2 or 3)
+                  coordinates dimensions (2 to 4)
                 * **k** (*positive int, optional*) -- number of considered nearest neighbors. Default is 4
                 * **weight_power** (*positive float, optional*) -- the interpolated value is the weighted average of the k nearest grid
                   points accordi g to ``w = d^(-weight_power)``, with d being the
@@ -216,11 +228,11 @@ Module Contents
    over the k nearest neighbors (e.g. upscaling).
 
    :Parameters: * **coords_flat** (*numpy.ndarray, shape (n_grids, m)*) -- array of flattened grid coordinates. n_grids is the number of model
-                  grid points, m the number of coordinates dimensions (i.e. 2 or 3)
+                  grid points, m the number of coordinates dimensions (2 to 4)
                 * **data_flat** (*numpy.ndarray, shape (n_grids, ...)*) -- array containing the flattened model data with various trailing
                   dimensions
                 * **pois_coords** (*numpy.ndarray , shape (n_pois, m)*) -- array of POI coordinates. n_pois is the number of POIs, m the number of
-                  coordinates dimensions (i.e. 2 or 3).
+                  coordinates dimensions (2 to 4).
                 * **k** (*positive int, optional*) -- number of considered nearest neighbors. Default is 4
                 * **agg_func** (*callable, optional*) -- specify the spatial aggregation function to use (i.e. numpy.mean,
                   numpy.max, numpy.min, numpy.std). Default is numpy.max.
@@ -237,11 +249,11 @@ Module Contents
    Performs nearest neighbor interpolation from grid to POIs.
 
    :Parameters: * **coords_flat** (*numpy.ndarray, shape (n_grids, m)*) -- array of flattened grid coordinates. n_grids is the number of model
-                  grid points, m the number of coordinates dimensions (i.e. 2 or 3).
+                  grid points, m the number of coordinates dimensions (2 to 4).
                 * **data_flat** (*numpy.ndarray, shape (n_grids, ...)*) -- array containing the flattened model data with various trailing
                   dimensions
                 * **pois_coords** (*numpy.ndarray , shape (n_pois, m)*) -- array of POI coordinates. n_pois is the number of POIs, m the number of
-                  coordinates dimensions (i.e. 2 or 3).
+                  coordinates dimensions (2 to 4).
 
    :returns: **poi_data** -- array containing the interpolated values and the same trailing
              dimensions as the input ``data_flat`` array
@@ -261,11 +273,11 @@ Module Contents
    among the k nearest neighbors is taken.
 
    :Parameters: * **coords_flat** (*numpy.ndarray, shape (n_grids, m)*) -- array of flattened grid coordinates. n_grids is the number of model
-                  grid points, m the number of coordinates dimensions (i.e. 3)
+                  grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)
                 * **data_flat** (*numpy.ndarray, shape (n_grids, ...)*) -- Array containing the flattened model data with various trailing
                   dimension.
                 * **pois_coords** (*numpy.ndarray , shape (n_pois, m)*) -- array of POI coordinates. n_pois is the number of POIs, m the number of
-                  coordinates dimensions (i.e. 3)
+                  coordinates dimensions (3 or 4, with the altitude as last column)
                 * **k** (*positive int*) -- Number of considered nearest neighbors to check for altitude of NaN
                   grid points.
                 * **d_max** (*positive float*) -- if all grid points within a radius of d_max meter from the POI are NaNs
@@ -347,6 +359,20 @@ Module Contents
      (e.g., excluding water pixels with `ds.where(ds.fr_land > 0.5).interp2poi(..., try_reg=False)`).
    - For regular grid interpolation, all NaN grid points are kept.
    - Environment variables allow flexible support for custom grid and POI data models.
+   - Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for 'linear',
+     'linear_3D' and 'cubic' are done) with distances in meters, never in latitude/longitude degrees. The source
+     grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and
+     longitude coordinates are present, otherwise its latitude/longitude. The coordinates are converted to:
+
+       - the CRS projected in meters of the source grid or of the destination, if any (the one of the larger grid
+         if both are);
+       - otherwise Swiss LV95 (EPSG:2056) if the destination is within ``lv95_max_offset`` meters (default 700 km,
+         set with the environment variable GRID_PROCESS__lv95_max_offset) of the LV95 central northing
+         (1 200 000 m), where the LV95 scale error is small (0.6 % at 700 km);
+       - otherwise earth-centered earth-fixed coordinates (ECEF, EPSG:4978), e.g. for global grids. The methods
+         'linear', 'linear_3D' and 'cubic' are not supported in this case.
+
+     Methods with altitude use it as an additional coordinate in meters.
 
 
 .. py:function:: nn_lookup(grid_coords: numpy.ndarray, points: numpy.ndarray, k: int) -> tuple[numpy.ndarray, numpy.ndarray]
@@ -355,9 +381,9 @@ Module Contents
    POIs.
 
    :Parameters: * **grid_coords** (*numpy.ndarray, shape (n, m)*) -- array of flattened grid coordinates. N is the number of model grid
-                  points, m the number of coordinates dimensions (i.e. 2 or 3)
+                  points, m the number of coordinates dimensions (2 to 4)
                 * **points** (*numpy.ndarray, shape (p, m)*) -- array of POIs coordinates. P is the number of POIs, m the number of
-                  coordinates dimensions (i.e. 2 or 3)
+                  coordinates dimensions (2 to 4)
                 * **k** (*positive int*) -- number of considered nearest neighbors
 
    :returns: * **dd** (*numpy.ndarray, shape (p, k)*) -- array of nearest neighbor distances.
@@ -419,8 +445,9 @@ Module Contents
 
                   For methods requiring altitude, ensure a surface altitude coordinate is present; extend supported names via
                   GRID_PROCESS__data_model__grid__surf_alt.
-                * **dst_grid** (*xarray.Dataset*) -- The destination grid to interpolate to. Same supported data models as the source grid, including conventions for
-                  dimensions and coordinates as well as spatial CRS.
+                * **dst_grid** (*xarray.Dataset*) -- The destination grid to interpolate to. It must be a structured grid with two spatial dimensions (y, x):
+                  unstructured (1D) grids are only supported as source grid. Same supported data models as the source grid,
+                  including conventions for dimensions and coordinates as well as spatial CRS.
                   For methods requiring altitude, ensure a surface altitude coordinate is also present.
                   The destination dataset may contain only spatial coordinates or also data variables which will be ignored.
                 * **method** (*str*) --
@@ -440,6 +467,9 @@ Module Contents
    :returns: Dataset with values from `data` interpolated onto the coordinates of `dst_grid`.
    :rtype: xr.Dataset
 
+   :raises ValueError: If ``dst_grid`` is not a structured grid, or for the methods 'linear', 'linear_3D' and 'cubic' when the
+       interpolation is done in ECEF coordinates (see notes).
+
    .. seealso:: :func:`interp_temp`, :func:`interp_temp_fixgrad`, :func:`interp_nearest_alt`, :func:`interp_idw`, :func:`interp_upscaled`, :func:`interp_nearest`, :func:`interp_snowlim`, :func:`scipy.interpolate.griddata`, :meth:`xarray.Dataset.interp`
 
    .. rubric:: Notes
@@ -448,6 +478,20 @@ Module Contents
    - Recommended methods: 'nearest', 'linear' (if the source grid is regular with 1D coordinates), 'idw' (with k=4),
      'temp_fixgrad', 'nearest_3D', 'nearest_alt'.
    - Environment variables allow flexible support for custom grid data models.
+   - Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for 'linear',
+     'linear_3D' and 'cubic' are done) with distances in meters, never in latitude/longitude degrees. The source
+     grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and
+     longitude coordinates are present, otherwise its latitude/longitude. The coordinates are converted to:
+
+       - the CRS projected in meters of the source grid or of the destination, if any (the one of the larger grid
+         if both are);
+       - otherwise Swiss LV95 (EPSG:2056) if the destination is within ``lv95_max_offset`` meters (default 700 km,
+         set with the environment variable GRID_PROCESS__lv95_max_offset) of the LV95 central northing
+         (1 200 000 m), where the LV95 scale error is small (0.6 % at 700 km);
+       - otherwise earth-centered earth-fixed coordinates (ECEF, EPSG:4978), e.g. for global grids. The methods
+         'linear', 'linear_3D' and 'cubic' are not supported in this case.
+
+     Methods with altitude use it as an additional coordinate in meters.
 
 
 .. py:function:: slice_boundingbox(data: xarray.Dataset, poi_info: geopandas.GeoDataFrame, method: str, spatial_dims: tuple[str, ...] | None = None, **kwargs: Any) -> xarray.Dataset
@@ -460,6 +504,14 @@ Module Contents
 
    Slice input dataset to the extend of the destination grid and coarsen it if the
    destination grid has lower resolution (downsampling).
+
+
+.. py:data:: GRIDDATA_METHODS
+   :value: ('linear', 'linear_3D', 'cubic')
+
+
+.. py:data:: FLAT_NEIGHBORHOOD
+   :value: 1e-06
 
 
 .. py:data:: HEIGHT_METHODS

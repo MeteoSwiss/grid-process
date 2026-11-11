@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=1de118f2"></script>
+    <script src="../../_static/documentation_options.js?v=e0d173ce"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/grid_process/grid_interp';</script>
@@ -55,7 +55,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="04.11.2026"/>
+    <meta name="docbuild:last-update" content="11.11.2026"/>
   </head>
   
   
@@ -420,10 +420,10 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.interpolate</span><span class="w"> </span><span class="kn">import</span> <span class="n">griddata</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.spatial</span><span class="w"> </span><span class="kn">import</span> <span class="n">KDTree</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pyproj</span><span class="w"> </span><span class="kn">import</span> <span class="n">CRS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyproj</span><span class="w"> </span><span class="kn">import</span> <span class="n">CRS</span><span class="p">,</span> <span class="n">Transformer</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process</span><span class="w"> </span><span class="kn">import</span> <span class="n">CONFIG</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_accessor</span><span class="p">,</span> <span class="n">reproject</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_accessor</span><span class="p">,</span> <span class="n">outer_ring</span><span class="p">,</span> <span class="n">reproject</span><span class="p">,</span> <span class="n">sphere_as_wgs84</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process</span><span class="w"> </span><span class="kn">import</span> <span class="n">data_model</span> <span class="k">as</span> <span class="n">dm</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.optimization</span><span class="w"> </span><span class="kn">import</span> <span class="n">memoize</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.ds_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ds_to_da</span><span class="p">,</span> <span class="n">cast_dtype</span>
@@ -453,7 +453,11 @@
 <span class="n">POI_DIM</span> <span class="o">=</span> <span class="n">POI_MODEL</span><span class="o">.</span><span class="n">dim</span>
 <span class="n">POI_COORD_COL</span> <span class="o">=</span> <span class="n">POI_MODEL</span><span class="o">.</span><span class="n">coord_from</span>
 <span class="n">SRC_ATTRS_KEEP</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"source"</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">,</span> <span class="s2">"institution"</span><span class="p">,</span> <span class="s2">"history"</span><span class="p">,</span> <span class="s2">"references"</span><span class="p">,</span> <span class="s2">"comment"</span><span class="p">)</span>
-<span class="n">SWISS_CRS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"EPSG:2056"</span><span class="p">,</span> <span class="s2">"EPSG:21781"</span><span class="p">)</span>
+<span class="c1"># CRS of the nearest neighbor searches and triangulations when both grids are geographic (lat/lon, rotated pole):</span>
+<span class="c1"># Swiss LV95 if the destination is close enough to Switzerland, otherwise earth-centered earth-fixed (ECEF)</span>
+<span class="n">LV95</span> <span class="o">=</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_epsg</span><span class="p">(</span><span class="mi">2056</span><span class="p">)</span>
+<span class="n">LV95_NORTHING_CENTER</span> <span class="o">=</span> <span class="mf">1_200_000.0</span>
+<span class="n">ECEF</span> <span class="o">=</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_epsg</span><span class="p">(</span><span class="mi">4978</span><span class="p">)</span>
 
 <span class="n">InterpMethods</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">Literal</span><span class="p">[</span>
@@ -494,17 +498,17 @@
 <span class="sd">    ----------</span>
 <span class="sd">    coords_flat : numpy.ndarray, shape (n_grids, m)</span>
 <span class="sd">        array of flattened grid coordinates. n_grids is the number of model</span>
-<span class="sd">        grid points, m the number of coordinates dimensions (i.e. 3)</span>
+<span class="sd">        grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)</span>
 <span class="sd">    data_flat : numpy.ndarray, shape (n_grids, ...)</span>
 <span class="sd">        array containing the flattened model data with various trailing</span>
 <span class="sd">        dimensions</span>
 <span class="sd">    pois_coords : numpy.ndarray , shape (n_pois, m)</span>
 <span class="sd">        array of POI coordinates. n_pois is the number of POIs, m the number of</span>
-<span class="sd">        coordinates dimensions (i.e. 3)</span>
+<span class="sd">        coordinates dimensions (3 or 4, with the altitude as last column)</span>
 <span class="sd">    z_fact : positive int, optional</span>
 <span class="sd">        factor to multiply the z coordinates to find nearest neighbors based on a</span>
 <span class="sd">        non-euclidean distance that penalizes more altitude differences. Default</span>
-<span class="sd">        value is 50. A value of 1 will use regular euclidean distances.</span>
+<span class="sd">        value is 25. A value of 1 will use regular euclidean distances.</span>
 <span class="sd">    k : positive int, optional</span>
 <span class="sd">        number of considered nearest neighbors for the local sounding. Default</span>
 <span class="sd">        is 36</span>
@@ -532,19 +536,17 @@
 <span class="sd">        array containing the interpolated values and the same trailing</span>
 <span class="sd">        dimensions as the input ``data_flat`` array</span>
 
-<span class="sd">    Raises</span>
-<span class="sd">    ------</span>
-<span class="sd">    ValueError : Raised if the orography is flat, as no sounding can be estimated.</span>
-
 <span class="sd">    See also</span>
 <span class="sd">    --------</span>
 <span class="sd">    :func:`interp2poi`</span>
 
 <span class="sd">    Note</span>
 <span class="sd">    ----</span>
-<span class="sd">    For POIs with altitude higher than 300m above the highest gridpoint or lower</span>
-<span class="sd">    than 500m below the lowest gridpoint in the local neighborhood used for the fit,</span>
-<span class="sd">    the fixgrad method is used with default gradient of 0.006 [K / m].</span>
+<span class="sd">    For POIs with altitude higher than 200m above the highest gridpoint or lower</span>
+<span class="sd">    than 600m below the lowest gridpoint in the local neighborhood used for the fit,</span>
+<span class="sd">    or whose neighbors all have the same altitude (no sounding can be fitted, e.g. at</span>
+<span class="sd">    the poles of a latitude/longitude grid or on flat orography), the fixgrad method</span>
+<span class="sd">    is used with default gradient of 0.006 [K / m].</span>
 <span class="sd">    """</span>
 
     <span class="c1"># make sure k is smaller or equal to the number of grid points</span>
@@ -582,11 +584,15 @@
         <span class="c1"># to classify fixgrad vs sounding POIs.</span>
         <span class="n">alt_minmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">all_alt</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># shape (2, n_pois)</span>
         <span class="n">fixgrad_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">poi_alts</span> <span class="o">&lt;</span> <span class="n">alt_minmax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">600</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">poi_alts</span> <span class="o">&gt;</span> <span class="n">alt_minmax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">)</span>
+        <span class="n">fixgrad_mask</span> <span class="o">|=</span> <span class="n">alt_minmax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">alt_minmax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">FLAT_NEIGHBORHOOD</span>
         <span class="n">sounding_groups</span> <span class="o">=</span> <span class="p">[(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="o">~</span><span class="n">fixgrad_mask</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="kc">True</span><span class="p">)]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># classify each POI into three groups: fixgrad, deg1 sounding, deg3 sounding</span>
         <span class="n">alt_q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">all_alt</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># shape (4, n_pois)</span>
         <span class="n">fixgrad_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">poi_alts</span> <span class="o">&lt;</span> <span class="n">alt_q</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">600</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">poi_alts</span> <span class="o">&gt;</span> <span class="n">alt_q</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">)</span>
+        <span class="c1"># no sounding can be fitted when all neighbors have the same altitude (e.g. copies of the pole point of a</span>
+        <span class="c1"># latitude/longitude grid, flat orography)</span>
+        <span class="n">fixgrad_mask</span> <span class="o">|=</span> <span class="n">alt_q</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">alt_q</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">FLAT_NEIGHBORHOOD</span>
         <span class="n">sounding_mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">fixgrad_mask</span>
         <span class="n">deg3_mask</span> <span class="o">=</span> <span class="n">sounding_mask</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">alt_q</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">poi_alts</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">poi_alts</span> <span class="o">&lt;</span> <span class="n">alt_q</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
         <span class="n">deg1_mask</span> <span class="o">=</span> <span class="n">sounding_mask</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">deg3_mask</span>
@@ -859,13 +865,13 @@
 <span class="sd">    ----------</span>
 <span class="sd">    coords_flat : numpy.ndarray, shape (n_grids, m)</span>
 <span class="sd">        array of flattened grid coordinates. n_grids is the number of model</span>
-<span class="sd">        grid points, m the number of coordinates dimensions (i.e. 3)</span>
+<span class="sd">        grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)</span>
 <span class="sd">    data_flat : numpy.ndarray, shape (n_grids, ...)</span>
 <span class="sd">        array containing the flattened model data with various trailing</span>
 <span class="sd">        dimensions</span>
 <span class="sd">    pois_coords : numpy.ndarray , shape (n_pois, m)</span>
 <span class="sd">        array of POI coordinates. n_pois is the number of POIs, m the number of</span>
-<span class="sd">        coordinates dimensions (i.e. 3)</span>
+<span class="sd">        coordinates dimensions (3 or 4, with the altitude as last column)</span>
 <span class="sd">    r_search : positive float, optional</span>
 <span class="sd">        radius in model gridpoints that define the number of neighbors included</span>
 <span class="sd">        in the search. Default is 4</span>
@@ -957,13 +963,13 @@
 <span class="sd">    ----------</span>
 <span class="sd">    coords_flat : numpy.ndarray, shape (n_grids, m)</span>
 <span class="sd">        array of flattened grid coordinates. n_grids is the number of model</span>
-<span class="sd">        grid points, m the number of coordinates dimensions (i.e. 3)</span>
+<span class="sd">        grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)</span>
 <span class="sd">    data_flat : numpy.ndarray, shape (n_grids, ...)</span>
 <span class="sd">        array containing the flattened model data with various trailing</span>
 <span class="sd">        dimensions</span>
 <span class="sd">    pois_coords : numpy.ndarray , shape (n_pois, m)</span>
 <span class="sd">        array of POI coordinates. n_pois is the number of POIs, m the number of</span>
-<span class="sd">        coordinates dimensions (i.e. 3)</span>
+<span class="sd">        coordinates dimensions (3 or 4, with the altitude as last column)</span>
 <span class="sd">    r_search : positive float, optional</span>
 <span class="sd">        radius in model gridpoints that define the number of neighbors included</span>
 <span class="sd">        in the search. Default is 4</span>
@@ -1004,7 +1010,7 @@
 
     <span class="n">k</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">r_search</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
     <span class="c1"># find indexes and distances of nearest neighbor grids for all POIs</span>
-    <span class="n">dist_nn_horz</span><span class="p">,</span> <span class="n">ind_nn</span> <span class="o">=</span> <span class="n">nn_lookup_cached</span><span class="p">(</span><span class="n">coords_flat</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">pois_coords</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">k</span><span class="p">)</span>
+    <span class="n">dist_nn_horz</span><span class="p">,</span> <span class="n">ind_nn</span> <span class="o">=</span> <span class="n">nn_lookup_cached</span><span class="p">(</span><span class="n">coords_flat</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">pois_coords</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">k</span><span class="p">)</span>
 
     <span class="n">dist_nn_vert</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">coords_flat</span><span class="p">[</span><span class="n">ind_nn</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">pois_coords</span><span class="p">[:,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
     <span class="n">dist_weighted</span> <span class="o">=</span> <span class="n">dist_nn_horz</span> <span class="o">+</span> <span class="n">z_weight</span> <span class="o">*</span> <span class="p">(</span><span class="n">dist_nn_vert</span> <span class="o">-</span> <span class="n">deltah_min</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
@@ -1029,13 +1035,13 @@
 <span class="sd">    ----------</span>
 <span class="sd">    coords_flat : numpy.ndarray, shape (n_grids,m)</span>
 <span class="sd">        array of flattened grid coordinates. n_grids is the number of model</span>
-<span class="sd">        grid points, m the number of coordinates dimensions (i.e. 2 or 3)</span>
+<span class="sd">        grid points, m the number of coordinates dimensions (2 to 4)</span>
 <span class="sd">    data_flat : numpy.ndarray, shape (n_grids, ...)</span>
 <span class="sd">        array containing the flattened model data with various trailing</span>
 <span class="sd">        dimensions</span>
 <span class="sd">    pois_coords : numpy.ndarray , shape (n_pois, m)</span>
 <span class="sd">        array of POI coordinates. n_pois is the number of POIs, m the number of</span>
-<span class="sd">        coordinates dimensions (i.e. 2 or 3)</span>
+<span class="sd">        coordinates dimensions (2 to 4)</span>
 <span class="sd">    k : positive int, optional</span>
 <span class="sd">        number of considered nearest neighbors. Default is 4</span>
 <span class="sd">    weight_power : positive float, optional</span>
@@ -1090,13 +1096,13 @@
 <span class="sd">    ----------</span>
 <span class="sd">    coords_flat : numpy.ndarray, shape (n_grids, m)</span>
 <span class="sd">        array of flattened grid coordinates. n_grids is the number of model</span>
-<span class="sd">        grid points, m the number of coordinates dimensions (i.e. 2 or 3)</span>
+<span class="sd">        grid points, m the number of coordinates dimensions (2 to 4)</span>
 <span class="sd">    data_flat : numpy.ndarray, shape (n_grids, ...)</span>
 <span class="sd">        array containing the flattened model data with various trailing</span>
 <span class="sd">        dimensions</span>
 <span class="sd">    pois_coords : numpy.ndarray , shape (n_pois, m)</span>
 <span class="sd">        array of POI coordinates. n_pois is the number of POIs, m the number of</span>
-<span class="sd">        coordinates dimensions (i.e. 2 or 3).</span>
+<span class="sd">        coordinates dimensions (2 to 4).</span>
 <span class="sd">    k : positive int, optional</span>
 <span class="sd">        number of considered nearest neighbors. Default is 4</span>
 <span class="sd">    agg_func : callable, optional</span>
@@ -1135,13 +1141,13 @@
 <span class="sd">    ----------</span>
 <span class="sd">    coords_flat : numpy.ndarray, shape (n_grids, m)</span>
 <span class="sd">        array of flattened grid coordinates. n_grids is the number of model</span>
-<span class="sd">        grid points, m the number of coordinates dimensions (i.e. 2 or 3).</span>
+<span class="sd">        grid points, m the number of coordinates dimensions (2 to 4).</span>
 <span class="sd">    data_flat : numpy.ndarray, shape (n_grids, ...)</span>
 <span class="sd">        array containing the flattened model data with various trailing</span>
 <span class="sd">        dimensions</span>
 <span class="sd">    pois_coords : numpy.ndarray , shape (n_pois, m)</span>
 <span class="sd">        array of POI coordinates. n_pois is the number of POIs, m the number of</span>
-<span class="sd">        coordinates dimensions (i.e. 2 or 3).</span>
+<span class="sd">        coordinates dimensions (2 to 4).</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1183,13 +1189,13 @@
 <span class="sd">    ----------</span>
 <span class="sd">    coords_flat : numpy.ndarray, shape (n_grids, m)</span>
 <span class="sd">        array of flattened grid coordinates. n_grids is the number of model</span>
-<span class="sd">        grid points, m the number of coordinates dimensions (i.e. 3)</span>
+<span class="sd">        grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)</span>
 <span class="sd">    data_flat : numpy.ndarray, shape (n_grids, ...)</span>
 <span class="sd">        Array containing the flattened model data with various trailing</span>
 <span class="sd">        dimension.</span>
 <span class="sd">    pois_coords : numpy.ndarray , shape (n_pois, m)</span>
 <span class="sd">        array of POI coordinates. n_pois is the number of POIs, m the number of</span>
-<span class="sd">        coordinates dimensions (i.e. 3)</span>
+<span class="sd">        coordinates dimensions (3 or 4, with the altitude as last column)</span>
 <span class="sd">    k : positive int</span>
 <span class="sd">        Number of considered nearest neighbors to check for altitude of NaN</span>
 <span class="sd">        grid points.</span>
@@ -1219,14 +1225,14 @@
     <span class="n">data_flat</span> <span class="o">=</span> <span class="n">data_flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">data_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">order</span><span class="o">=</span><span class="s2">"C"</span><span class="p">)</span>
 
     <span class="c1"># array with default values when there is only NaNs within distance d_max</span>
-    <span class="n">poi_data</span> <span class="o">=</span> <span class="p">(</span><span class="n">pois_coords</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">200</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">data_flat</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">poi_data</span> <span class="o">=</span> <span class="p">(</span><span class="n">pois_coords</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">200</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">data_flat</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">poi_data</span> <span class="o">-=</span> <span class="n">poi_data</span> <span class="o">%</span> <span class="mi">50</span>  <span class="c1"># floor to multiple of 50</span>
     <span class="n">poi_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">poi_data</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="p">(</span><span class="n">n_pois</span><span class="p">,</span> <span class="n">data_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
     <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">array</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_flat</span><span class="o">.</span><span class="n">T</span><span class="p">):</span>
         <span class="n">ind</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">ind</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-            <span class="n">dist_nn</span><span class="p">,</span> <span class="n">ind_nn</span> <span class="o">=</span> <span class="n">nn_lookup</span><span class="p">(</span><span class="n">coords_flat</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">pois_coords</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">dist_nn</span><span class="p">,</span> <span class="n">ind_nn</span> <span class="o">=</span> <span class="n">nn_lookup</span><span class="p">(</span><span class="n">coords_flat</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">pois_coords</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
             <span class="n">bool_dist</span> <span class="o">=</span> <span class="n">dist_nn</span> <span class="o">&lt;</span> <span class="n">d_max</span>
             <span class="n">poi_data</span><span class="p">[</span><span class="n">bool_dist</span><span class="p">,</span> <span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="n">ind_nn</span><span class="p">[</span><span class="n">bool_dist</span><span class="p">]]</span>
 
@@ -1246,13 +1252,13 @@
 <span class="sd">    ----------</span>
 <span class="sd">    coords_flat : numpy.ndarray, shape (n_grids, m)</span>
 <span class="sd">        array of flattened grid coordinates. n_grids is the number of model</span>
-<span class="sd">        grid points, m the number of coordinates dimensions (i.e. 3)</span>
+<span class="sd">        grid points, m the number of coordinates dimensions (3 or 4, with the altitude as last column)</span>
 <span class="sd">    data_flat : numpy.ndarray, shape (n_grids, ...)</span>
 <span class="sd">        array containing the flattened model data with various trailing</span>
 <span class="sd">        dimensions</span>
 <span class="sd">    pois_coords : numpy.ndarray , shape (n_pois, m)</span>
 <span class="sd">        array of POI coordinates. n_pois is the number of POIs, m the number of</span>
-<span class="sd">        coordinates dimensions (i.e. 3)</span>
+<span class="sd">        coordinates dimensions (3 or 4, with the altitude as last column)</span>
 <span class="sd">    k : positive int</span>
 <span class="sd">        number of considered nearest neighbors to check for altitude of NaN</span>
 
@@ -1268,7 +1274,7 @@
 <span class="sd">    """</span>
 
     <span class="n">ndim_trail</span> <span class="o">=</span> <span class="n">data_flat</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span>
-    <span class="n">_</span><span class="p">,</span> <span class="n">ind_nn</span> <span class="o">=</span> <span class="n">nn_lookup</span><span class="p">(</span><span class="n">coords_flat</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">pois_coords</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">k</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">ind_nn</span> <span class="o">=</span> <span class="n">nn_lookup</span><span class="p">(</span><span class="n">coords_flat</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">pois_coords</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">k</span><span class="p">)</span>
     <span class="n">data_poi</span> <span class="o">=</span> <span class="n">data_flat</span><span class="p">[</span><span class="n">ind_nn</span><span class="p">]</span>
     <span class="n">ind_na</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">data_poi</span><span class="p">)</span>
     <span class="n">alt_poi</span> <span class="o">=</span> <span class="n">coords_flat</span><span class="p">[</span><span class="n">ind_nn</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">ind_nn</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span> <span class="o">*</span> <span class="n">ndim_trail</span><span class="p">)</span>
@@ -1366,6 +1372,20 @@
 <span class="sd">      (e.g., excluding water pixels with `ds.where(ds.fr_land &gt; 0.5).interp2poi(..., try_reg=False)`).</span>
 <span class="sd">    - For regular grid interpolation, all NaN grid points are kept.</span>
 <span class="sd">    - Environment variables allow flexible support for custom grid and POI data models.</span>
+<span class="sd">    - Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for 'linear',</span>
+<span class="sd">      'linear_3D' and 'cubic' are done) with distances in meters, never in latitude/longitude degrees. The source</span>
+<span class="sd">      grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and</span>
+<span class="sd">      longitude coordinates are present, otherwise its latitude/longitude. The coordinates are converted to:</span>
+
+<span class="sd">        - the CRS projected in meters of the source grid or of the destination, if any (the one of the larger grid</span>
+<span class="sd">          if both are);</span>
+<span class="sd">        - otherwise Swiss LV95 (EPSG:2056) if the destination is within ``lv95_max_offset`` meters (default 700 km,</span>
+<span class="sd">          set with the environment variable GRID_PROCESS__lv95_max_offset) of the LV95 central northing</span>
+<span class="sd">          (1 200 000 m), where the LV95 scale error is small (0.6 % at 700 km);</span>
+<span class="sd">        - otherwise earth-centered earth-fixed coordinates (ECEF, EPSG:4978), e.g. for global grids. The methods</span>
+<span class="sd">          'linear', 'linear_3D' and 'cubic' are not supported in this case.</span>
+
+<span class="sd">      Methods with altitude use it as an additional coordinate in meters.</span>
 <span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_fullnan_ds</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
@@ -1465,7 +1485,11 @@
     <span class="n">data</span> <span class="o">=</span> <span class="n">_y_increasing</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">y_dim</span><span class="p">)</span>
 
     <span class="c1"># Reproject POIs coordinates in the grid CRS</span>
-    <span class="n">pois_coords</span> <span class="o">=</span> <span class="n">_convert_poi</span><span class="p">(</span><span class="n">poi_info</span><span class="p">,</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_grid_crs</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">data</span><span class="p">[</span><span class="n">y_dim</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">grid_crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_grid_crs</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">pois_coords</span> <span class="o">=</span> <span class="n">_convert_poi</span><span class="p">(</span><span class="n">poi_info</span><span class="p">,</span> <span class="n">grid_crs</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">y_dim</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">grid_crs</span><span class="o">.</span><span class="n">is_geographic</span><span class="p">:</span>  <span class="c1"># longitudes in the convention of the grid, across the 360 degree seam</span>
+        <span class="n">pois_coords</span> <span class="o">=</span> <span class="p">(</span><span class="n">_wrap_lon</span><span class="p">(</span><span class="n">pois_coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">_lon_center</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">x_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)),</span> <span class="n">pois_coords</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">_pad_global_lon</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">x_dim</span><span class="p">,</span> <span class="n">pois_coords</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">poi_dim_coord</span> <span class="o">=</span> <span class="n">poi_info</span><span class="p">[</span><span class="n">POI_COORD_COL</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
     <span class="n">pois_coords</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">pois_coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">coords</span><span class="o">=</span><span class="p">[(</span><span class="n">POI_DIM</span><span class="p">,</span> <span class="n">poi_dim_coord</span><span class="p">)]),</span>
@@ -1570,10 +1594,10 @@
 <span class="sd">    ----------</span>
 <span class="sd">    grid_coords : numpy.ndarray, shape (n, m)</span>
 <span class="sd">        array of flattened grid coordinates. N is the number of model grid</span>
-<span class="sd">        points, m the number of coordinates dimensions (i.e. 2 or 3)</span>
+<span class="sd">        points, m the number of coordinates dimensions (2 to 4)</span>
 <span class="sd">    points : numpy.ndarray, shape (p, m)</span>
 <span class="sd">        array of POIs coordinates. P is the number of POIs, m the number of</span>
-<span class="sd">        coordinates dimensions (i.e. 2 or 3)</span>
+<span class="sd">        coordinates dimensions (2 to 4)</span>
 <span class="sd">    k : positive int</span>
 <span class="sd">        number of considered nearest neighbors</span>
 
@@ -1676,42 +1700,32 @@
     <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Flattens the grid and concatenate columnwise `x` and `y` coordinates into a</span>
-<span class="sd">    single 2D array. Also, reprojects the POIs coordinates if they are not in</span>
-<span class="sd">    the same CRS than the model coordinates</span>
+<span class="sd">    Flattens the grid and concatenate columnwise the horizontal coordinates (and the altitude for</span>
+<span class="sd">    ``HEIGHT_METHODS``) into a single 2D array, in the CRS chosen by :func:`_choose_kdtree_crs`. The POIs</span>
+<span class="sd">    coordinates are converted in the same CRS.</span>
 <span class="sd">    """</span>
 
     <span class="n">data</span><span class="p">,</span> <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">,</span> <span class="n">grid_crs</span> <span class="o">=</span> <span class="n">_flatten_coords_crs</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">HEIGHT_METHODS</span><span class="p">:</span>
-        <span class="c1"># include elevation</span>
-        <span class="n">surf_alt</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_surf_alt</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-        <span class="n">coords_flat</span> <span class="o">=</span> <span class="n">_stack_coords</span><span class="p">(</span>
-            <span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-            <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-            <span class="n">data</span><span class="p">[</span><span class="n">surf_alt</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-        <span class="p">)</span>
+    <span class="n">target_crs</span> <span class="o">=</span> <span class="n">_choose_kdtree_crs</span><span class="p">(</span>
+        <span class="n">grid_crs</span><span class="p">,</span>
+        <span class="n">poi_info</span><span class="o">.</span><span class="n">crs</span><span class="o">.</span><span class="n">to_2d</span><span class="p">(),</span>
+        <span class="n">src_larger</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">dst_lv95</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">_convert_poi</span><span class="p">(</span><span class="n">poi_info</span><span class="p">,</span> <span class="n">LV95</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)),</span>
+    <span class="p">)</span>
+    <span class="n">_check_griddata_crs</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">target_crs</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">grid_crs</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SWISS_CRS</span><span class="p">:</span>
-            <span class="c1"># project to CH1903+/LV95 to have units in [m]</span>
-            <span class="n">new_crs</span> <span class="o">=</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">SWISS_CRS</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">_reproject_grid_cached</span><span class="p">(</span>
-                <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">grid_crs</span><span class="p">,</span> <span class="n">new_crs</span>
-            <span class="p">)</span>
-            <span class="n">grid_crs</span> <span class="o">=</span> <span class="n">new_crs</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">coords_flat</span> <span class="o">=</span> <span class="n">_stack_coords</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
-
-    <span class="c1"># Reproject POIs coordinates in the grid CRS</span>
-    <span class="n">pois_coords</span> <span class="o">=</span> <span class="n">_convert_poi</span><span class="p">(</span><span class="n">poi_info</span><span class="p">,</span> <span class="n">grid_crs</span><span class="p">,</span> <span class="n">coords_flat</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">HEIGHT_METHODS</span><span class="p">:</span>
-        <span class="n">pois_coords_cat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span>
-            <span class="n">pois_coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-            <span class="n">pois_coords</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-            <span class="n">dm</span><span class="o">.</span><span class="n">get_poi_alt</span><span class="p">(</span><span class="n">poi_info</span><span class="p">),</span>
-        <span class="p">]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">pois_coords_cat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">pois_coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pois_coords</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">height</span> <span class="o">=</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">HEIGHT_METHODS</span>
+    <span class="n">coords_flat</span> <span class="o">=</span> <span class="n">_kdtree_coords</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">grid_crs</span><span class="p">,</span>
+        <span class="n">target_crs</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">dm</span><span class="o">.</span><span class="n">get_surf_alt</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span><span class="o">.</span><span class="n">values</span> <span class="k">if</span> <span class="n">height</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">pois_coords_cat</span> <span class="o">=</span> <span class="n">_poi_kdtree_coords</span><span class="p">(</span>
+        <span class="n">poi_info</span><span class="p">,</span> <span class="n">target_crs</span><span class="p">,</span> <span class="n">coords_flat</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_poi_alt</span><span class="p">(</span><span class="n">poi_info</span><span class="p">)</span> <span class="k">if</span> <span class="n">height</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"snowlim"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">coords_flat</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">pois_coords_cat</span>
@@ -1782,6 +1796,135 @@
     <span class="k">return</span> <span class="n">x_coords</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">y_coords</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 
+<span class="nd">@memoize</span><span class="p">(</span><span class="n">CONFIG</span><span class="o">.</span><span class="n">cache_size</span><span class="o">.</span><span class="n">reproject_grid</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_to_ecef</span><span class="p">(</span><span class="n">x_coords</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">src_crs</span><span class="p">:</span> <span class="n">CRS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Earth-centered earth-fixed (ECEF, EPSG:4978) coordinates [m] at zero ellipsoidal height, shape (n, 3), of</span>
+<span class="sd">    horizontal coordinates in ``src_crs``. That can be cached.</span>
+<span class="sd">    """</span>
+
+    <span class="n">transformer</span> <span class="o">=</span> <span class="n">Transformer</span><span class="o">.</span><span class="n">from_crs</span><span class="p">(</span><span class="n">sphere_as_wgs84</span><span class="p">(</span><span class="n">src_crs</span><span class="p">),</span> <span class="n">ECEF</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">x_coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">y_coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y_coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">(</span><span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">x_coords</span><span class="p">)))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_to_ecef_cached</span><span class="p">(</span><span class="n">x_coords</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">src_crs</span><span class="p">:</span> <span class="n">CRS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Cached conversion of horizontal coordinates to ECEF coordinates, see :func:`_to_ecef`.</span>
+<span class="sd">    """</span>
+
+    <span class="n">hkey</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_coords</span><span class="o">.</span><span class="n">tobytes</span><span class="p">(),</span> <span class="n">y_coords</span><span class="o">.</span><span class="n">tobytes</span><span class="p">(),</span> <span class="n">x_coords</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">src_crs</span><span class="p">,</span> <span class="s2">"ECEF"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_to_ecef</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">,</span> <span class="n">src_crs</span><span class="p">,</span> <span class="n">hkey</span><span class="o">=</span><span class="n">hkey</span><span class="p">)</span>  <span class="c1"># type: ignore[call-arg]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_choose_kdtree_crs</span><span class="p">(</span>
+    <span class="n">src_crs</span><span class="p">:</span> <span class="n">CRS</span><span class="p">,</span>
+    <span class="n">dst_crs</span><span class="p">:</span> <span class="n">CRS</span><span class="p">,</span>
+    <span class="n">src_larger</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">dst_lv95</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CRS</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Choose the CRS in which the nearest neighbor searches (KDTree) and triangulations (griddata) of the</span>
+<span class="sd">    generic interpolation path are done, so that distances are euclidean distances in meters (never in degrees):</span>
+
+<span class="sd">    - if exactly one of the source and destination CRS is projected with axes in meters (e.g. LV95, LV03, UTM),</span>
+<span class="sd">      this one, so that only the other side is reprojected;</span>
+<span class="sd">    - if both are, the CRS of the larger grid (``src_larger``), whose reprojection would be the most costly;</span>
+<span class="sd">    - if both are geographic (e.g. latitude/longitude or rotated pole), Swiss LV95 (EPSG:2056) if all the</span>
+<span class="sd">      destination points are within ``CONFIG.lv95_max_offset`` meters of the LV95 central northing (where the LV95</span>
+<span class="sd">      scale error is small), otherwise earth-centered earth-fixed coordinates (ECEF, EPSG:4978).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    src_crs, dst_crs : pyproj.CRS</span>
+<span class="sd">        CRS of the source grid and of the destination (grid or POIs) coordinates</span>
+<span class="sd">    src_larger : bool</span>
+<span class="sd">        whether the source grid has more points than the destination</span>
+<span class="sd">    dst_lv95 : callable</span>
+<span class="sd">        returns the LV95 coordinates (x, y) of the destination points to check against ``CONFIG.lv95_max_offset``:</span>
+<span class="sd">        the POIs, or the outer ring of a destination grid (see :func:`~grid_process.helpers.outer_ring`). Only called</span>
+<span class="sd">        when both CRS are geographic.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pyproj.CRS</span>
+<span class="sd">        the chosen CRS. ``crs.is_geocentric`` is True for ECEF.</span>
+<span class="sd">    """</span>
+
+    <span class="n">src_metric</span><span class="p">,</span> <span class="n">dst_metric</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">is_metric_crs</span><span class="p">(</span><span class="n">src_crs</span><span class="p">),</span> <span class="n">dm</span><span class="o">.</span><span class="n">is_metric_crs</span><span class="p">(</span><span class="n">dst_crs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">src_metric</span> <span class="ow">and</span> <span class="n">dst_metric</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">src_crs</span> <span class="k">if</span> <span class="n">src_larger</span> <span class="k">else</span> <span class="n">dst_crs</span>
+    <span class="k">if</span> <span class="n">src_metric</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">src_crs</span>
+    <span class="k">if</span> <span class="n">dst_metric</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dst_crs</span>
+
+    <span class="n">x_lv95</span><span class="p">,</span> <span class="n">y_lv95</span> <span class="o">=</span> <span class="n">dst_lv95</span><span class="p">()</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y_lv95</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">-</span> <span class="n">LV95_NORTHING_CENTER</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">x_lv95</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="ow">and</span> <span class="n">offset</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">CONFIG</span><span class="o">.</span><span class="n">lv95_max_offset</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">LV95</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Destination beyond </span><span class="si">%s</span><span class="s2"> m of the LV95 central northing: interpolation in ECEF"</span><span class="p">,</span> <span class="n">CONFIG</span><span class="o">.</span><span class="n">lv95_max_offset</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ECEF</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_griddata_crs</span><span class="p">(</span><span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target_crs</span><span class="p">:</span> <span class="n">CRS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Raise an error for griddata methods (triangulation) in ECEF coordinates, see :func:`_choose_kdtree_crs`.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">GRIDDATA_METHODS</span> <span class="ow">and</span> <span class="n">target_crs</span><span class="o">.</span><span class="n">is_geocentric</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Method </span><span class="si">{</span><span class="n">method</span><span class="si">!r}</span><span class="s2"> is not supported for geographic grids beyond </span><span class="si">{</span><span class="n">CONFIG</span><span class="o">.</span><span class="n">lv95_max_offset</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> km"</span>
+            <span class="s2">" of the Swiss LV95 central northing, which are interpolated in earth-centered earth-fixed (ECEF)"</span>
+            <span class="s2">" coordinates: a Delaunay triangulation of points close to the Earth's surface is degenerate in ECEF."</span>
+            <span class="s2">" Use e.g. method='idw' instead, or try_reg=True for a regular grid with 1D coordinates (or adjust"</span>
+            <span class="s2">" GRID_PROCESS__lv95_max_offset)."</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_kdtree_coords</span><span class="p">(</span>
+    <span class="n">x_coords</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">y_coords</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">src_crs</span><span class="p">:</span> <span class="n">CRS</span><span class="p">,</span>
+    <span class="n">target_crs</span><span class="p">:</span> <span class="n">CRS</span><span class="p">,</span>
+    <span class="n">alt</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Stack columnwise the flattened horizontal coordinates converted to ``target_crs``, and the altitude ``alt``</span>
+<span class="sd">    if given (always as last column): ``[x, y(, alt)]`` for a projected ``target_crs``, ``[X, Y, Z(, alt)]``</span>
+<span class="sd">    in float64 for ECEF.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">target_crs</span><span class="o">.</span><span class="n">is_geocentric</span><span class="p">:</span>
+        <span class="n">ecef</span> <span class="o">=</span> <span class="n">_to_ecef_cached</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">,</span> <span class="n">src_crs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ecef</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">alt</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">ecef</span><span class="p">,</span> <span class="n">alt</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)))</span>
+
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">_stack_coords</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">)</span> <span class="k">if</span> <span class="n">alt</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_stack_coords</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">,</span> <span class="n">alt</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">src_crs</span> <span class="o">!=</span> <span class="n">target_crs</span><span class="p">:</span>
+        <span class="n">coords</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">coords</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">_reproject_grid_cached</span><span class="p">(</span><span class="n">coords</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">coords</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">src_crs</span><span class="p">,</span> <span class="n">target_crs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">coords</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_poi_kdtree_coords</span><span class="p">(</span>
+    <span class="n">poi_info</span><span class="p">:</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">,</span> <span class="n">target_crs</span><span class="p">:</span> <span class="n">CRS</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">alt</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    POIs coordinates in ``target_crs``, stacked like :func:`_kdtree_coords`.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">target_crs</span><span class="o">.</span><span class="n">is_geocentric</span><span class="p">:</span>
+        <span class="n">xy</span> <span class="o">=</span> <span class="n">poi_info</span><span class="o">.</span><span class="n">get_coordinates</span><span class="p">()</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">ecef</span> <span class="o">=</span> <span class="n">_to_ecef_cached</span><span class="p">(</span><span class="n">xy</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">xy</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">poi_info</span><span class="o">.</span><span class="n">crs</span><span class="o">.</span><span class="n">to_2d</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">ecef</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">alt</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">ecef</span><span class="p">,</span> <span class="n">alt</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)))</span>
+
+    <span class="n">pois_coords</span> <span class="o">=</span> <span class="n">_convert_poi</span><span class="p">(</span><span class="n">poi_info</span><span class="p">,</span> <span class="n">target_crs</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">alt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">pois_coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pois_coords</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">pois_coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pois_coords</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">alt</span><span class="p">]</span>
+
+
 <div class="viewcode-block" id="interp2grid">
 <a class="viewcode-back" href="../../autoapi/grid_process/grid_interp/index.html#grid_process.grid_interp.interp2grid">[docs]</a>
 <span class="nd">@dataset_accessor</span>
@@ -1826,8 +1969,9 @@
 <span class="sd">        For methods requiring altitude, ensure a surface altitude coordinate is present; extend supported names via</span>
 <span class="sd">        GRID_PROCESS__data_model__grid__surf_alt.</span>
 <span class="sd">    dst_grid : xarray.Dataset</span>
-<span class="sd">        The destination grid to interpolate to. Same supported data models as the source grid, including conventions for</span>
-<span class="sd">        dimensions and coordinates as well as spatial CRS.</span>
+<span class="sd">        The destination grid to interpolate to. It must be a structured grid with two spatial dimensions (y, x):</span>
+<span class="sd">        unstructured (1D) grids are only supported as source grid. Same supported data models as the source grid,</span>
+<span class="sd">        including conventions for dimensions and coordinates as well as spatial CRS.</span>
 <span class="sd">        For methods requiring altitude, ensure a surface altitude coordinate is also present.</span>
 <span class="sd">        The destination dataset may contain only spatial coordinates or also data variables which will be ignored.</span>
 <span class="sd">    method : str</span>
@@ -1850,6 +1994,12 @@
 <span class="sd">    xr.Dataset</span>
 <span class="sd">        Dataset with values from `data` interpolated onto the coordinates of `dst_grid`.</span>
 
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If ``dst_grid`` is not a structured grid, or for the methods 'linear', 'linear_3D' and 'cubic' when the</span>
+<span class="sd">        interpolation is done in ECEF coordinates (see notes).</span>
+
 <span class="sd">    See also</span>
 <span class="sd">    --------</span>
 <span class="sd">    :func:`interp_temp`, :func:`interp_temp_fixgrad`, :func:`interp_nearest_alt`,</span>
@@ -1862,6 +2012,20 @@
 <span class="sd">    - Recommended methods: 'nearest', 'linear' (if the source grid is regular with 1D coordinates), 'idw' (with k=4),</span>
 <span class="sd">      'temp_fixgrad', 'nearest_3D', 'nearest_alt'.</span>
 <span class="sd">    - Environment variables allow flexible support for custom grid data models.</span>
+<span class="sd">    - Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for 'linear',</span>
+<span class="sd">      'linear_3D' and 'cubic' are done) with distances in meters, never in latitude/longitude degrees. The source</span>
+<span class="sd">      grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and</span>
+<span class="sd">      longitude coordinates are present, otherwise its latitude/longitude. The coordinates are converted to:</span>
+
+<span class="sd">        - the CRS projected in meters of the source grid or of the destination, if any (the one of the larger grid</span>
+<span class="sd">          if both are);</span>
+<span class="sd">        - otherwise Swiss LV95 (EPSG:2056) if the destination is within ``lv95_max_offset`` meters (default 700 km,</span>
+<span class="sd">          set with the environment variable GRID_PROCESS__lv95_max_offset) of the LV95 central northing</span>
+<span class="sd">          (1 200 000 m), where the LV95 scale error is small (0.6 % at 700 km);</span>
+<span class="sd">        - otherwise earth-centered earth-fixed coordinates (ECEF, EPSG:4978), e.g. for global grids. The methods</span>
+<span class="sd">          'linear', 'linear_3D' and 'cubic' are not supported in this case.</span>
+
+<span class="sd">      Methods with altitude use it as an additional coordinate in meters.</span>
 <span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_array2ds</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
@@ -1889,6 +2053,11 @@
 
     <span class="n">src_spatial_dims</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_spatial_dims</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">dst_spatial_dims</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_spatial_dims</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dst_spatial_dims</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"The destination grid must be a structured grid with two spatial dimensions (y, x), got"</span>
+            <span class="sa">f</span><span class="s2">" </span><span class="si">{</span><span class="n">dst_spatial_dims</span><span class="si">}</span><span class="s2">. Unstructured grids are only supported as source grid."</span>
+        <span class="p">)</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">set_grid_mapping</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">dst_grid</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">set_grid_mapping</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">)</span>
     <span class="n">dst_grid</span> <span class="o">=</span> <span class="n">dst_grid</span><span class="o">.</span><span class="n">drop_dims</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">dst_grid</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">dst_spatial_dims</span><span class="p">))</span>
@@ -2008,9 +2177,15 @@
             <span class="n">interp_data</span> <span class="o">=</span> <span class="n">interp_data</span><span class="o">.</span><span class="n">coarsen</span><span class="p">(</span><span class="n">coarsen_specs</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="s2">"trim"</span><span class="p">)</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span>
 
         <span class="n">interp_data</span> <span class="o">=</span> <span class="n">_y_increasing</span><span class="p">(</span><span class="n">interp_data</span><span class="p">,</span> <span class="n">src_spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">x_targets</span> <span class="o">=</span> <span class="n">x_coords</span>
+        <span class="k">if</span> <span class="n">src_crs</span><span class="o">.</span><span class="n">is_geographic</span><span class="p">:</span>  <span class="c1"># longitudes in the convention of the grid, across the 360 degree seam</span>
+            <span class="n">x_targets</span> <span class="o">=</span> <span class="n">x_coords</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">_wrap_lon</span><span class="p">(</span><span class="n">x_coords</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">_lon_center</span><span class="p">(</span><span class="n">interp_data</span><span class="p">[</span><span class="n">src_spatial_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
+            <span class="p">)</span>
+            <span class="n">interp_data</span> <span class="o">=</span> <span class="n">_pad_global_lon</span><span class="p">(</span><span class="n">interp_data</span><span class="p">,</span> <span class="n">src_spatial_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x_targets</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
 
         <span class="n">interp_data</span> <span class="o">=</span> <span class="n">interp_data</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span>
-            <span class="p">{</span><span class="n">src_spatial_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">x_coords</span><span class="p">,</span> <span class="n">src_spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">y_coords</span><span class="p">},</span>
+            <span class="p">{</span><span class="n">src_spatial_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">x_targets</span><span class="p">,</span> <span class="n">src_spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">y_coords</span><span class="p">},</span>
             <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
             <span class="n">assume_sorted</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span><span class="n">src_spatial_dims</span><span class="p">)</span>
@@ -2049,66 +2224,45 @@
     <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Flattens the grids and concatenate columnwise `x` and `y` coordinates into a</span>
-<span class="sd">    single 2D array. Also, reprojects the destination grid coordinates if they are not</span>
-<span class="sd">    in the same CRS than the input model coordinates.</span>
+<span class="sd">    Flattens the grids and concatenate columnwise the horizontal coordinates (and the altitude for</span>
+<span class="sd">    ``HEIGHT_METHODS``) into a single 2D array per grid, in the CRS chosen by :func:`_choose_kdtree_crs`.</span>
 <span class="sd">    """</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_choose_crs_meters</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">CRS</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_dst_lv95</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Choose the target CRS with units in [m] for reprojection.</span>
+<span class="sd">        LV95 coordinates of the outer ring of the destination grid, to check its extent.</span>
 <span class="sd">        """</span>
 
-        <span class="k">if</span> <span class="n">reproj_dst</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">grid_crs</span> <span class="ow">in</span> <span class="n">SWISS_CRS</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">grid_crs</span>
-            <span class="k">return</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">SWISS_CRS</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">if</span> <span class="n">dst_grid_crs</span> <span class="o">==</span> <span class="n">SWISS_CRS</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">else</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">SWISS_CRS</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">x_ring</span><span class="p">,</span> <span class="n">y_ring</span> <span class="o">=</span> <span class="n">outer_ring</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">reproject</span><span class="p">(</span><span class="n">x_ring</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="n">y_ring</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="n">dst_grid_crs</span><span class="p">,</span> <span class="n">LV95</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">dst_grid_crs</span> <span class="ow">in</span> <span class="n">SWISS_CRS</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">dst_grid_crs</span>
-        <span class="k">return</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">SWISS_CRS</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">if</span> <span class="n">grid_crs</span> <span class="o">==</span> <span class="n">SWISS_CRS</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">else</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">SWISS_CRS</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-
+    <span class="n">dst_grid_y</span><span class="p">,</span> <span class="n">dst_grid_x</span><span class="p">,</span> <span class="n">dst_grid_crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">,</span> <span class="n">prefer_projected</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">,</span> <span class="n">grid_crs</span> <span class="o">=</span> <span class="n">_flatten_coords_crs</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">)</span>
     <span class="n">flat_dim</span> <span class="o">=</span> <span class="n">spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">"cell"</span>
-    <span class="n">dst_grid</span><span class="p">,</span> <span class="n">dst_grid_y</span><span class="p">,</span> <span class="n">dst_grid_x</span><span class="p">,</span> <span class="n">dst_grid_crs</span> <span class="o">=</span> <span class="n">_flatten_coords_crs</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">,</span> <span class="n">flat_dim</span><span class="p">)</span>
+    <span class="n">dst_flat</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_flatten_coords_crs</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">,</span> <span class="n">flat_dim</span><span class="p">)</span>
 
-    <span class="n">reproj_dst</span> <span class="o">=</span> <span class="n">dst_grid</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">flat_dim</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">data</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">flat_dim</span><span class="p">]</span>
+    <span class="n">target_crs</span> <span class="o">=</span> <span class="n">_choose_kdtree_crs</span><span class="p">(</span>
+        <span class="n">grid_crs</span><span class="p">,</span>
+        <span class="n">dst_grid_crs</span><span class="p">,</span>
+        <span class="n">src_larger</span><span class="o">=</span><span class="n">dst_flat</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">flat_dim</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">data</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">flat_dim</span><span class="p">],</span>
+        <span class="n">dst_lv95</span><span class="o">=</span><span class="n">_dst_lv95</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">_check_griddata_crs</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">target_crs</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">HEIGHT_METHODS</span><span class="p">:</span>
-        <span class="n">surf_alt</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_surf_alt</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-        <span class="n">dst_surf_alt</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_surf_alt</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">)</span>
-        <span class="c1"># include elevation</span>
-        <span class="n">coords_flat</span> <span class="o">=</span> <span class="n">_stack_coords</span><span class="p">(</span>
-            <span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-            <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-            <span class="n">data</span><span class="p">[</span><span class="n">surf_alt</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">dst_coords_flat</span> <span class="o">=</span> <span class="n">_stack_coords</span><span class="p">(</span>
-            <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-            <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-            <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_surf_alt</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">target_crs</span> <span class="o">=</span> <span class="n">_choose_crs_meters</span><span class="p">()</span>
-        <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">_reproject_grid_cached</span><span class="p">(</span>
-            <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">grid_crs</span><span class="p">,</span> <span class="n">target_crs</span>
-        <span class="p">)</span>
-        <span class="n">dst_coords_flat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">dst_coords_flat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">_reproject_grid_cached</span><span class="p">(</span>
-            <span class="n">dst_coords_flat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">dst_coords_flat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dst_grid_crs</span><span class="p">,</span> <span class="n">target_crs</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">coords_flat</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dst_coords_flat</span>
-
-    <span class="c1"># Non-height methods</span>
-    <span class="n">coords_flat</span> <span class="o">=</span> <span class="n">_stack_coords</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
-    <span class="n">dst_coords_flat</span> <span class="o">=</span> <span class="n">_stack_coords</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">reproj_dst</span><span class="p">:</span>  <span class="c1"># reproject destination coordinates in the grid CRS</span>
-        <span class="n">dst_coords_flat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">dst_coords_flat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">_reproject_grid_cached</span><span class="p">(</span>
-            <span class="n">dst_coords_flat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">dst_coords_flat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dst_grid_crs</span><span class="p">,</span> <span class="n">grid_crs</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">coords_flat</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dst_coords_flat</span>
-
-    <span class="c1"># reproject grid coordinates in the destination CRS</span>
-    <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">_reproject_grid_cached</span><span class="p">(</span>
-        <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">coords_flat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">grid_crs</span><span class="p">,</span> <span class="n">dst_grid_crs</span>
+    <span class="n">height</span> <span class="o">=</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">HEIGHT_METHODS</span>
+    <span class="n">coords_flat</span> <span class="o">=</span> <span class="n">_kdtree_coords</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">grid_crs</span><span class="p">,</span>
+        <span class="n">target_crs</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">dm</span><span class="o">.</span><span class="n">get_surf_alt</span><span class="p">(</span><span class="n">data</span><span class="p">)]</span><span class="o">.</span><span class="n">values</span> <span class="k">if</span> <span class="n">height</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">dst_coords_flat</span> <span class="o">=</span> <span class="n">_kdtree_coords</span><span class="p">(</span>
+        <span class="n">dst_flat</span><span class="p">[</span><span class="n">dst_grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">dst_flat</span><span class="p">[</span><span class="n">dst_grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">dst_grid_crs</span><span class="p">,</span>
+        <span class="n">target_crs</span><span class="p">,</span>
+        <span class="n">dst_flat</span><span class="p">[</span><span class="n">dm</span><span class="o">.</span><span class="n">get_surf_alt</span><span class="p">(</span><span class="n">dst_flat</span><span class="p">)]</span><span class="o">.</span><span class="n">values</span> <span class="k">if</span> <span class="n">height</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">coords_flat</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dst_coords_flat</span>
 
@@ -2129,16 +2283,16 @@
     <span class="n">flat_dim</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"cell"</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span> <span class="o">|</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">CRS</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Flatten input dataset if not already and extract spatial coordinates and</span>
-<span class="sd">    corresponding crs to be used.</span>
+<span class="sd">    Flatten input dataset if not already and extract spatial coordinates and corresponding crs to be used:</span>
+<span class="sd">    native coordinates if their CRS is projected with axes in meters, otherwise latitude and longitude</span>
+<span class="sd">    if present (see :func:`~grid_process.data_model.get_coords_name_crs`).</span>
 <span class="sd">    """</span>
 
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="c1"># flatten grid</span>
-        <span class="n">grid</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">stack</span><span class="p">({</span><span class="n">flat_dim</span><span class="p">:</span> <span class="n">spatial_dims</span><span class="p">})</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">flat_dim</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
-        <span class="n">spatial_dims</span> <span class="o">=</span> <span class="p">(</span><span class="n">flat_dim</span><span class="p">,)</span>
+    <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">,</span> <span class="n">grid_crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">prefer_projected</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-    <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">,</span> <span class="n">grid_crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># flatten grid: 1D dimension coordinates become levels of the flat dimension</span>
+        <span class="n">grid</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">stack</span><span class="p">({</span><span class="n">flat_dim</span><span class="p">:</span> <span class="n">spatial_dims</span><span class="p">})</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">flat_dim</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">grid</span><span class="p">,</span> <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">,</span> <span class="n">grid_crs</span>
 
@@ -2173,14 +2327,13 @@
         <span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_spatial_dims</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
     <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">,</span> <span class="n">grid_crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">)</span>
-    <span class="n">pois_coords</span> <span class="o">=</span> <span class="n">_convert_poi</span><span class="p">(</span><span class="n">poi_info</span><span class="p">,</span> <span class="n">grid_crs</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-    <span class="n">yx_bnds</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="p">(</span><span class="n">pois_coords</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">pois_coords</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()),</span>
-        <span class="p">(</span><span class="n">pois_coords</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">pois_coords</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()),</span>
-    <span class="p">)</span>
+    <span class="n">pois_x</span><span class="p">,</span> <span class="n">pois_y</span> <span class="o">=</span> <span class="n">_convert_poi</span><span class="p">(</span><span class="n">poi_info</span><span class="p">,</span> <span class="n">grid_crs</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">grid_crs</span><span class="o">.</span><span class="n">is_geographic</span><span class="p">:</span>  <span class="c1"># longitudes in the convention of the grid (e.g. 0..360 or -180..180)</span>
+        <span class="n">pois_x</span> <span class="o">=</span> <span class="n">_wrap_lon</span><span class="p">(</span><span class="n">pois_x</span><span class="p">,</span> <span class="n">_lon_center</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
+    <span class="n">yx_bnds</span> <span class="o">=</span> <span class="p">((</span><span class="n">pois_y</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">pois_y</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()),</span> <span class="p">(</span><span class="n">pois_x</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">pois_x</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()))</span>
 
     <span class="n">buffer</span> <span class="o">=</span> <span class="n">_get_buffer</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">sub_domain</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_get_sub_domain</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="p">(</span><span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">),</span> <span class="n">yx_bnds</span><span class="p">,</span> <span class="n">buffer</span><span class="p">)</span>
+    <span class="n">sub_domain</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_get_sub_domain</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="p">(</span><span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">),</span> <span class="n">yx_bnds</span><span class="p">,</span> <span class="n">buffer</span><span class="p">,</span> <span class="n">grid_crs</span><span class="o">.</span><span class="n">is_geographic</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">sub_domain</span><span class="p">)</span></div>
 
 
@@ -2225,20 +2378,18 @@
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">grid_crs</span> <span class="o">!=</span> <span class="n">dst_grid_crs</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">x_coords</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">)</span>
-
         <span class="c1"># only keep the outer rectangle</span>
-        <span class="n">x_coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x_coords</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">x_coords</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
-        <span class="n">y_coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_coords</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">y_coords</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
+        <span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span> <span class="o">=</span> <span class="n">outer_ring</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">)</span>
 
         <span class="c1"># Reproject destination coordinates in the grid CRS</span>
         <span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span> <span class="o">=</span> <span class="n">reproject</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">,</span> <span class="n">dst_grid_crs</span><span class="p">,</span> <span class="n">grid_crs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">grid_crs</span><span class="o">.</span><span class="n">is_geographic</span><span class="p">:</span>  <span class="c1"># longitudes in the convention of the grid (e.g. 0..360 or -180..180)</span>
+        <span class="n">x_coords</span> <span class="o">=</span> <span class="n">_wrap_lon</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">_lon_center</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">coords_crs</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
 
     <span class="n">yx_bnds</span> <span class="o">=</span> <span class="p">((</span><span class="n">y_coords</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">y_coords</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span> <span class="p">(</span><span class="n">x_coords</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">x_coords</span><span class="o">.</span><span class="n">max</span><span class="p">()))</span>
 
     <span class="n">buffer</span> <span class="o">=</span> <span class="n">_get_buffer</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">sub_domain</span><span class="p">,</span> <span class="n">res</span> <span class="o">=</span> <span class="n">_get_sub_domain</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">coords_crs</span><span class="p">[:</span><span class="mi">2</span><span class="p">],</span> <span class="n">yx_bnds</span><span class="p">,</span> <span class="n">buffer</span><span class="p">)</span>
+    <span class="n">sub_domain</span><span class="p">,</span> <span class="n">res</span> <span class="o">=</span> <span class="n">_get_sub_domain</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">coords_crs</span><span class="p">[:</span><span class="mi">2</span><span class="p">],</span> <span class="n">yx_bnds</span><span class="p">,</span> <span class="n">buffer</span><span class="p">,</span> <span class="n">grid_crs</span><span class="o">.</span><span class="n">is_geographic</span><span class="p">)</span>
     <span class="n">data_sub</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">sub_domain</span><span class="p">)</span>
 
     <span class="c1"># coarsen input dataset if needed (downsampling)</span>
@@ -2305,20 +2456,38 @@
     <span class="n">spatial_coords</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="n">yx_bnds</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
     <span class="n">buffer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">geographic</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">slice</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Get a dict to index ``data`` in ``spatial_dims`` according to ``yx_bnds``</span>
 <span class="sd">    plus a ``buffer``. Also return an estimate of the resolution if input grid is</span>
 <span class="sd">    unstructured.</span>
+
+<span class="sd">    For a ``geographic`` grid (latitude/longitude or rotated pole, in degrees), the x bounds must be in the</span>
+<span class="sd">    longitude convention of the grid (see :func:`_wrap_lon`). The x buffer is widened by 1 / cos(latitude), as</span>
+<span class="sd">    a degree of longitude shrinks towards the poles, and all longitudes are kept when the target spans more</span>
+<span class="sd">    than half of them or reaches the poles, whose neighbors can be at any longitude.</span>
 <span class="sd">    """</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_cond_xy</span><span class="p">(</span><span class="n">buffer_crs</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">lon_buffer_factor</span><span class="p">(</span><span class="n">res_y</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Get a boolean array to indicate which points are within x_bnds and y_bnds</span>
-<span class="sd">        +- ``buffer_crs`` to index data on the unstructured grid dimension.</span>
+<span class="sd">        Factor to widen the x buffer of a geographic grid, or None to keep all longitudes.</span>
 <span class="sd">        """</span>
 
-        <span class="n">cond_x</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">&gt;</span> <span class="n">x_bnds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">buffer_crs</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">&lt;</span> <span class="n">x_bnds</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">buffer_crs</span><span class="p">)</span>
+        <span class="n">lat_reach</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">y_bnds</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">y_bnds</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span> <span class="o">+</span> <span class="p">(</span><span class="n">buffer</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">res_y</span>
+        <span class="n">cos_lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">lat_reach</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="n">cos_lat</span> <span class="o">&lt;</span> <span class="mf">0.01</span> <span class="ow">or</span> <span class="n">x_bnds</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x_bnds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">180.0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">cos_lat</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_cond_xy</span><span class="p">(</span><span class="n">buffer_crs</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">x_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get a boolean array to indicate which points are within x_bnds and y_bnds</span>
+<span class="sd">        +- ``buffer_crs`` (times ``x_factor`` in x) to index data on the unstructured grid dimension.</span>
+<span class="sd">        """</span>
+
+        <span class="n">x_buffer</span> <span class="o">=</span> <span class="n">buffer_crs</span> <span class="o">*</span> <span class="n">x_factor</span>
+        <span class="n">cond_x</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">&gt;</span> <span class="n">x_bnds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">x_buffer</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">&lt;</span> <span class="n">x_bnds</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">x_buffer</span><span class="p">)</span>
         <span class="n">cond_y</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">&gt;</span> <span class="n">y_bnds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">buffer_crs</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">&lt;</span> <span class="n">y_bnds</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">buffer_crs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">cond_x</span> <span class="o">&amp;</span> <span class="n">cond_y</span>
 
@@ -2351,21 +2520,30 @@
 
     <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span> <span class="o">=</span> <span class="n">spatial_coords</span>
     <span class="n">y_bnds</span><span class="p">,</span> <span class="n">x_bnds</span> <span class="o">=</span> <span class="n">yx_bnds</span>
+    <span class="n">x_factor</span> <span class="o">=</span> <span class="mf">1.0</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="n">res_start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">][:</span><span class="mi">2</span><span class="p">])[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">][:</span><span class="mi">2</span><span class="p">])[</span><span class="mi">0</span><span class="p">]))</span>
         <span class="n">res_end</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">][</span><span class="o">-</span><span class="mi">2</span><span class="p">:])[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">][</span><span class="o">-</span><span class="mi">2</span><span class="p">:])[</span><span class="mi">0</span><span class="p">]))</span>
         <span class="n">res_approx</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">res_start</span><span class="p">,</span> <span class="n">res_end</span><span class="p">)</span>
-        <span class="n">cond_xy</span> <span class="o">=</span> <span class="n">get_cond_xy</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">res_approx</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">geographic</span><span class="p">:</span>
+            <span class="n">factor</span> <span class="o">=</span> <span class="n">lon_buffer_factor</span><span class="p">(</span><span class="n">res_approx</span><span class="p">)</span>
+            <span class="n">x_bnds</span><span class="p">,</span> <span class="n">x_factor</span> <span class="o">=</span> <span class="p">((</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span> <span class="k">if</span> <span class="n">factor</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span><span class="n">x_bnds</span><span class="p">,</span> <span class="n">factor</span><span class="p">)</span>
+        <span class="n">cond_xy</span> <span class="o">=</span> <span class="n">get_cond_xy</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">res_approx</span><span class="p">,</span> <span class="n">x_factor</span><span class="p">)</span>
         <span class="n">res</span> <span class="o">=</span> <span class="n">_get_flat_grid_res</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">][</span><span class="n">cond_xy</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">][</span><span class="n">cond_xy</span><span class="p">])</span>
-        <span class="n">cond_xy</span> <span class="o">=</span> <span class="n">get_cond_xy</span><span class="p">(</span><span class="n">buffer</span> <span class="o">*</span> <span class="n">res</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">)</span>
+        <span class="n">cond_xy</span> <span class="o">=</span> <span class="n">get_cond_xy</span><span class="p">(</span><span class="n">buffer</span> <span class="o">*</span> <span class="n">res</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">x_factor</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="n">spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">cond_xy</span><span class="p">},</span> <span class="n">res</span>
 
     <span class="n">y_dim</span><span class="p">,</span> <span class="n">x_dim</span> <span class="o">=</span> <span class="n">spatial_dims</span>
+    <span class="k">if</span> <span class="n">geographic</span><span class="p">:</span>
+        <span class="n">res_y</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">get_axis_num</span><span class="p">(</span><span class="n">y_dim</span><span class="p">)))))</span>
+        <span class="n">factor</span> <span class="o">=</span> <span class="n">lon_buffer_factor</span><span class="p">(</span><span class="n">res_y</span><span class="p">)</span>
+        <span class="n">x_bnds</span><span class="p">,</span> <span class="n">x_factor</span> <span class="o">=</span> <span class="p">((</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span> <span class="k">if</span> <span class="n">factor</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span><span class="n">x_bnds</span><span class="p">,</span> <span class="n">factor</span><span class="p">)</span>
     <span class="n">idx_start</span><span class="p">,</span> <span class="n">idx_end</span> <span class="o">=</span> <span class="n">get_ind_startend</span><span class="p">(</span><span class="n">grid_x</span><span class="p">,</span> <span class="n">x_dim</span><span class="p">,</span> <span class="n">x_bnds</span><span class="p">)</span>
     <span class="n">idy_start</span><span class="p">,</span> <span class="n">idy_end</span> <span class="o">=</span> <span class="n">get_ind_startend</span><span class="p">(</span><span class="n">grid_y</span><span class="p">,</span> <span class="n">y_dim</span><span class="p">,</span> <span class="n">y_bnds</span><span class="p">)</span>
-    <span class="n">idx_start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">idx_start</span> <span class="o">-</span> <span class="n">buffer</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-    <span class="n">idx_end</span> <span class="o">+=</span> <span class="n">buffer</span>
+    <span class="n">x_buffer</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">ceil</span><span class="p">(</span><span class="n">buffer</span> <span class="o">*</span> <span class="p">(</span><span class="n">x_factor</span> <span class="o">-</span> <span class="mf">0.01</span><span class="p">)))</span>  <span class="c1"># widened beyond 1 % of distortion (latitudes &gt; ~8°)</span>
+    <span class="n">idx_start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">idx_start</span> <span class="o">-</span> <span class="n">x_buffer</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">idx_end</span> <span class="o">+=</span> <span class="n">x_buffer</span>
     <span class="n">idy_start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">idy_start</span> <span class="o">-</span> <span class="n">buffer</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
     <span class="n">idy_end</span> <span class="o">+=</span> <span class="n">buffer</span>
     <span class="k">return</span> <span class="p">{</span><span class="n">x_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="n">idx_start</span><span class="p">,</span> <span class="n">idx_end</span><span class="p">),</span> <span class="n">y_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="n">idy_start</span><span class="p">,</span> <span class="n">idy_end</span><span class="p">)},</span> <span class="kc">None</span>
@@ -2381,6 +2559,55 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">values</span><span class="p">)))</span>
 
     <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">dcoords</span><span class="p">(</span><span class="n">coords_x</span><span class="p">),</span> <span class="n">dcoords</span><span class="p">(</span><span class="n">coords_y</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_lon_center</span><span class="p">(</span><span class="n">lon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Center of the longitude range [degrees] of a geographic grid, see :func:`_wrap_lon`.</span>
+<span class="sd">    """</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">lon</span><span class="p">))</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">lon</span><span class="p">)))</span> <span class="o">/</span> <span class="mi">2</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_wrap_lon</span><span class="p">(</span><span class="n">lon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">center</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Longitudes [degrees] brought within [center - 180, center + 180), i.e. in the convention (e.g. 0..360 or</span>
+<span class="sd">    -180..180) of a geographic grid whose longitude range is centered on ``center`` (see :func:`_lon_center`).</span>
+<span class="sd">    Longitudes already in that range are unchanged.</span>
+<span class="sd">    """</span>
+
+    <span class="n">lon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">lon</span><span class="p">)</span>
+    <span class="n">wrapped</span> <span class="o">=</span> <span class="n">center</span> <span class="o">-</span> <span class="mf">180.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">lon</span> <span class="o">-</span> <span class="p">(</span><span class="n">center</span> <span class="o">-</span> <span class="mf">180.0</span><span class="p">),</span> <span class="mf">360.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">wrapped</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">lon</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">lon</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">)</span> <span class="k">else</span> <span class="n">wrapped</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_pad_global_lon</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">x_dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">x_targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    For a regular latitude/longitude grid covering all longitudes (1D increasing longitudes), add the last</span>
+<span class="sd">    column before the first one (at -360) and/or the first column after the last one (at +360) when target</span>
+<span class="sd">    longitudes (in the grid convention, see :func:`_wrap_lon`) fall between them, so that the regular grid</span>
+<span class="sd">    interpolation does not return NaN across the 360 degree seam. The data are only copied when needed.</span>
+
+<span class="sd">    Grids without rows at the poles are not padded across the poles: targets beyond their first or last</span>
+<span class="sd">    latitude get NaN.</span>
+<span class="sd">    """</span>
+
+    <span class="n">lon</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">x_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="k">if</span> <span class="n">lon</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">data</span>
+    <span class="n">spacing</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">lon</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">lon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">spacing</span> <span class="o">-</span> <span class="mf">360.0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.01</span> <span class="o">*</span> <span class="n">spacing</span><span class="p">:</span>  <span class="c1"># not global in longitude</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="n">parts</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">x_targets</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">lon</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">x_dim</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]})</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="n">x_dim</span><span class="p">:</span> <span class="p">[</span><span class="n">lon</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mf">360.0</span><span class="p">]}))</span>
+    <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">x_targets</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">lon</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">x_dim</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]})</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="n">x_dim</span><span class="p">:</span> <span class="p">[</span><span class="n">lon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mf">360.0</span><span class="p">]}))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">data</span>
+    <span class="k">return</span> <span class="n">xr</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">parts</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">x_dim</span><span class="p">,</span> <span class="n">data_vars</span><span class="o">=</span><span class="s2">"minimal"</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="s2">"minimal"</span><span class="p">,</span> <span class="n">compat</span><span class="o">=</span><span class="s2">"override"</span><span class="p">,</span> <span class="n">join</span><span class="o">=</span><span class="s2">"exact"</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_coarsen_ratio</span><span class="p">(</span>  <span class="c1"># pylint: disable=too-many-locals</span>
@@ -2449,6 +2676,10 @@
     <span class="k">return</span> <span class="n">combined_attrs</span>
 
 
+<span class="c1"># methods relying on scipy.interpolate.griddata (Delaunay triangulation), not supported in ECEF coordinates</span>
+<span class="n">GRIDDATA_METHODS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"linear"</span><span class="p">,</span> <span class="s2">"linear_3D"</span><span class="p">,</span> <span class="s2">"cubic"</span><span class="p">)</span>
+<span class="n">FLAT_NEIGHBORHOOD</span> <span class="o">=</span> <span class="mf">1e-6</span>  <span class="c1"># [m] max altitude range of the neighbors of a POI for which interp_temp uses fixgrad</span>
+
 <span class="n">HEIGHT_METHODS</span> <span class="o">=</span> <span class="p">(</span>
     <span class="s2">"temp"</span><span class="p">,</span>
     <span class="s2">"temp_fixgrad"</span><span class="p">,</span>
@@ -2510,10 +2741,10 @@
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-3d57771</div>
+grid-process, version: dev-e479e16</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 04.11.2026.
+  Last updated on 11.11.2026.
   <br/>
 </p></div>
       

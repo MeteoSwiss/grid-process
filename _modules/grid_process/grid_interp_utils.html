@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=1de118f2"></script>
+    <script src="../../_static/documentation_options.js?v=e0d173ce"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/grid_process/grid_interp_utils';</script>
@@ -55,7 +55,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="04.11.2026"/>
+    <meta name="docbuild:last-update" content="11.11.2026"/>
   </head>
   
   
@@ -412,7 +412,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">pyproj</span><span class="w"> </span><span class="kn">import</span> <span class="n">CRS</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">reproject</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">outer_ring</span><span class="p">,</span> <span class="n">reproject</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process</span><span class="w"> </span><span class="kn">import</span> <span class="n">data_model</span> <span class="k">as</span> <span class="n">dm</span>
 
 
@@ -551,7 +551,9 @@
 <span class="sd">    dst_grid_crs : string, int, dict or a CRS object</span>
 <span class="sd">        Anything accepted by pyproj.crs.CRS.from_user_input:</span>
 <span class="sd">        https://pyproj4.github.io/pyproj/dev/api/crs/crs.html#pyproj.crs.CRS.from_user_input</span>
-<span class="sd">        (e.g. EPSG:4326)</span>
+<span class="sd">        (e.g. EPSG:4326). The source domain must be representable in this CRS: a global source needs a</span>
+<span class="sd">        geographic destination CRS (e.g. EPSG:4326), since a projected CRS (e.g. LV95 or UTM) cannot represent</span>
+<span class="sd">        the whole globe.</span>
 <span class="sd">    add_latlon : bool</span>
 <span class="sd">        If True, add latitude and longitude 2d arrays as coordinates</span>
 
@@ -567,14 +569,18 @@
 
     <span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_spatial_dims</span><span class="p">(</span><span class="n">src_grid</span><span class="p">)</span>
     <span class="n">src_grid</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">set_grid_mapping</span><span class="p">(</span><span class="n">src_grid</span><span class="p">)</span>
-    <span class="n">src_y</span><span class="p">,</span> <span class="n">src_x</span><span class="p">,</span> <span class="n">src_crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">src_grid</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">)</span>
+    <span class="n">src_y</span><span class="p">,</span> <span class="n">src_x</span><span class="p">,</span> <span class="n">src_crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">src_grid</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">prefer_projected</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">dst_crs</span> <span class="o">=</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_user_input</span><span class="p">(</span><span class="n">dst_grid_crs</span><span class="p">)</span>
-    <span class="n">x_min</span><span class="p">,</span> <span class="n">x_max</span> <span class="o">=</span> <span class="n">src_grid</span><span class="p">[</span><span class="n">src_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">src_grid</span><span class="p">[</span><span class="n">src_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
-    <span class="n">y_min</span><span class="p">,</span> <span class="n">y_max</span> <span class="o">=</span> <span class="n">src_grid</span><span class="p">[</span><span class="n">src_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">src_grid</span><span class="p">[</span><span class="n">src_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
-    <span class="n">x_bnds</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_min</span><span class="p">,</span> <span class="n">x_min</span><span class="p">,</span> <span class="n">x_max</span><span class="p">,</span> <span class="n">x_max</span><span class="p">)</span>
-    <span class="n">y_bnds</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_min</span><span class="p">,</span> <span class="n">y_max</span><span class="p">,</span> <span class="n">y_min</span><span class="p">,</span> <span class="n">y_max</span><span class="p">)</span>
-    <span class="n">x_bnds</span><span class="p">,</span> <span class="n">y_bnds</span> <span class="o">=</span> <span class="n">reproject</span><span class="p">(</span><span class="n">x_bnds</span><span class="p">,</span> <span class="n">y_bnds</span><span class="p">,</span> <span class="n">src_crs</span><span class="p">,</span> <span class="n">dst_crs</span><span class="p">)</span>
-    <span class="n">x_bnds</span><span class="p">,</span> <span class="n">y_bnds</span> <span class="o">=</span> <span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">x_bnds</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">x_bnds</span><span class="p">)),</span> <span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">y_bnds</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y_bnds</span><span class="p">))</span>
+
+    <span class="c1"># bounding box of the source domain in the destination CRS: of the outer ring of a structured grid (which</span>
+    <span class="c1"># encloses the reprojected grid), of all points of an unstructured one</span>
+    <span class="n">src_x_coords</span> <span class="o">=</span> <span class="n">src_grid</span><span class="p">[</span><span class="n">src_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">src_y_coords</span> <span class="o">=</span> <span class="n">src_grid</span><span class="p">[</span><span class="n">src_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">src_x_coords</span><span class="p">,</span> <span class="n">src_y_coords</span> <span class="o">=</span> <span class="n">outer_ring</span><span class="p">(</span><span class="n">src_x_coords</span><span class="p">,</span> <span class="n">src_y_coords</span><span class="p">)</span>
+    <span class="n">x_src_dst</span><span class="p">,</span> <span class="n">y_src_dst</span> <span class="o">=</span> <span class="n">reproject</span><span class="p">(</span><span class="n">src_x_coords</span><span class="p">,</span> <span class="n">src_y_coords</span><span class="p">,</span> <span class="n">src_crs</span><span class="p">,</span> <span class="n">dst_crs</span><span class="p">)</span>
+    <span class="n">x_bnds</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">x_src_dst</span><span class="p">)),</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">x_src_dst</span><span class="p">)))</span>
+    <span class="n">y_bnds</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">y_src_dst</span><span class="p">)),</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">y_src_dst</span><span class="p">)))</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># need to infer expected sizes for x and y dims</span>
         <span class="n">xy_ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_bnds</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x_bnds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">y_bnds</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">y_bnds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
@@ -651,10 +657,10 @@
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-3d57771</div>
+grid-process, version: dev-e479e16</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 04.11.2026.
+  Last updated on 11.11.2026.
   <br/>
 </p></div>
       

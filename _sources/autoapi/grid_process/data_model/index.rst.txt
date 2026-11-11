@@ -50,6 +50,7 @@ Functions
    grid_process.data_model.get_poi_alt
    grid_process.data_model.get_grid_crs
    grid_process.data_model.parse_grid_mapping
+   grid_process.data_model.is_metric_crs
    grid_process.data_model.get_coords_name_crs
    grid_process.data_model.is_decreasing1d
    grid_process.data_model.is_decreasing
@@ -232,12 +233,28 @@ Module Contents
 
    .. seealso:: :func:`get_grid_crs`
 
+   .. note::
 
-.. py:function:: get_coords_name_crs(grid: xarray.Dataset | xarray.DataArray, spatial_dims: tuple[str, ...] | None = None) -> tuple[str, str, pyproj.CRS]
+      CF ``latitude_longitude`` and ``rotated_latitude_longitude`` mappings without ellipsoid parameters other than
+      ``earth_radius`` (as NWP models on a sphere) are built directly on WGS84, which is much faster than
+      pyproj.CRS.from_cf(). The result is the same as ``sphere_as_wgs84(pyproj.CRS.from_cf(grid_mapping))``, see
+      :func:`~grid_process.helpers.sphere_as_wgs84`.
+
+
+.. py:function:: is_metric_crs(crs: pyproj.CRS) -> bool
+
+   Whether ``crs`` is a projected CRS with all axes in meters (e.g. LV95, LV03 or UTM), i.e. in which euclidean
+   distances can be computed directly from the coordinates. The axis units are compared by their conversion factor
+   to the meter, so that units written with another name (e.g. "m" or "Meter" in a WKT without authority) are
+   recognized, while kilometers or feet are not.
+
+
+.. py:function:: get_coords_name_crs(grid: xarray.Dataset | xarray.DataArray, spatial_dims: tuple[str, ...] | None = None, prefer_projected: bool = False) -> tuple[str, str, pyproj.CRS]
 
    Get correct coordinate names and CRS according to supported conventions. When
    non-dimensional longitude and latitude coordinates arrays are present, these
-   are used instead of the native spatial dimension coordinates.
+   are used instead of the native spatial dimension coordinates, unless ``prefer_projected``
+   is True and the native CRS is projected with axes in meters.
 
    :Parameters: * **grid** (*xarray Dataset or DataArray*) -- contains spatial horizontal coordinates. Must have a "grid_mapping" or "crs"
                   attribute referencing the spatial dimensions unless longitude and
@@ -245,6 +262,9 @@ Module Contents
                 * **spatial_dims** (*tuple of string(s), optional*) -- name of the ``grid`` spatial dimension(s). Has size one in case of
                   unstructured grid otherwise contains dimension names in the order (y, x).
                   If not provided, calls :func:`~grid_process.helpers.get_spatial_dims`
+                * **prefer_projected** (*bool, optional*) -- If True, return the native spatial coordinates when their CRS is projected with axes in meters (e.g. LV95),
+                  even if longitude and latitude coordinates are also present. Native coordinates in degrees (e.g. rotated
+                  pole) still give the longitude and latitude coordinates when present. Default is False.
 
    :returns: * **grid_y** (*str*) -- name of the northward coordinate. Usually 'x' or 'longitude'
              * **grid_x** (*str*) -- name of the eastward coordinate. Usually 'y' or 'latitude''
