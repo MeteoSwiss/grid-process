@@ -15,6 +15,7 @@ import xarray as xr
 
 import grid_process.grid_interp_utils as gru
 from grid_process.data_model import get_grid_crs
+from grid_process.helpers import reproject, sphere_as_wgs84
 
 
 def test_create_dst_grid(data_native_lv95):
@@ -77,7 +78,8 @@ def test_create_dst_grid_from_src(data_native_rotlatlon):
     original = gru.create_dst_grid_from_src(results, get_grid_crs(data_native_rotlatlon))
     assert original.sizes["x"] == data_native_rotlatlon.sizes["x"]
     assert original.sizes["y"] == data_native_rotlatlon.sizes["y"]
-    assert original.crs == CRS.from_cf(json.loads(data_native_rotlatlon.grid_mapping))
+    # rotated pole on a sphere: considered on WGS84 (see grid_process.helpers.sphere_as_wgs84)
+    assert original.crs == sphere_as_wgs84(CRS.from_cf(json.loads(data_native_rotlatlon.grid_mapping)))
     assert original.x.dtype == data_native_rotlatlon.x.dtype
     np.testing.assert_allclose(original.x.values, data_native_rotlatlon.x.values, atol=5e-2)
     np.testing.assert_allclose(original.y.values, data_native_rotlatlon.y.values, atol=5e-2)
@@ -122,3 +124,86 @@ def test_create_dst_grid_topright_resolution(start, topright, res, expected_n):
         np.testing.assert_allclose(np.diff(coords), res)
         assert coords[0] == start
         assert coords[-1] <= topright + 1e-9
+
+
+def test_create_dst_grid_missing_args():
+    """
+    Two out of the three arguments topright, nrowcol, resolution are required
+    """
+
+    with pytest.raises(ValueError, match="At least two"):
+        gru.create_dst_grid("EPSG:2056", (1.2e6, 2.6e6), resolution=1000.0)
+
+
+def _lv95_points(grid: xr.Dataset) -> tuple[np.ndarray, np.ndarray]:
+    """LV95 coordinates of all latitude/longitude points of a grid"""
+
+    return reproject(grid.longitude.values.ravel(), grid.latitude.values.ravel(), "EPSG:4326", "EPSG:2056")
+
+
+@pytest.mark.parametrize("src_name", ["data_native_lv95", "data_native_rotlatlon", "model_data", "unstructured"])
+def test_create_dst_grid_from_src_bounds(src_name, request):
+    """
+    The destination grid spans exactly the bounding box of the source domain reprojected in the destination CRS,
+    using native metric coordinates when available (identity in the same CRS)
+    """
+
+    if src_name == "unstructured":
+        src = request.getfixturevalue("data_native_rotlatlon").stack({"cell": ("y", "x")})
+    else:
+        src = request.getfixturevalue(src_name)
+    results = gru.create_dst_grid_from_src(src, "EPSG:2056")
+
+    if src_name == "data_native_lv95":
+        np.testing.assert_allclose(results.x.values, src.x.values, rtol=0, atol=1e-6)
+        np.testing.assert_allclose(results.y.values, src.y.values, rtol=0, atol=1e-6)
+        return
+
+    # all source points are within the destination grid, which is not larger than needed
+    x_lv95, y_lv95 = _lv95_points(src)
+    atol = 1.0  # float32 coordinates
+    np.testing.assert_allclose([results.x.min(), results.x.max()], [x_lv95.min(), x_lv95.max()], rtol=0, atol=atol)
+    np.testing.assert_allclose([results.y.min(), results.y.max()], [y_lv95.min(), y_lv95.max()], rtol=0, atol=atol)
+    if src_name == "unstructured":
+        assert abs(results.sizes["x"] * results.sizes["y"] - src.sizes["cell"]) <= max(results.sizes.values())
+
+
+@pytest.mark.filterwarnings("ignore:You will likely lose important projection information")  # to_proj4()
+@pytest.mark.parametrize("method,kwargs", [("nearest", {}), ("idw", {"k": 4})])
+def test_interp2grid_on_created_dst_grid(method, kwargs, data_native_lv95, data_native_rotlatlon):
+    """
+    interp2grid gives the same results on destination grids created by the utilities, whatever the way their CRS
+    is given (string, int, CRS object, WKT, rotated pole on a sphere) and with or without latitude/longitude
+    (same values, NaN included)
+    """
+
+    import grid_process.grid_interp as gri
+
+    def interp(src: xr.Dataset, dst: xr.Dataset) -> xr.Dataset:
+        return gri.interp2grid(src[["test_var_1"]], dst, method, try_reg=False, **kwargs)
+
+    # LV95 destination from a rotated pole source
+    grid_kwargs = {"bottomleft": (1.17e6, 2.65e6), "nrowcol": (8, 10), "resolution": 4000.0}
+    expected = interp(data_native_rotlatlon, gru.create_dst_grid("EPSG:2056", **grid_kwargs))
+    assert expected["test_var_1"].notnull().any()
+    lv95 = CRS.from_epsg(2056)
+    for crs, add_latlon in [("EPSG:2056", True), (2056, False), (lv95, False), (lv95.to_wkt(), False)]:
+        dst = gru.create_dst_grid(crs, add_latlon=add_latlon, **grid_kwargs)
+        np.testing.assert_array_equal(
+            interp(data_native_rotlatlon, dst)["test_var_1"].values, expected["test_var_1"].values
+        )
+
+    # rotated pole destination from an LV95 source
+    rotated = get_grid_crs(data_native_rotlatlon)
+    dst = gru.create_dst_grid_from_src(data_native_rotlatlon, rotated)
+    expected = interp(data_native_lv95, dst)
+    assert expected["test_var_1"].notnull().any()
+    rotated_sphere = CRS.from_cf(json.loads(data_native_rotlatlon.grid_mapping))
+    for other in (
+        gru.create_dst_grid_from_src(data_native_rotlatlon, rotated, add_latlon=True),
+        dst.assign_attrs(crs=rotated_sphere.to_wkt()),
+        dst.assign_attrs(crs=rotated_sphere.to_proj4()),
+    ):
+        np.testing.assert_array_equal(
+            interp(data_native_lv95, other)["test_var_1"].values, expected["test_var_1"].values
+        )

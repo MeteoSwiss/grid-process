@@ -151,18 +151,22 @@ def test_interp_temp():
     # compare
     assert np.allclose(expected, results)
 
-    # ***flat orography: all neighbor altitudes identical → deg=1 rank-deficient***
-    # must raise ValueError without infinite recursion
+    # ***flat orography: all neighbor altitudes identical (e.g. copies of the pole point of a lat/lon grid)***
+    # no sounding can be fitted: fixgrad fallback (nearest grid point corrected with 6 K/km), for both branches
 
     x_flat = np.tile(np.arange(0, 10), (10, 1))
     y_flat = x_flat.T
     z_flat = np.zeros(x_flat.shape)  # completely flat
     coords_flat_flat = np.c_[x_flat.flatten(), y_flat.flatten(), z_flat.flatten()]
     data_flat_flat = (x_flat + y_flat).flatten().astype(np.float32)[:, None]
-    poi_coords_flat = np.array([[2.5, 2.5, 0.0], [7.0, 7.0, 0.0]])
+    poi_coords_flat = np.array([[2.0, 3.0, 0.0], [7.0, 7.0, 100.0]])  # on grid points: unambiguous nearest
 
-    with pytest.raises(ValueError, match="rank-deficient"):
-        gri.interp_temp(coords_flat_flat, data_flat_flat, poi_coords_flat, z_fact=1, k=9)
+    expected_flat = np.array([[5.0], [14.0 - 0.006 * 100]])
+    for grad_only in (False, True):
+        results_flat = gri.interp_temp(
+            coords_flat_flat, data_flat_flat, poi_coords_flat, z_fact=1, k=9, grad_only=grad_only
+        )
+        np.testing.assert_allclose(results_flat, expected_flat, rtol=1e-6)
 
     # ***chunk_size invariance: results must not depend on chunk_size***
 
@@ -605,6 +609,7 @@ def test_flatten_concat(model_data, poi_def):
     import grid_process.grid_interp as gri
     from grid_process.ds_utils import ds_to_da
     from grid_process.data_model import get_spatial_dims
+    from grid_process import data_model as dm
 
     methods_1 = ("nearest", "linear", "cubic", "idw", "upscaled")
     methods_2 = (
@@ -653,14 +658,13 @@ def test_flatten_concat(model_data, poi_def):
 
         assert pois_coords.shape == (n_pois, n_coords)
 
+        # grid and POIs both in lat/lon over Switzerland: coords transformed to 'EPSG:2056' (CH1903+/LV95) for all
+        # methods, so that the nearest neighbor searches and triangulations use distances in meters
+        assert (pois_coords[:, :2] > 1e6).all() and (pois_coords[:, :2] < 3e6).all()
+        assert (model_coords_flat[:, :2] > 1e6).all() and (model_coords_flat[:, :2] < 3e6).all()
         if method in methods_2:
-            # coords transformed to 'EPSG:2056' (CH1903+/LV95)
-            assert (pois_coords[:, :2] > 1e5).all() and (pois_coords[:, :2] < 1e7).all()
-            assert (model_coords_flat[:, :2] > 1e5).all() and (model_coords_flat[:, :2] < 1e7).all()
-        else:
-            # coords still in 'EPSG:4326' (lat/lon)
-            assert (pois_coords[:, :2] > -180).all() and (pois_coords[:, :2] < 180).all()
-            assert (model_coords_flat[:, :2] > -180).all() and (model_coords_flat[:, :2] < 180).all()
+            # altitude as last column
+            np.testing.assert_array_equal(pois_coords[:, -1], dm.get_poi_alt(poi_def))
 
 
 @pytest.mark.parametrize(
@@ -904,20 +908,15 @@ def test_slice_boundingbox(model_data_2dflat, poi_def, data_native_lv95_2dflat, 
 
     import grid_process.grid_interp as gri
 
-    # check that with a single POI the sliced grid has correct sizes
-    sliced_data = gri.slice_boundingbox(model_data_2dflat, poi_def.loc[[0]], method="nearest")
-    if "cell" in sliced_data.dims:
-        assert 4 <= sliced_data.sizes["cell"] <= 16
-    else:
-        assert sliced_data.sizes["x"] == 2
-        assert sliced_data.sizes["y"] == 2
-
-    sliced_data = gri.slice_boundingbox(data_native_lv95_2dflat, poi_def_lv95.loc[[0]], method="nearest")
-    if "cell" in sliced_data.dims:
-        assert 4 <= sliced_data.sizes["cell"] <= 16
-    else:
-        assert sliced_data.sizes["x"] == 2
-        assert sliced_data.sizes["y"] == 2
+    # check that with a single POI the sliced grid has correct sizes. Both grids are sliced in latitude/longitude
+    # (~46°N), where the x buffer is widened by 1 / cos(latitude): 1 -> 2 columns on each side
+    for data, pois in ((model_data_2dflat, poi_def), (data_native_lv95_2dflat, poi_def_lv95)):
+        sliced_data = gri.slice_boundingbox(data, pois.loc[[0]], method="nearest")
+        if "cell" in sliced_data.dims:
+            assert 4 <= sliced_data.sizes["cell"] <= 24
+        else:
+            assert sliced_data.sizes["x"] == 4
+            assert sliced_data.sizes["y"] == 2
 
 
 @pytest.mark.parametrize("method", ["nearest", "linear"])
@@ -972,6 +971,19 @@ def test_interp2grid(model_data_2dflat, data_native_lv95, data_native_rotlatlon)
 
     model_data_2dflat = model_data_2dflat.assign_coords(coords).assign_attrs(grid_mapping={"epsg_code": "EPSG:4326"})
 
+    def assert_same_as_regular(regular: xr.Dataset, generic: xr.Dataset, method: str) -> None:
+        """
+        The generic path triangulates in LV95 (meters), the regular path interpolates bilinearly in lat/lon: since
+        the test data are linear in lat/lon, 'linear' differs by less than 0.2 % of the grid step along x (528 for
+        test_var_1, 1320 for test_var_2).
+        """
+
+        if method == "linear":
+            xr.testing.assert_allclose(regular, generic, rtol=0, atol=2.5)
+            assert regular.attrs == generic.attrs
+        else:
+            xr.testing.assert_identical(regular, generic)
+
     for method in ["nearest", "linear", "nearest_3D"]:
         # unregular grid interpolation with lat/lon
         results = gri.interp2grid(model_data_2dflat, data_native_lv95, method, try_reg=False)
@@ -996,7 +1008,7 @@ def test_interp2grid(model_data_2dflat, data_native_lv95, data_native_rotlatlon)
 
         # regular grid interpolation with y/x and lat/lon for dst_grid
         results_regular = gri.interp2grid(model_data_2dflat, data_native_lv95, method, try_reg=True)
-        xr.testing.assert_identical(results_regular, results)
+        assert_same_as_regular(results_regular, results, method)
 
         # regular grid interpolation with y/x and y/x for dst_grid
         results_regular_2 = gri.interp2grid(
@@ -1009,7 +1021,7 @@ def test_interp2grid(model_data_2dflat, data_native_lv95, data_native_rotlatlon)
         if method == "linear" and "cell" in model_data_2dflat.dims:
             results_regular_2.update(results.drop_vars(["longitude", "latitude"]))
 
-        xr.testing.assert_identical(results_regular_2, results.drop_vars(["longitude", "latitude"]))
+        assert_same_as_regular(results_regular_2, results.drop_vars(["longitude", "latitude"]), method)
 
     # same with dst_grid in rotated lat lon native grid.
     for method in ["nearest", "linear", "nearest_3D"]:
@@ -1033,7 +1045,9 @@ def test_interp2grid(model_data_2dflat, data_native_lv95, data_native_rotlatlon)
 
         # regular grid interpolation with y/x and lat/lon for dst_grid
         results_regular = gri.interp2grid(model_data_2dflat, data_native_rotlatlon, method, try_reg=True)
-        xr.testing.assert_allclose(results.where(results_regular.notnull()), results_regular)
+        # 'linear': triangulation in LV95 vs bilinear in lat/lon, see assert_same_as_regular
+        atol = 2.5 if method == "linear" else 1e-8
+        xr.testing.assert_allclose(results.where(results_regular.notnull()), results_regular, rtol=1e-5, atol=atol)
 
     data_flat = data_native_lv95.stack(poi=("y", "x"))
     poi_def = data_flat.poi.to_dataframe()[["latitude", "longitude"]].reset_index()
@@ -1309,3 +1323,339 @@ def test_interp2poi_integer_coords(method, data_native_lv95, poi_def_lv95):
     expected = interp2poi(data_lv95, poi_def_lv95, method)
     result = interp2poi(data_lv95_int, poi_def_lv95, method)
     np.testing.assert_array_equal(result.test_var_1.values, expected.test_var_1.values)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# CRS of the generic interpolation path (KDTree / griddata): never latitude/longitude degrees
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def _latlon_grid(lat: np.ndarray, lon: np.ndarray, alt: float = 500.0) -> xr.Dataset:
+    """Regular latitude/longitude grid whose values are the flat index of the grid points."""
+
+    shape = (lat.size, lon.size)
+    return xr.Dataset(
+        {"var": (("latitude", "longitude"), np.arange(lat.size * lon.size, dtype=np.float64).reshape(shape))},
+        coords={
+            "latitude": lat,
+            "longitude": lon,
+            "surface_altitude": (("latitude", "longitude"), np.full(shape, alt)),
+        },
+        attrs={"crs": "EPSG:4326"},
+    )
+
+
+def _latlon_pois(lon: np.ndarray, lat: np.ndarray, alt: float = 500.0) -> gpd.GeoDataFrame:
+    return gpd.GeoDataFrame(
+        {"name": [f"p{i}" for i in range(len(lon))], "height_masl": np.full(len(lon), alt)},
+        geometry=gpd.points_from_xy(lon, lat),
+        crs="EPSG:4326",
+    )
+
+
+@pytest.mark.parametrize(
+    "src,dst,src_larger,dst_lonlat,expected",
+    [
+        # one metric CRS: that one
+        ("EPSG:2056", "EPSG:4326", True, None, "EPSG:2056"),
+        ("EPSG:4326", "EPSG:2056", True, None, "EPSG:2056"),
+        ("EPSG:32632", "EPSG:4326", False, None, "EPSG:32632"),
+        # two metric CRS: the one of the larger grid
+        ("EPSG:21781", "EPSG:2056", True, None, "EPSG:21781"),
+        ("EPSG:21781", "EPSG:2056", False, None, "EPSG:2056"),
+        ("EPSG:32632", "EPSG:2056", True, None, "EPSG:32632"),
+        # two geographic CRS: LV95 if the destination is close enough to Switzerland, otherwise ECEF
+        ("EPSG:4326", "EPSG:4326", True, ([5.9, 10.5], [45.8, 47.8]), "EPSG:2056"),  # Switzerland
+        ("EPSG:4326", "EPSG:4326", False, ([-0.8, 17.7], [42.0, 50.5]), "EPSG:2056"),  # ICON-CH1 domain
+        ("EPSG:4326", "EPSG:4326", True, ([5.0, 15.0], [55.0, 60.0]), "EPSG:4978"),  # Denmark / Scandinavia
+        ("EPSG:4326", "EPSG:4326", True, ([-180.0, 179.0], [-90.0, 90.0]), "EPSG:4978"),  # global
+    ],
+)
+def test_choose_kdtree_crs(src, dst, src_larger, dst_lonlat, expected):
+    """
+    Choice of the CRS of the nearest neighbor searches and triangulations
+    """
+
+    from pyproj import CRS
+
+    import grid_process.grid_interp as gri
+    from grid_process.helpers import reproject
+
+    def dst_lv95():
+        assert dst_lonlat is not None, "the destination extent is only needed for two geographic CRS"
+        lon, lat = np.meshgrid(*dst_lonlat)
+        return reproject(lon.ravel(), lat.ravel(), "EPSG:4326", "EPSG:2056")
+
+    target = gri._choose_kdtree_crs(CRS.from_user_input(src), CRS.from_user_input(dst), src_larger, dst_lv95)
+    assert target == CRS.from_user_input(expected)
+
+
+def test_choose_kdtree_crs_threshold(monkeypatch):
+    """
+    The LV95 range is configurable, and non-finite LV95 coordinates give ECEF
+    """
+
+    from pyproj import CRS
+
+    import grid_process.grid_interp as gri
+    from grid_process import CONFIG
+    from grid_process.helpers import reproject
+
+    latlon = CRS.from_epsg(4326)
+    swiss = reproject(np.array([5.9, 10.5]), np.array([45.8, 47.8]), latlon, "EPSG:2056")  # max offset ~ 125 km
+    assert gri._choose_kdtree_crs(latlon, latlon, True, lambda: swiss) == gri.LV95
+    assert gri._choose_kdtree_crs(latlon, latlon, True, lambda: (np.array([np.inf]), np.array([1.2e6]))) == gri.ECEF
+    monkeypatch.setattr(CONFIG, "lv95_max_offset", 50_000.0)
+    assert gri._choose_kdtree_crs(latlon, latlon, True, lambda: swiss) == gri.ECEF
+
+
+def test_interp2poi_ecef_nearest():
+    """
+    Beyond the LV95 range, nearest neighbors are searched in ECEF coordinates: they are the nearest grid points along
+    the Earth's surface (not in latitude/longitude degrees), also across the antimeridian
+    """
+
+    from pyproj import Geod
+
+    import grid_process.grid_interp as gri
+
+    def check(grid: xr.Dataset, pois: gpd.GeoDataFrame) -> None:
+        result = gri.interp2poi(grid, pois, "nearest", try_reg=False)["var"].values
+        lon_2d, lat_2d = np.meshgrid(grid.longitude.values, grid.latitude.values)
+        n_poi, n_grid = len(pois), lon_2d.size
+        _, _, dist = Geod(ellps="WGS84").inv(
+            np.repeat(pois.geometry.x.values, n_grid),
+            np.repeat(pois.geometry.y.values, n_grid),
+            np.tile(lon_2d.ravel(), n_poi),
+            np.tile(lat_2d.ravel(), n_poi),
+        )
+        dist = dist.reshape(n_poi, n_grid)
+        expected = np.argmin(dist, axis=1)
+        # ties (nearly equidistant grid points) may be resolved differently between chord and geodesic distances
+        sorted_dist = np.sort(dist, axis=1)
+        tie = sorted_dist[:, 1] - sorted_dist[:, 0] < 1e-6 * sorted_dist[:, 1]
+        np.testing.assert_array_equal(result[~tie], expected[~tie])
+
+    rng = np.random.default_rng(1)
+    # Europe, up to 70°N, where 1° of longitude is about a third of 1° of latitude
+    grid = _latlon_grid(np.arange(30.0, 70.1, 1.0), np.arange(-20.0, 40.1, 1.0))
+    check(grid, _latlon_pois(rng.uniform(-19, 39, 300), rng.uniform(31, 69, 300)))
+
+    # global grid: POIs close to the antimeridian (the POIs span all longitudes, so that the grid is not sliced)
+    grid = _latlon_grid(np.arange(-80.0, 80.1, 2.0), np.arange(-180.0, 179.0, 2.0))
+    lon = np.array([179.6, -179.6, 178.9, -178.9, 0.0])
+    lat = np.array([0.3, -10.2, 60.4, -61.0, 0.0])
+    check(grid, _latlon_pois(lon, lat))
+    result = gri.interp2poi(grid, _latlon_pois(lon, lat), "nearest", try_reg=False)["var"].values
+    # e.g. 179.6°E is closer to 180°W (index 0 along longitude) than to 178°E
+    assert result[0] == grid["var"].sel(latitude=0.0, longitude=-180.0).item()
+
+
+@pytest.mark.parametrize(
+    "method,kwargs",
+    [
+        ("nearest", {}),
+        ("idw", {"k": 4, "weight_power": 2}),
+        ("upscaled", {"k": 4}),
+        ("nearest_3D", {}),
+        ("idw_3D", {"k": 4}),
+        ("upscaled_3D", {"k": 4}),
+        ("temp", {"k": 20, "weight_power": 0.5}),
+        ("temp_fixgrad", {"r_search": 1.5}),
+        ("nearest_alt", {"r_search": 1.5}),
+        ("snowlim", {"k": 9}),
+    ],
+)
+def test_interp2poi_ecef_vs_lv95(method, kwargs, model_data, poi_def, monkeypatch):
+    """
+    On a Swiss grid, forcing ECEF coordinates gives (almost) the same results as LV95 for all KDTree methods,
+    including the methods with altitude (altitude as last column of the coordinates)
+    """
+
+    import grid_process.grid_interp as gri
+    from grid_process import CONFIG
+
+    lv95 = gri.interp2poi(model_data, poi_def, method, try_reg=False, **kwargs)
+    monkeypatch.setattr(CONFIG, "lv95_max_offset", 1.0)
+    ecef = gri.interp2poi(model_data, poi_def, method, try_reg=False, **kwargs)
+    # LV95 (projection scale error) and ECEF (chord) distances differ slightly, which changes the inverse distance
+    # weights by ~1e-6 of the data range; absolute tolerance as "temp" can extrapolate values close to 0
+    for var in lv95.data_vars:
+        atol = 1e-5 * float(np.ptp(model_data[var].values))
+        np.testing.assert_allclose(lv95[var].values, ecef[var].values, rtol=1e-4, atol=atol, err_msg=var)
+
+
+@pytest.mark.parametrize("method", ["linear", "linear_3D", "cubic"])
+def test_griddata_ecef_error(method, model_data):
+    """
+    griddata methods (Delaunay triangulation) raise an error beyond the LV95 range (ECEF coordinates)
+    """
+
+    import grid_process.grid_interp as gri
+
+    grid = _latlon_grid(np.arange(55.0, 70.1, 0.5), np.arange(5.0, 25.1, 0.5))
+    pois = _latlon_pois(np.array([10.0, 20.0]), np.array([60.0, 65.0]))
+    with pytest.raises(ValueError, match="earth-centered earth-fixed"):
+        gri.interp2poi(grid, pois, method, try_reg=False)
+    dst_grid = _latlon_grid(np.arange(56.0, 69.1, 1.0), np.arange(6.0, 24.1, 1.0)).drop_vars("var")
+    with pytest.raises(ValueError, match="earth-centered earth-fixed"):
+        gri.interp2grid(grid, dst_grid, method, try_reg=False)
+
+
+def test_interp2grid_unstructured_dst_error(model_data):
+    """
+    The destination grid of interp2grid must be structured (two spatial dimensions)
+    """
+
+    import grid_process.grid_interp as gri
+
+    dst_flat = model_data.stack({"cell": ("y", "x")}).drop_vars(("cell", "y", "x"))
+    with pytest.raises(ValueError, match="structured grid"):
+        gri.interp2grid(model_data, dst_flat, "nearest")
+
+
+def test_kdtree_native_metric_coords(data_native_lv95, poi_def_lv95):
+    """
+    Native coordinates in meters (here LV03) are used instead of the latitude/longitude coordinates, and a grid
+    with only latitude/longitude coordinates gives the same nearest neighbors as with its native LV95 coordinates
+    """
+
+    import grid_process.grid_interp as gri
+    from grid_process.ds_utils import ds_to_da
+
+    # LV03 grid with latitude/longitude coordinates: nearest neighbor search in LV03
+    data_lv03 = data_native_lv95.assign_coords(x=data_native_lv95.x - 2e6, y=data_native_lv95.y - 1e6)
+    data_lv03.attrs["grid_mapping"] = '{"epsg_code": "EPSG:21781"}'
+    da, _ = ds_to_da(data_lv03)
+    coords_flat, _, pois_coords = gri._flatten_concat(da.transpose("y", "x", ...), ("y", "x"), poi_def_lv95, "idw")
+    for coords in (coords_flat, pois_coords):
+        assert (coords[:, 0] > 5e5).all() and (coords[:, 0] < 9e5).all()  # LV03 easting
+        assert (coords[:, 1] > 5e4).all() and (coords[:, 1] < 3.5e5).all()  # LV03 northing
+
+    # the same LV95 grid with only latitude/longitude coordinates
+    data_latlon = data_native_lv95.drop_vars(["x", "y"]).assign_attrs(crs="EPSG:4326")
+    data_latlon.attrs.pop("grid_mapping")
+    for method, kwargs in (("nearest", {}), ("idw", {"k": 4, "weight_power": 2})):
+        native = gri.interp2poi(data_native_lv95, poi_def_lv95, method, try_reg=False, **kwargs)
+        latlon = gri.interp2poi(data_latlon, poi_def_lv95, method, try_reg=False, **kwargs)
+        xr.testing.assert_allclose(native.drop_vars(["x", "y"], errors="ignore"), latlon, rtol=1e-4)
+
+
+def _sphere_field(lon: np.ndarray, lat: np.ndarray) -> np.ndarray:
+    """Smooth field on the sphere, continuous across the 360 degree seam and at the poles"""
+
+    lon, lat = np.radians(lon), np.radians(lat)
+    return 10 * np.cos(lat) * np.cos(lon) + 5 * np.sin(lat)
+
+
+def _global_grid(res: float, lon_start: float, lon_span: float = 360.0, lat_bnds=(90.0, -90.0), var=True):
+    """Regular latitude/longitude grid (decreasing latitudes, as ERA5 or GFS) with the field of _sphere_field"""
+
+    lat = np.arange(lat_bnds[0], lat_bnds[1] - res / 2, -res)
+    lon = np.arange(lon_start, lon_start + lon_span - res / 2, res)
+    grid = xr.Dataset(coords={"latitude": lat, "longitude": lon}, attrs={"crs": "EPSG:4326"})
+    if var:
+        lon_2d, lat_2d = np.meshgrid(lon, lat)
+        grid["var"] = (("latitude", "longitude"), _sphere_field(lon_2d, lat_2d).astype(np.float32))
+    return grid
+
+
+@pytest.mark.parametrize(
+    "method,kwargs", [("nearest", {}), ("linear", {}), ("nearest", {"try_reg": False}), ("idw", {})]
+)
+@pytest.mark.parametrize(
+    "src_lon,dst_lon,dst_span,dst_lat",
+    [
+        (0.0, -180.0, 360.0, (90.0, -90.0)),  # 0..360 to -180..180
+        (-180.0, 0.0, 360.0, (90.0, -90.0)),  # -180..180 to 0..360
+        (-180.0, 170.0, 20.0, (30.0, -30.0)),  # destination across the antimeridian, 170..190
+        (0.0, -190.0, 20.0, (30.0, -30.0)),  # destination across the source seam, -190..-170
+    ],
+)
+def test_interp2grid_longitude_convention(method, kwargs, src_lon, dst_lon, dst_span, dst_lat):
+    """
+    Latitude/longitude source and destination grids with different longitude conventions (0..360 or -180..180):
+    all destination cells get the value of their location, including across the 360 degree seam
+    """
+
+    import grid_process.grid_interp as gri
+
+    src = _global_grid(1.0, src_lon)
+    dst = _global_grid(0.5, dst_lon, dst_span, dst_lat, var=False)
+    out = gri.interp2grid(src, dst, method, **kwargs)["var"].transpose("latitude", "longitude").values
+    expected = _sphere_field(*np.meshgrid(dst.longitude.values, dst.latitude.values))
+    assert not np.isnan(out).any()
+    # max gradient of the field ~0.2 per degree: nearest is within half a grid spacing
+    np.testing.assert_allclose(out, expected, atol=0.01 if method == "linear" else 0.15)
+
+
+@pytest.mark.parametrize("src_lon", [0.0, -180.0])
+def test_interp2poi_longitude_convention(src_lon):
+    """
+    POIs at any longitude (incl. the 360 degree seam and near the poles) on a global latitude/longitude grid in
+    either longitude convention, through the regular path (try_reg=True) and the generic (ECEF) path
+    """
+
+    import grid_process.grid_interp as gri
+
+    src = _global_grid(1.0, src_lon)
+    rng = np.random.default_rng(0)
+    src = src.assign_coords(surface_altitude=(("latitude", "longitude"), rng.uniform(0, 3000, src["var"].shape)))
+    lon = np.array([-179.9, 179.9, 359.6, -70.0, 0.0, 0.2, 139.7, -0.1, 290.0, -120.0])
+    lat = np.array([-18.0, 0.0, 10.0, -16.5, -89.99, 89.9, 35.7, 51.5, 60.0, 40.0])
+    pois = gpd.GeoDataFrame(
+        {"name": [f"p{i}" for i in range(lon.size)], "height_masl": 500.0},
+        geometry=gpd.points_from_xy(lon, lat),
+        crs="EPSG:4326",
+    )
+    expected = _sphere_field(lon, lat)
+    for method, kwargs, atol in [
+        ("nearest", {}, 0.15),
+        ("linear", {}, 0.01),
+        ("nearest", {"try_reg": False}, 0.15),
+        ("temp", {"k": 9}, 0.5),
+    ]:
+        out = gri.interp2poi(src, pois, method, **kwargs)["var"].values
+        np.testing.assert_allclose(out, expected, atol=atol, err_msg=f"{method} {kwargs}")
+
+
+def test_interp2grid_regional_latlon_source_unchanged():
+    """
+    A regional latitude/longitude source is not wrapped around the globe: the regular path gives NaN outside of
+    its domain and the expected values inside
+    """
+
+    import grid_process.grid_interp as gri
+
+    src = _global_grid(1.0, -10.0, 41.0, (70.0, 30.0))
+    dst = _global_grid(0.5, -180.0, 360.0, (80.0, 20.0), var=False)
+    out = gri.interp2grid(src, dst, "linear")["var"].transpose("latitude", "longitude").values
+    lon_2d, lat_2d = np.meshgrid(dst.longitude.values, dst.latitude.values)
+    inside = (lon_2d >= -10) & (lon_2d <= 30) & (lat_2d <= 70) & (lat_2d >= 30)
+    assert np.isnan(out[~inside]).all()
+    np.testing.assert_allclose(out[inside], _sphere_field(lon_2d, lat_2d)[inside], atol=0.01)
+
+
+def test_interp2poi_temp_at_poles():
+    """
+    On a latitude/longitude grid with rows at the poles, all points of a pole row are copies of the same point
+    (same altitude and value): the k nearest neighbors of a POI close to a pole may all be such copies, for which
+    no sounding can be fitted. temp falls back to the nearest grid point corrected with a fixed lapse rate
+    """
+
+    import grid_process.grid_interp as gri
+
+    src = _global_grid(1.0, 0.0)
+    rng = np.random.default_rng(0)
+    alt = rng.uniform(0, 3000, src["var"].shape)
+    alt[[0, -1], :] = alt[[0, -1], :1]  # one altitude per pole
+    src = src.assign_coords(surface_altitude=(("latitude", "longitude"), alt))
+    lon, lat = np.array([0.0, 120.0, -45.0]), np.array([-90.0, -89.99, 89.95])
+    pois = gpd.GeoDataFrame(
+        {"name": ["south_pole", "near_south_pole", "near_north_pole"], "height_masl": alt[[-1, -1, 0], 0]},
+        geometry=gpd.points_from_xy(lon, lat),
+        crs="EPSG:4326",
+    )
+    out = gri.interp2poi(src, pois, "temp", z_fact=15, k=50, weight_power=0.75)["var"].values
+    # same altitude as the pole point: its value
+    np.testing.assert_allclose(out, _sphere_field(lon, lat), atol=0.01)

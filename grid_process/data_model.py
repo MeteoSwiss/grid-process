@@ -10,12 +10,15 @@ Module with utility functions to deal with the numerous supported data models
 
 import logging
 import json
+from functools import lru_cache
 from typing import Any, TypeVar, Literal, overload
 from collections.abc import Callable
 
 import numpy as np
 from numpy.typing import NDArray
 from pyproj import CRS
+from pyproj.crs import DerivedGeographicCRS
+from pyproj.crs.coordinate_operation import PoleRotationNetCDFCFConversion
 import geopandas as gpd
 import xarray as xr
 
@@ -203,12 +206,6 @@ def set_grid_mapping(ds: xr.Dataset) -> xr.Dataset:
     data variable encoding the grid mapping is removed.
     """
 
-    def serializable_mapping() -> dict[str, Any]:
-        return {
-            key: float(value) if isinstance(value, np.floating) else value
-            for key, value in ds_out[mapname].attrs.items()
-        }
-
     ds_out = ds.copy(deep=False)
     grid_map = set()
     for varname, da in ds_out.items():
@@ -224,7 +221,7 @@ def set_grid_mapping(ds: xr.Dataset) -> xr.Dataset:
 
     mapname = grid_map.pop()
     if {"grid_mapping", "crs"}.isdisjoint(ds_out.attrs) and mapname in ds_out:
-        ds_out.attrs["grid_mapping"] = json.dumps(serializable_mapping())
+        ds_out.attrs["grid_mapping"] = _grid_mapping_json(ds_out[mapname].attrs)
 
     return ds_out.drop_vars(mapname, errors="ignore")
 
@@ -452,23 +449,106 @@ def parse_grid_mapping(grid_mapping: str | dict[str, Any]) -> CRS:
     See also
     --------
     :func:`get_grid_crs`
+
+    Note
+    ----
+    CF ``latitude_longitude`` and ``rotated_latitude_longitude`` mappings without ellipsoid parameters other than
+    ``earth_radius`` (as NWP models on a sphere) are built directly on WGS84, which is much faster than
+    pyproj.CRS.from_cf(). The result is the same as ``sphere_as_wgs84(pyproj.CRS.from_cf(grid_mapping))``, see
+    :func:`~grid_process.helpers.sphere_as_wgs84`.
     """
 
+    # pyproj.CRS.from_cf() takes ~0.3 s for mappings with ellipsoid parameters (custom datum): cached on the JSON
     if isinstance(grid_mapping, str):
-        grid_mapping = json.loads(grid_mapping)
-    if "epsg_code" in grid_mapping:
-        return CRS.from_string(grid_mapping["epsg_code"])  # type: ignore[index]
+        return _parse_grid_mapping_str(grid_mapping)
+    try:
+        return _parse_grid_mapping_str(_grid_mapping_json(grid_mapping))
+    except TypeError:  # not serializable: parse without cache
+        return _parse_grid_mapping_dict(grid_mapping)
 
-    return CRS.from_cf(grid_mapping)  # type: ignore[arg-type]
+
+def _grid_mapping_json(grid_mapping: dict[str, Any]) -> str:
+    """
+    JSON string of a grid mapping dictionary, with sorted keys and numpy scalars and arrays (e.g. attributes read
+    from a netCDF file such as "standard_parallel") converted to numbers and lists.
+    """
+
+    return json.dumps(grid_mapping, sort_keys=True, default=lambda value: value.tolist())
+
+
+@lru_cache(maxsize=32)
+def _parse_grid_mapping_str(grid_mapping: str) -> CRS:
+    """
+    Cached parsing of a JSON "grid_mapping" attribute, see :func:`parse_grid_mapping`.
+    """
+
+    return _parse_grid_mapping_dict(json.loads(grid_mapping))
+
+
+def _parse_grid_mapping_dict(grid_mapping: dict[str, Any]) -> CRS:
+    """
+    Parsing of a "grid_mapping" dictionary, see :func:`parse_grid_mapping`.
+    """
+
+    if "epsg_code" in grid_mapping:
+        return CRS.from_string(grid_mapping["epsg_code"])
+
+    if _ELLIPSOID_KEYS.isdisjoint(grid_mapping):
+        mapping_name = grid_mapping.get("grid_mapping_name")
+        if mapping_name == "latitude_longitude":
+            return CRS.from_epsg(4326)
+        if mapping_name == "rotated_latitude_longitude":
+            return DerivedGeographicCRS(
+                base_crs=CRS.from_epsg(4326),
+                conversion=PoleRotationNetCDFCFConversion(
+                    grid_north_pole_latitude=grid_mapping["grid_north_pole_latitude"],
+                    grid_north_pole_longitude=grid_mapping["grid_north_pole_longitude"],
+                    north_pole_grid_longitude=grid_mapping.get("north_pole_grid_longitude", 0.0),
+                ),
+            )
+
+    return CRS.from_cf(grid_mapping)
+
+
+# CF grid mapping attributes defining the ellipsoid or datum (other than earth_radius for a sphere)
+_ELLIPSOID_KEYS = frozenset(
+    (
+        "semi_major_axis",
+        "semi_minor_axis",
+        "inverse_flattening",
+        "reference_ellipsoid_name",
+        "horizontal_datum_name",
+        "geographic_crs_name",
+        "prime_meridian_name",
+        "longitude_of_prime_meridian",
+        "towgs84",
+        "crs_wkt",
+        "spatial_ref",  # WKT written by GDAL
+    )
+)
+
+
+def is_metric_crs(crs: CRS) -> bool:
+    """
+    Whether ``crs`` is a projected CRS with all axes in meters (e.g. LV95, LV03 or UTM), i.e. in which euclidean
+    distances can be computed directly from the coordinates. The axis units are compared by their conversion factor
+    to the meter, so that units written with another name (e.g. "m" or "Meter" in a WKT without authority) are
+    recognized, while kilometers or feet are not.
+    """
+
+    return bool(crs.is_projected) and all(axis.unit_conversion_factor == 1.0 for axis in crs.axis_info)
 
 
 def get_coords_name_crs(
-    grid: xr.Dataset | xr.DataArray, spatial_dims: tuple[str, ...] | None = None
+    grid: xr.Dataset | xr.DataArray,
+    spatial_dims: tuple[str, ...] | None = None,
+    prefer_projected: bool = False,
 ) -> tuple[str, str, CRS]:
     """
     Get correct coordinate names and CRS according to supported conventions. When
     non-dimensional longitude and latitude coordinates arrays are present, these
-    are used instead of the native spatial dimension coordinates.
+    are used instead of the native spatial dimension coordinates, unless ``prefer_projected``
+    is True and the native CRS is projected with axes in meters.
 
     Parameters
     ----------
@@ -480,6 +560,10 @@ def get_coords_name_crs(
         name of the ``grid`` spatial dimension(s). Has size one in case of
         unstructured grid otherwise contains dimension names in the order (y, x).
         If not provided, calls :func:`~grid_process.helpers.get_spatial_dims`
+    prefer_projected : bool, optional
+        If True, return the native spatial coordinates when their CRS is projected with axes in meters (e.g. LV95),
+        even if longitude and latitude coordinates are also present. Native coordinates in degrees (e.g. rotated
+        pole) still give the longitude and latitude coordinates when present. Default is False.
 
     Returns
     -------
@@ -490,6 +574,13 @@ def get_coords_name_crs(
     grid_crs : pyproj CRS
         pyproj representation of input grid coordinate reference system
     """
+
+    if prefer_projected:
+        if spatial_dims is None:
+            spatial_dims = get_spatial_dims(grid)
+        native = _get_native_metric_coords(grid, spatial_dims)
+        if native is not None:
+            return native
 
     latlon = get_latlon_coords(grid)
     if latlon is not None:
@@ -508,6 +599,35 @@ def get_coords_name_crs(
         return grid_y, grid_x, get_grid_crs(grid)
 
     raise ValueError("Missing spatial coordinates")
+
+
+def _get_native_metric_coords(
+    grid: xr.Dataset | xr.DataArray, spatial_dims: tuple[str, ...]
+) -> tuple[str, str, CRS] | None:
+    """
+    Names of the native (y, x) spatial coordinates and their CRS if this CRS is projected with axes in meters,
+    otherwise None. Used by :func:`get_coords_name_crs` with ``prefer_projected=True``.
+    """
+
+    if len(spatial_dims) == 1:
+        try:
+            grid_y, grid_x = get_spatial_coords(grid)
+        except ValueError:
+            return None
+    else:
+        grid_y, grid_x = spatial_dims
+        if grid_y not in grid.coords or grid_x not in grid.coords:
+            return None
+
+    if (grid_y, grid_x) == get_latlon_coords(grid, nondim=False):
+        return None
+
+    try:
+        crs = get_grid_crs(grid)
+    except ValueError:  # no CRS attribute: only longitude and latitude can be used
+        return None
+
+    return (grid_y, grid_x, crs) if is_metric_crs(crs) else None
 
 
 def is_decreasing1d(coords: xr.DataArray) -> bool:
