@@ -487,6 +487,73 @@ def test_get_coords_name_crs_prefer_projected_rotlatlon(data_native_rotlatlon_2d
     assert rotated == ("latitude", "longitude", CRS.from_string("EPSG:4326"))
 
 
+LV95_WKT1 = CRS.from_epsg(2056).to_wkt("WKT1_GDAL")
+LV95_WKT1_UNIT = 'UNIT["metre",1,AUTHORITY["EPSG","9001"]]'
+
+
+@pytest.mark.parametrize(
+    "crs,expected",
+    [
+        ("EPSG:2056", True),  # LV95
+        ("EPSG:21781", True),  # LV03
+        ("EPSG:32632", True),  # UTM 32N
+        ("EPSG:3035", True),  # LAEA Europe
+        (
+            CRS.from_cf(
+                {
+                    "grid_mapping_name": "lambert_conformal_conic",
+                    "standard_parallel": [45.0, 50.0],
+                    "longitude_of_central_meridian": 10.0,
+                    "latitude_of_projection_origin": 47.0,
+                    "earth_radius": 6371229.0,
+                }
+            ),
+            True,
+        ),
+        # hand-written WKT with a unit without authority: the unit name is kept as written
+        (LV95_WKT1.replace(LV95_WKT1_UNIT, 'UNIT["m",1]'), True),
+        (LV95_WKT1.replace(LV95_WKT1_UNIT, 'UNIT["Meter",1]'), True),
+        ("EPSG:4326", False),
+        (
+            CRS.from_cf(
+                {
+                    "grid_mapping_name": "rotated_latitude_longitude",
+                    "grid_north_pole_latitude": 43.0,
+                    "grid_north_pole_longitude": -170.0,
+                    "earth_radius": 6371229.0,
+                }
+            ),
+            False,
+        ),
+        ("EPSG:4978", False),  # ECEF
+        ("+proj=stere +lat_0=90 +lon_0=0 +units=km", False),
+        ("EPSG:2263", False),  # US survey foot
+        ("EPSG:29371", False),  # German legal metre
+    ],
+    ids=[
+        "lv95",
+        "lv03",
+        "utm32n",
+        "laea_europe",
+        "cf_lambert",
+        "wkt_unit_m",
+        "wkt_unit_Meter",
+        "latlon",
+        "cf_rotated_pole",
+        "ecef",
+        "km",
+        "us_survey_foot",
+        "german_legal_metre",
+    ],
+)
+def test_is_metric_crs(crs, expected):
+    """
+    is_metric_crs: projected CRS with axes in meters, whatever the unit name
+    """
+
+    assert dm.is_metric_crs(CRS.from_user_input(crs)) is expected
+
+
 def test_parse_grid_mapping(monkeypatch):
     """
     CF latitude/longitude and rotated pole mappings on a sphere are built directly on WGS84 (fast, without
@@ -529,25 +596,6 @@ def test_parse_grid_mapping(monkeypatch):
     assert dm.parse_grid_mapping(lambert) == expected_lambert
     assert dm.parse_grid_mapping(lambert) is dm.parse_grid_mapping(lambert)
     assert dm.parse_grid_mapping(json.dumps(lambert)) is dm.parse_grid_mapping(json.dumps(lambert))
-
-
-def test_is_metric_crs():
-    """
-    Simple testcase for is_metric_crs
-    """
-
-    rotated = CRS.from_cf(
-        {
-            "grid_mapping_name": "rotated_latitude_longitude",
-            "grid_north_pole_latitude": 43.0,
-            "grid_north_pole_longitude": -170.0,
-            "earth_radius": 6371229.0,
-        }
-    )
-    for epsg in (2056, 21781, 32632, 3035):  # LV95, LV03, UTM 32N, LAEA Europe
-        assert dm.is_metric_crs(CRS.from_epsg(epsg))
-    for crs in (CRS.from_epsg(4326), CRS.from_epsg(4978), CRS.from_epsg(2263), rotated):  # lat/lon, ECEF, US feet
-        assert not dm.is_metric_crs(crs)
 
 
 def test_config_extended():

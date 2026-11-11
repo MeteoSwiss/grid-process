@@ -531,10 +531,12 @@ _ELLIPSOID_KEYS = frozenset(
 def is_metric_crs(crs: CRS) -> bool:
     """
     Whether ``crs`` is a projected CRS with all axes in meters (e.g. LV95, LV03 or UTM), i.e. in which euclidean
-    distances can be computed directly from the coordinates.
+    distances can be computed directly from the coordinates. The axis units are compared by their conversion factor
+    to the meter, so that units written with another name (e.g. "m" or "Meter" in a WKT without authority) are
+    recognized, while kilometers or feet are not.
     """
 
-    return bool(crs.is_projected) and all(axis.unit_name in ("metre", "meter") for axis in crs.axis_info)
+    return bool(crs.is_projected) and all(axis.unit_conversion_factor == 1.0 for axis in crs.axis_info)
 
 
 def get_coords_name_crs(
