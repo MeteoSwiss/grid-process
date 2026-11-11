@@ -186,8 +186,13 @@ def test_sounding_batch():
 
     # create test data — wrap single-POI inputs in a batch dimension of size 1
     x = np.arange(-5, 10, 0.1)
-    func1 = lambda x: 2 * np.power(x, 3) + 3 * x - 2
-    func2 = lambda x: 2 * x + 4
+
+    def func1(x):
+        return 2 * np.power(x, 3) + 3 * x - 2
+
+    def func2(x):
+        return 2 * x + 4
+
     y1 = np.tile(func1(x), (4, 6, 10, 1)).T
     y2 = np.tile(func2(x), (4, 6, 10, 1)).T
     y = np.stack((y1, y2), axis=-1)
