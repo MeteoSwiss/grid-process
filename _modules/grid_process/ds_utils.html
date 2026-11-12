@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=5e016783"></script>
+    <script src="../../_static/documentation_options.js?v=9d8c6047"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/grid_process/ds_utils';</script>
@@ -419,6 +419,7 @@
 <a class="viewcode-back" href="../../autoapi/grid_process/ds_utils/index.html#grid_process.ds_utils.ds_to_da">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">ds_to_da</span><span class="p">(</span>
     <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Transform a dataset containing model data and one or several data</span>
@@ -430,6 +431,10 @@
 <span class="sd">    ----------</span>
 <span class="sd">    ds : xarray.Dataset</span>
 <span class="sd">        contain one or more variables</span>
+<span class="sd">    copy : bool, optional</span>
+<span class="sd">        if False and ``ds`` has a single data variable spanning all its dimensions, the dataarray is a view of its</span>
+<span class="sd">        data, without a copy: writing into it modifies ``ds``. Several variables are always stacked (copied).</span>
+<span class="sd">        Default is True.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -445,6 +450,14 @@
 <span class="sd">    """</span>
 
     <span class="n">vars_attrs</span> <span class="o">=</span> <span class="p">{</span><span class="n">varname</span><span class="p">:</span> <span class="n">da</span><span class="o">.</span><span class="n">attrs</span> <span class="k">for</span> <span class="n">varname</span><span class="p">,</span> <span class="n">da</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">copy</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">dims</span><span class="p">):</span>  <span class="c1"># otherwise to_array keeps coordinates on other dimensions</span>
+            <span class="c1"># same as to_array, whose np.stack copies the data</span>
+            <span class="n">da</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+            <span class="n">da</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">)</span>
+            <span class="n">da</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">return</span> <span class="n">da</span><span class="p">,</span> <span class="n">vars_attrs</span>
     <span class="n">da</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">to_array</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">da</span><span class="p">,</span> <span class="n">vars_attrs</span></div>
 
@@ -501,7 +514,7 @@
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-c31dd86</div>
+grid-process, version: dev-8a43f7c</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 12.11.2026.

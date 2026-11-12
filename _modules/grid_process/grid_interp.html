@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=5e016783"></script>
+    <script src="../../_static/documentation_options.js?v=9d8c6047"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/grid_process/grid_interp';</script>
@@ -414,6 +414,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Hashable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">math</span><span class="w"> </span><span class="kn">import</span> <span class="n">isclose</span><span class="p">,</span> <span class="n">prod</span><span class="p">,</span> <span class="n">ceil</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">bottleneck</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bn</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArray</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
@@ -1433,7 +1434,7 @@
         <span class="k">return</span> <span class="n">_interp_regular</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">poi_info</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">slice_boundingbox</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">poi_info</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">vars_attrs</span> <span class="o">=</span> <span class="n">ds_to_da</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># type: ignore[assignment]</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">vars_attrs</span> <span class="o">=</span> <span class="n">ds_to_da</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># type: ignore[assignment]</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">*</span><span class="n">spatial_dims</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
     <span class="n">coords_flat</span><span class="p">,</span> <span class="n">data_flat</span><span class="p">,</span> <span class="n">pois_coords</span> <span class="o">=</span> <span class="n">_flatten_concat</span><span class="p">(</span>
         <span class="n">data</span><span class="p">,</span>  <span class="c1"># type: ignore[arg-type]</span>
@@ -2133,7 +2134,7 @@
     <span class="n">dst_grid</span> <span class="o">=</span> <span class="n">dst_grid</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">*</span><span class="n">dst_spatial_dims</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">slice_coarsen</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">src_spatial_dims</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">vars_attrs</span> <span class="o">=</span> <span class="n">ds_to_da</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># type: ignore[assignment]</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">vars_attrs</span> <span class="o">=</span> <span class="n">ds_to_da</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># type: ignore[assignment]</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">*</span><span class="n">src_spatial_dims</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
     <span class="n">coords_flat</span><span class="p">,</span> <span class="n">data_flat</span><span class="p">,</span> <span class="n">dst_coords_flat</span> <span class="o">=</span> <span class="n">_flatten_concat_grids</span><span class="p">(</span>
         <span class="n">data</span><span class="p">,</span>  <span class="c1"># type: ignore[arg-type]</span>
@@ -2229,8 +2230,7 @@
                 <span class="p">)</span>
                 <span class="k">if</span> <span class="n">ratio</span> <span class="o">&gt;</span> <span class="mi">1</span>
             <span class="p">}</span>
-            <span class="c1"># reduce(np.mean) propagates NaNs like mean(skipna=False), which fails with xarray 2026.9.0</span>
-            <span class="n">interp_data</span> <span class="o">=</span> <span class="n">interp_data</span><span class="o">.</span><span class="n">coarsen</span><span class="p">(</span><span class="n">coarsen_specs</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="s2">"trim"</span><span class="p">)</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span>
+            <span class="n">interp_data</span> <span class="o">=</span> <span class="n">interp_data</span><span class="o">.</span><span class="n">coarsen</span><span class="p">(</span><span class="n">coarsen_specs</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="s2">"trim"</span><span class="p">)</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">_window_nanmean</span><span class="p">)</span>
 
         <span class="n">interp_data</span> <span class="o">=</span> <span class="n">_y_increasing</span><span class="p">(</span><span class="n">interp_data</span><span class="p">,</span> <span class="n">src_spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="n">x_targets</span> <span class="o">=</span> <span class="n">x_coords</span>
@@ -2506,11 +2506,22 @@
                 <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">ratio</span> <span class="ow">in</span> <span class="n">coarsen_specs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
             <span class="p">}</span>
         <span class="p">)</span>
-        <span class="c1"># reduce(np.mean) propagates NaNs like mean(skipna=False), which fails with xarray 2026.9.0</span>
-        <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">sub_domain</span><span class="p">)</span><span class="o">.</span><span class="n">coarsen</span><span class="p">(</span><span class="n">coarsen_specs</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="s2">"trim"</span><span class="p">)</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">sub_domain</span><span class="p">)</span><span class="o">.</span><span class="n">coarsen</span><span class="p">(</span><span class="n">coarsen_specs</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="s2">"trim"</span><span class="p">)</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">_window_nanmean</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">data_sub</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_window_nanmean</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Mean over the coarsening window ``axis`` (for ``coarsen(...).reduce``) ignoring NaN: a block is NaN only if all</span>
+<span class="sd">    its values are NaN. bottleneck, with the window moved last and flattened, is faster than ``np.mean`` over the</span>
+<span class="sd">    window axes. It sums float32 in float32: the relative error grows with the window size (about 1e-7 for a 2 x 2</span>
+<span class="sd">    window, 2e-6 for 40 x 40).</span>
+<span class="sd">    """</span>
+
+    <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">axis</span><span class="p">),</span> <span class="mi">0</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">bn</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">axis</span><span class="p">)]</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,)),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="get_buffer">
@@ -2840,7 +2851,7 @@
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-c31dd86</div>
+grid-process, version: dev-8a43f7c</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 12.11.2026.

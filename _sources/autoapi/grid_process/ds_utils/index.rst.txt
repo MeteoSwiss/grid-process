@@ -31,14 +31,17 @@ Module Contents
 
 .. py:data:: logger
 
-.. py:function:: ds_to_da(ds: xarray.Dataset) -> tuple[xarray.DataArray, dict[collections.abc.Hashable, dict[collections.abc.Hashable, Any]]]
+.. py:function:: ds_to_da(ds: xarray.Dataset, copy: bool = True) -> tuple[xarray.DataArray, dict[collections.abc.Hashable, dict[collections.abc.Hashable, Any]]]
 
    Transform a dataset containing model data and one or several data
    variables to a dataarray with the variables stacked as a new dimension.
    The function also returns the attributes of the data variables for further
    use.
 
-   :Parameters: **ds** (*xarray.Dataset*) -- contain one or more variables
+   :Parameters: * **ds** (*xarray.Dataset*) -- contain one or more variables
+                * **copy** (*bool, optional*) -- if False and ``ds`` has a single data variable spanning all its dimensions, the dataarray is a view of its
+                  data, without a copy: writing into it modifies ``ds``. Several variables are always stacked (copied).
+                  Default is True.
 
    :returns: * **da** (*xarray.DataArray*) -- contains the data variables from the input dataset stacked in a new
                `variable` dimension

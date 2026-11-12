@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=5e016783"></script>
+    <script src="_static/documentation_options.js?v=9d8c6047"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'changelog';</script>
@@ -399,6 +399,29 @@
                   
   <section id="changelog">
 <h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">#</a></h1>
+<section id="unreleased">
+<h2>Unreleased<a class="headerlink" href="#unreleased" title="Link to this heading">#</a></h2>
+<p><strong>Changes of results</strong> (compared to 1.1.0, see the entries below for details)</p>
+<ul class="simple">
+<li><p>the coarsening of the source grid by <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> (to a coarser destination grid) skips NaN: a coarsened
+cell with some NaN values gets the mean of its valid values instead of NaN, only cells with all values NaN stay NaN</p></li>
+<li><p>coarsened float32 values differ from before by float32 rounding, growing with the window size (for 2 m
+temperature, up to 3e-5 K for a 2 x 2 window and 2e-4 K for 10 x 10)</p></li>
+</ul>
+<p><strong>Changes</strong></p>
+<ul class="simple">
+<li><p>changed <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> to no longer copy a dataset with a single data variable before
+interpolation (new <code class="docutils literal notranslate"><span class="pre">copy</span></code> parameter of <code class="docutils literal notranslate"><span class="pre">ds_utils.ds_to_da</span></code>, default <code class="docutils literal notranslate"><span class="pre">True</span></code>). For the operational grids
+(with cached neighbors), POIs are interpolated up to about 1.5 times faster (e.g. ICON-CH2 <code class="docutils literal notranslate"><span class="pre">nearest</span></code> 0.18 s →
+0.12 s) with 0.1 to 0.2 GB less memory for ICON, and IFS to the seamless 2 km grid with <code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code> 0.39 s →
+0.24 s. A sliced source that is not contiguous in memory is now copied into contiguous rows per grid point, which
+is slower for large sources: ICON-CH2 in LV95 to the seamless 2 km grid with <code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code> or <code class="docutils literal notranslate"><span class="pre">temp_fixgrad</span></code>
+0.23 s → 0.29 s and 0.34 s → 0.39 s</p></li>
+<li><p>changed the coarsening of the source grid by <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> to skip NaN (e.g. for the snow limit, NaN below the
+orography), with bottleneck. ICON-CH1 to the seamless 2 km grid (with cached neighbors) is about 1.4 times
+faster (e.g. <code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code> 0.30 s → 0.21 s), with about 0.05 GB more peak memory (copy of the windows)</p></li>
+</ul>
+</section>
 <section id="id1">
 <h2>1.1.0 (2026-11-12)<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
 <p><strong>Changes of results</strong> (compared to 1.0.0, see the entries below for details)</p>
@@ -540,6 +563,7 @@ interpolation method and its arguments, e.g. to slice the input data with <code 
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#unreleased">Unreleased</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">1.1.0 (2026-11-12)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">1.0.0</a></li>
 </ul>
@@ -567,7 +591,7 @@ interpolation method and its arguments, e.g. to slice the input data with <code 
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-c31dd86</div>
+grid-process, version: dev-8a43f7c</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 12.11.2026.
