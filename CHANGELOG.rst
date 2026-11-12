@@ -2,6 +2,29 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+**Changes of results** (compared to 1.1.0, see the entries below for details)
+
+* the coarsening of the source grid by ``interp2grid`` (to a coarser destination grid) skips NaN: a coarsened
+  cell with some NaN values gets the mean of its valid values instead of NaN, only cells with all values NaN stay NaN
+* coarsened float32 values differ from before by float32 rounding, growing with the window size (for 2 m
+  temperature, up to 3e-5 K for a 2 x 2 window and 2e-4 K for 10 x 10)
+
+**Changes**
+
+* changed ``interp2poi`` and ``interp2grid`` to no longer copy a dataset with a single data variable before
+  interpolation (new ``copy`` parameter of ``ds_utils.ds_to_da``, default ``True``). For the operational grids
+  (with cached neighbors), POIs are interpolated up to about 1.5 times faster (e.g. ICON-CH2 ``nearest`` 0.18 s →
+  0.12 s) with 0.1 to 0.2 GB less memory for ICON, and IFS to the seamless 2 km grid with ``nearest_alt`` 0.39 s →
+  0.24 s. A sliced source that is not contiguous in memory is now copied into contiguous rows per grid point, which
+  is slower for large sources: ICON-CH2 in LV95 to the seamless 2 km grid with ``nearest_alt`` or ``temp_fixgrad``
+  0.23 s → 0.29 s and 0.34 s → 0.39 s
+* changed the coarsening of the source grid by ``interp2grid`` to skip NaN (e.g. for the snow limit, NaN below the
+  orography), with bottleneck. ICON-CH1 to the seamless 2 km grid (with cached neighbors) is about 1.4 times
+  faster (e.g. ``nearest_alt`` 0.30 s → 0.21 s), with about 0.05 GB more peak memory (copy of the windows)
+
 1.1.0 (2026-11-12)
 ------------------
 

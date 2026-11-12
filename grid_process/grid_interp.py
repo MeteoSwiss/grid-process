@@ -16,6 +16,7 @@ from typing import Any, Literal
 from collections.abc import Callable, Hashable
 from math import isclose, prod, ceil
 
+import bottleneck as bn
 import numpy as np
 from numpy.typing import NDArray
 import pandas as pd
@@ -1009,7 +1010,7 @@ def interp2poi(
         return _interp_regular(data, spatial_dims, poi_info, method)  # type: ignore[arg-type]
 
     data = slice_boundingbox(data, poi_info, method, spatial_dims, **kwargs)
-    data, vars_attrs = ds_to_da(data)  # type: ignore[assignment]
+    data, vars_attrs = ds_to_da(data, copy=False)  # type: ignore[assignment]
     data = data.transpose(*spatial_dims, ...)
     coords_flat, data_flat, pois_coords = _flatten_concat(
         data,  # type: ignore[arg-type]
@@ -1697,7 +1698,7 @@ def interp2grid(
     dst_grid = dst_grid.transpose(*dst_spatial_dims)
 
     data = slice_coarsen(data, dst_grid, method, src_spatial_dims, dst_spatial_dims, **kwargs)
-    data, vars_attrs = ds_to_da(data)  # type: ignore[assignment]
+    data, vars_attrs = ds_to_da(data, copy=False)  # type: ignore[assignment]
     data = data.transpose(*src_spatial_dims, ...)
     coords_flat, data_flat, dst_coords_flat = _flatten_concat_grids(
         data,  # type: ignore[arg-type]
@@ -1792,8 +1793,7 @@ def _interp_grid_regular(
                 )
                 if ratio > 1
             }
-            # reduce(np.mean) propagates NaNs like mean(skipna=False), which fails with xarray 2026.9.0
-            interp_data = interp_data.coarsen(coarsen_specs, boundary="trim").reduce(np.mean)
+            interp_data = interp_data.coarsen(coarsen_specs, boundary="trim").reduce(_window_nanmean)
 
         interp_data = _y_increasing(interp_data, src_spatial_dims[0])
         x_targets = x_coords
@@ -2064,10 +2064,21 @@ def slice_coarsen(  # pylint: disable=too-many-locals
                 for dim, ratio in coarsen_specs.items()
             }
         )
-        # reduce(np.mean) propagates NaNs like mean(skipna=False), which fails with xarray 2026.9.0
-        return data.isel(sub_domain).coarsen(coarsen_specs, boundary="trim").reduce(np.mean)
+        return data.isel(sub_domain).coarsen(coarsen_specs, boundary="trim").reduce(_window_nanmean)
 
     return data_sub
+
+
+def _window_nanmean(values: np.ndarray, axis: tuple[int, ...]) -> np.ndarray:
+    """
+    Mean over the coarsening window ``axis`` (for ``coarsen(...).reduce``) ignoring NaN: a block is NaN only if all
+    its values are NaN. bottleneck, with the window moved last and flattened, is faster than ``np.mean`` over the
+    window axes. It sums float32 in float32: the relative error grows with the window size (about 1e-7 for a 2 x 2
+    window, 2e-6 for 40 x 40).
+    """
+
+    values = np.moveaxis(values, axis, tuple(range(-len(axis), 0)))
+    return bn.nanmean(values.reshape(values.shape[: -len(axis)] + (-1,)), axis=-1)
 
 
 def get_buffer(method: str, **kwargs: Any) -> int:
