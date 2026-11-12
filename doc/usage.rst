@@ -68,3 +68,41 @@ Use case: regridding::
 
 Returns a xarray.Dataset with the data of ds remapped to the coordinates of ds_dst. Same
 interpolation methods exist as for POI interpolation
+
+
+In-memory caching
+-----------------
+
+``interp2poi`` and ``interp2grid`` cache intermediate results in memory, so that later calls with the same grids
+and POIs (e.g. other variables or runs of the same model) are faster. Each cache keeps a fixed number of results
+(the least recently used one is evicted) for the lifetime of the Python process:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 18 8 74
+
+   * - Cache
+     - Default size
+     - Content
+   * - ``nn_lookup``
+     - 10
+     - nearest neighbor indices and distances (KDTree), outside of the regular grid interpolation
+   * - ``nn_lookup_regular``
+     - 10
+     - nearest grid indices of the regular grid interpolation (``try_reg=True``, chunked or non-float data)
+   * - ``reproject_poi``
+     - 6
+     - POI coordinates reprojected to the grid CRS
+   * - ``reproject_grid``
+     - 6
+     - grid coordinates reprojected to another CRS, and grid coordinates converted to earth-centered earth-fixed
+       coordinates (two separate caches of this size)
+
+The sizes are defined in ``grid_process/config/grid_process.yaml`` and can be overridden with the environment
+variables ``GRID_PROCESS__cache_size__<cache>``. A size of 0 deactivates a cache, without any overhead. This can be
+useful to limit the memory, e.g. for global grids where one cached result can take hundreds of MB, or when the grids
+and POIs differ at each call. The variables are read when ``grid_process`` is imported, so they must be set before,
+e.g. in the shell or the container environment::
+
+    export GRID_PROCESS__cache_size__nn_lookup=0
+    export GRID_PROCESS__cache_size__reproject_grid=0

@@ -6,6 +6,8 @@
 
 """Tests for the grid_interp module"""
 
+import warnings
+
 import pytest
 import numpy as np
 import xarray as xr
@@ -186,8 +188,13 @@ def test_sounding_batch():
 
     # create test data — wrap single-POI inputs in a batch dimension of size 1
     x = np.arange(-5, 10, 0.1)
-    func1 = lambda x: 2 * np.power(x, 3) + 3 * x - 2
-    func2 = lambda x: 2 * x + 4
+
+    def func1(x):
+        return 2 * np.power(x, 3) + 3 * x - 2
+
+    def func2(x):
+        return 2 * x + 4
+
     y1 = np.tile(func1(x), (4, 6, 10, 1)).T
     y2 = np.tile(func2(x), (4, 6, 10, 1)).T
     y = np.stack((y1, y2), axis=-1)
@@ -1659,3 +1666,159 @@ def test_interp2poi_temp_at_poles():
     out = gri.interp2poi(src, pois, "temp", z_fact=15, k=50, weight_power=0.75)["var"].values
     # same altitude as the pole point: its value
     np.testing.assert_allclose(out, _sphere_field(lon, lat), atol=0.01)
+
+
+def _flatten_test_grids() -> dict[str, tuple[xr.DataArray, tuple[str, ...]]]:
+    """
+    Grids with the spatial dimensions first: 1D dimension coordinates, 2D coordinates stored in another dimension
+    order (x, y), unstructured
+    """
+
+    rng = np.random.default_rng(0)
+    lat = np.linspace(50, 40, 5)
+    lon = np.linspace(0, 10, 7)
+    grid_1d = xr.DataArray(
+        rng.standard_normal((5, 7, 3)),
+        dims=("latitude", "longitude", "step"),
+        coords={"latitude": lat, "longitude": lon},
+    )
+    lat_xy = rng.uniform(40, 50, (7, 5))
+    grid_2d = xr.DataArray(
+        rng.standard_normal((5, 7, 2, 3)).astype(np.float32),
+        dims=("y", "x", "step", "realization"),
+        coords={
+            "y": np.arange(5.0),
+            "x": np.arange(7.0),
+            "latitude": (("x", "y"), lat_xy),
+            "longitude": (("x", "y"), lat_xy + 1),
+            "surface_altitude": (("y", "x"), rng.uniform(0, 3000, (5, 7))),
+        },
+    )
+    unstructured = xr.DataArray(
+        rng.standard_normal((9, 2)),
+        dims=("cell", "step"),
+        coords={"lat": ("cell", rng.uniform(40, 50, 9)), "lon": ("cell", rng.uniform(0, 10, 9))},
+    )
+    return {
+        "1d_coords": (grid_1d, ("latitude", "longitude")),
+        "2d_coords_xy": (grid_2d, ("y", "x")),
+        "unstructured": (unstructured, ("cell",)),
+    }
+
+
+@pytest.mark.parametrize("case", ["1d_coords", "2d_coords_xy", "unstructured"])
+def test_flat_coord_values(case):
+    """
+    _flat_coord and _flat_values give the same values and order as xarray.stack
+    """
+
+    from grid_process.grid_interp import _flat_coord, _flat_values  # pylint: disable=import-outside-toplevel
+
+    grid, spatial_dims = _flatten_test_grids()[case]
+    stacked = grid.stack({"flat": spatial_dims}).transpose("flat", ...) if len(spatial_dims) > 1 else grid
+    for name in (name for name, coord in grid.coords.items() if set(coord.dims) <= set(spatial_dims)):
+        np.testing.assert_array_equal(_flat_coord(grid, name, spatial_dims), stacked[name].values)
+    flat = _flat_values(grid, spatial_dims)
+    np.testing.assert_array_equal(flat, stacked.values)
+    assert flat.dtype == grid.dtype
+
+    with pytest.raises(ValueError, match="other than the spatial dimensions"):
+        _flat_coord(grid.assign_coords(bad=("step", np.arange(grid.sizes["step"]))), "bad", spatial_dims)
+
+
+def test_valid_points():
+    """
+    _valid_points excludes only the points that are NaN (or NaT) in all fields, and gives None when no copy is needed
+    """
+
+    from grid_process.grid_interp import _valid_points  # pylint: disable=import-outside-toplevel
+
+    data = np.arange(12.0).reshape(4, 3)
+    assert _valid_points(data) is None
+    data[1, 0] = np.nan  # NaN in some fields only: kept
+    assert _valid_points(data) is None
+    data[2] = np.nan  # NaN in all fields: excluded
+    data[3, 1:] = np.nan  # NaN in all fields but the first (NaN in the middle one, checked further): kept
+    np.testing.assert_array_equal(_valid_points(data), [True, True, False, True])
+    np.testing.assert_array_equal(_valid_points(data.reshape(4, 3, 1)), [True, True, False, True])
+    np.testing.assert_array_equal(_valid_points(data[:, 0]), [True, False, False, True])
+    data[0, [0, 2]] = np.nan  # NaN in all fields but the middle one: kept
+    np.testing.assert_array_equal(_valid_points(data), [True, True, False, True])
+
+    # accumulated variable: first lead time NaN everywhere, some points masked (NaN in all lead times)
+    accum = np.arange(20.0).reshape(4, 5)
+    accum[:, 0] = np.nan
+    assert _valid_points(accum) is None
+    accum[1] = np.nan
+    np.testing.assert_array_equal(_valid_points(accum), [True, False, True, True])
+    np.testing.assert_array_equal(_valid_points(accum.reshape(4, 1, 5)), [True, False, True, True])
+
+    assert _valid_points(np.arange(6).reshape(3, 2)) is None  # integers cannot be NaN
+    times = np.array([["2026-01-01", "NaT"], ["NaT", "NaT"]], dtype="datetime64[ns]")
+    np.testing.assert_array_equal(_valid_points(times), [True, False])
+    # no field: all() of an empty selection is True, as with xarray
+    np.testing.assert_array_equal(_valid_points(np.empty((3, 0))), [False, False, False])
+
+    # same as the previous xarray implementation
+    da = xr.DataArray(data, dims=("cell", "step"))
+    np.testing.assert_array_equal(_valid_points(data), ~da.isnull().all("step").values)
+    rng = np.random.default_rng(0)
+    scattered = rng.random((200, 3, 4))
+    scattered[rng.random(scattered.shape) < 0.8] = np.nan
+    scattered[:20] = np.nan
+    expected = ~xr.DataArray(scattered, dims=("cell", "member", "step")).isnull().all(("member", "step")).values
+    assert not expected.all()
+    np.testing.assert_array_equal(_valid_points(scattered), expected)
+
+
+def test_interp2poi_all_pois_outside_unstructured_grid():
+    """
+    POIs all outside an unstructured grid (no grid point left after slicing) get NaN, with the other dimensions,
+    without numpy warnings
+    """
+
+    import grid_process.grid_interp as gri  # pylint: disable=import-outside-toplevel
+
+    rng = np.random.default_rng(0)
+    data = xr.Dataset(
+        {"t": (("step", "cell"), rng.random((2, 50), dtype=np.float32))},
+        coords={
+            "step": [0, 1],
+            "latitude": ("cell", rng.uniform(46, 47, 50)),
+            "longitude": ("cell", rng.uniform(7, 8, 50)),
+        },
+        attrs={"crs": "EPSG:4326"},
+    )
+    pois = gpd.GeoDataFrame({"name": ["paris"]}, geometry=gpd.points_from_xy([2.35], [48.85]), crs="EPSG:4326")
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)  # e.g. "Mean of empty slice"
+        out = gri.interp2poi(data, pois, "nearest")
+
+    assert out["t"].dims == ("poi", "step")
+    assert out["t"].dtype == np.float32
+    np.testing.assert_array_equal(out["step"], [0, 1])
+    assert out["t"].isnull().all()
+
+
+@pytest.mark.parametrize(
+    ("method", "kwargs", "expected"),
+    [
+        ("nearest", {}, 1),
+        ("linear", {}, 1),
+        ("cubic", {}, 2),
+        ("idw_3D", {"k": 4}, 4),
+        ("idw", {"k": 9, "weight_power": 0.25}, 3),
+        ("nearest_alt", {"r_search": 1.7}, 3),
+        ("temp", {"z_fact": 15, "k": 50, "weight_power": 0.75}, 5),
+    ],
+)
+def test_get_buffer(method, kwargs, expected):
+    """
+    The slicing buffer grows with the number of neighbors ``k``, the search radius ``r_search``, and for ``cubic``
+    and the 3D methods
+    """
+
+    from grid_process.grid_interp import get_buffer  # pylint: disable=import-outside-toplevel
+
+    assert get_buffer(method, **kwargs) == expected

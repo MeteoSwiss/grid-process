@@ -12,12 +12,13 @@ Module for spatial interpolation of gridded datasets
 
 import logging
 from functools import partial
-from typing import Any, Literal, overload
-from collections.abc import Callable
+from typing import Any, Literal
+from collections.abc import Callable, Hashable
 from math import isclose, prod, ceil
 
 import numpy as np
 from numpy.typing import NDArray
+import pandas as pd
 import xarray as xr
 import geopandas as gpd
 from scipy.interpolate import griddata
@@ -962,6 +963,10 @@ def interp2poi(
           'linear', 'linear_3D' and 'cubic' are not supported in this case.
 
       Methods with altitude use it as an additional coordinate in meters.
+    - Nearest neighbor lookups and coordinate reprojections are cached in memory, so that later calls with the same
+      grids and POIs are faster. The cache sizes are set by the environment variables
+      GRID_PROCESS__cache_size__<name> (``nn_lookup``, ``nn_lookup_regular``, ``reproject_poi``, ``reproject_grid``),
+      where 0 deactivates a cache. They must be set before importing grid_process, see the Usage page.
     """
 
     def _fullnan_ds(data: xr.DataArray) -> xr.Dataset:
@@ -969,6 +974,8 @@ def interp2poi(
         Returns a dataset full of NaNs with correct dimensions
         """
 
+        # an unstructured grid can have no point left after slicing (all POIs outside): pad so its first point exists
+        data = data.pad({dim: (0, 1) for dim in spatial_dims if data.sizes[dim] == 0})
         da = (
             data.isel({dim: 0 for dim in spatial_dims}, drop=True)
             .expand_dims({POI_DIM: poi_info[POI_COORD_COL].to_numpy(dtype=str)})
@@ -1145,19 +1152,20 @@ def _interp_nearest_regular(
     )
     data = data.chunk()  # cast to dask
     grid_coords = (data[x_dim].values, data[y_dim].values)
-    hkey = (
-        tuple(pois_coords[0].poi.values.tolist()),
-        pois_coords[0].values.tobytes(),
-        pois_coords[1].values.tobytes(),
-        grid_coords[0].tobytes(),
-        grid_coords[1].tobytes(),
-    )
     # pylint: disable-next=unbalanced-tuple-unpacking  # returns one index array per spatial dimension
-    indx, indy = nn_lookup_regular(grid_coords, grid_spacing, pois_coords, hkey=hkey)  # type: ignore[call-arg]
+    indx, indy = _nn_lookup_regular_cached(grid_coords, grid_spacing, pois_coords)
     return data.isel({x_dim: indx, y_dim: indy}).drop_vars(spatial_dims, errors="ignore")
 
 
-@memoize(CONFIG.cache_size.nn_lookup)
+def _array_key(arr: np.ndarray) -> tuple[tuple[int, ...], str, bytes]:
+    """
+    Exact hashable cache key of a numpy array (shape, dtype and content), see
+    :func:`~grid_process.optimization.memoize`.
+    """
+
+    return arr.shape, arr.dtype.str, arr.tobytes()
+
+
 def nn_lookup(grid_coords: np.ndarray, points: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
     """
     Find the k nearest grid points and corresponding distances for a set of
@@ -1192,16 +1200,19 @@ def nn_lookup(grid_coords: np.ndarray, points: np.ndarray, k: int) -> tuple[np.n
     return dd.astype(points.dtype, copy=False), ii
 
 
+@memoize(
+    CONFIG.cache_size.nn_lookup,
+    key=lambda grid_coords, points, k: (_array_key(grid_coords), _array_key(points), k),
+)
 def nn_lookup_cached(grid_coords: np.ndarray, points: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
     """
-    Wrapper to :func:`nn_lookup` function to use it with a cache
+    :func:`nn_lookup` with an in-memory cache of the results, keyed on the coordinates and ``k``. Its size is set by
+    ``cache_size.nn_lookup`` (environment variable ``GRID_PROCESS__cache_size__nn_lookup``, 0 to deactivate).
     """
 
-    hkey = (grid_coords.tobytes(), points.tobytes(), k)
-    return nn_lookup(grid_coords, points, k, hkey=hkey)  # type: ignore[call-arg]
+    return nn_lookup(grid_coords, points, k)
 
 
-@memoize(CONFIG.cache_size.nn_lookup_regular)
 def nn_lookup_regular(
     grid_coords: tuple[np.ndarray, np.ndarray],
     grid_spacing: tuple[float, float],
@@ -1240,6 +1251,42 @@ def nn_lookup_regular(
     return grid_index
 
 
+def _nn_lookup_regular_key(
+    grid_coords: tuple[np.ndarray, np.ndarray],
+    grid_spacing: tuple[float, float],
+    points: tuple[xr.DataArray, xr.DataArray],
+) -> Hashable:
+    """
+    Cache key of :func:`_nn_lookup_regular_cached`: the grid coordinates and spacing, and the POIs coordinates and
+    labels (which become the coordinates of the output indexes).
+    """
+
+    poi_dim = points[0].dims[0]
+    return (
+        tuple(points[0][poi_dim].values.tolist()),
+        _array_key(points[0].values),
+        _array_key(points[1].values),
+        _array_key(grid_coords[0]),
+        _array_key(grid_coords[1]),
+        grid_spacing,
+    )
+
+
+@memoize(CONFIG.cache_size.nn_lookup_regular, key=_nn_lookup_regular_key)
+def _nn_lookup_regular_cached(
+    grid_coords: tuple[np.ndarray, np.ndarray],
+    grid_spacing: tuple[float, float],
+    points: tuple[xr.DataArray, xr.DataArray],
+) -> list[np.ndarray | xr.DataArray]:
+    """
+    :func:`nn_lookup_regular` with an in-memory cache of the results. Its size is set by
+    ``cache_size.nn_lookup_regular`` (environment variable ``GRID_PROCESS__cache_size__nn_lookup_regular``, 0 to
+    deactivate).
+    """
+
+    return nn_lookup_regular(grid_coords, grid_spacing, points)
+
+
 def _compute_dist_weight(dist: np.ndarray, power: float, dtype: np.dtype) -> np.ndarray:
     """
     Compute weights based on the inverse distance. The weights scales to 1.
@@ -1271,7 +1318,7 @@ def _flatten_concat(
     coordinates are converted in the same CRS.
     """
 
-    data, grid_y, grid_x, grid_crs = _flatten_coords_crs(data, spatial_dims)
+    grid_y, grid_x, grid_crs = dm.get_coords_name_crs(data, spatial_dims, prefer_projected=True)
 
     target_crs = _choose_kdtree_crs(
         grid_crs,
@@ -1283,23 +1330,28 @@ def _flatten_concat(
 
     height = method in HEIGHT_METHODS
     coords_flat = _kdtree_coords(
-        data[grid_x].values,
-        data[grid_y].values,
+        _flat_coord(data, grid_x, spatial_dims),
+        _flat_coord(data, grid_y, spatial_dims),
         grid_crs,
         target_crs,
-        data[dm.get_surf_alt(data)].values if height else None,
+        _flat_coord(data, dm.get_surf_alt(data), spatial_dims) if height else None,
     )
     pois_coords_cat = _poi_kdtree_coords(
         poi_info, target_crs, coords_flat.dtype, dm.get_poi_alt(poi_info) if height else None
     )
+    data_flat = _flat_values(data, spatial_dims)
 
     if method == "snowlim":
-        return coords_flat, data.values, pois_coords_cat
+        return coords_flat, data_flat, pois_coords_cat
 
-    # check for all NaN grid points
-    ind = ~data.isnull().all(data.dims[1:]).values
+    # exclude the grid points with only NaN values
+    ind = _valid_points(data_flat)
+    if ind is None:
+        # contiguous rows (one per grid point): gathering the neighbors of the POIs from a strided view (e.g. data
+        # stored with the fields first) is several times slower than this copy
+        return coords_flat, np.ascontiguousarray(data_flat), pois_coords_cat
 
-    return coords_flat[ind], data.values[ind], pois_coords_cat
+    return coords_flat[ind], data_flat[ind], pois_coords_cat
 
 
 def _convert_poi(poi_info: gpd.GeoDataFrame, grid_crs: CRS, dtype: np.dtype) -> tuple[np.ndarray, np.ndarray]:
@@ -1318,14 +1370,17 @@ def _convert_poi(poi_info: gpd.GeoDataFrame, grid_crs: CRS, dtype: np.dtype) -> 
     if grid_crs == poi_crs:
         return pois_coords[:, 0], pois_coords[:, 1]
 
-    hkey = (pois_coords[:, 0].tobytes(), pois_coords[:, 1].tobytes(), grid_crs)
-    return _reproject_poi(pois_coords, poi_crs, grid_crs, hkey=hkey)  # type: ignore[call-arg]
+    return _reproject_poi(pois_coords, poi_crs, grid_crs)
 
 
-@memoize(CONFIG.cache_size.reproject_poi)
+@memoize(
+    CONFIG.cache_size.reproject_poi,
+    key=lambda coords, src_crs, dst_crs: (_array_key(coords), src_crs, dst_crs),
+)
 def _reproject_poi(coords: np.ndarray, src_crs: CRS, dst_crs: CRS) -> tuple[np.ndarray, np.ndarray]:
     """
-    Reprojection of POIs coordinates that can be cached
+    Reprojection of POIs coordinates, with an in-memory cache of size ``cache_size.reproject_poi`` (environment
+    variable ``GRID_PROCESS__cache_size__reproject_poi``, 0 to deactivate)
     """
 
     x_coords, y_coords = reproject(coords[:, 0], coords[:, 1], src_crs, dst_crs)
@@ -1335,12 +1390,16 @@ def _reproject_poi(coords: np.ndarray, src_crs: CRS, dst_crs: CRS) -> tuple[np.n
     return x_coords, y_coords
 
 
-@memoize(CONFIG.cache_size.reproject_grid)
+@memoize(
+    CONFIG.cache_size.reproject_grid,
+    key=lambda x_coords, y_coords, src_crs, dst_crs: (_array_key(x_coords), _array_key(y_coords), src_crs, dst_crs),
+)
 def _reproject_grid(
     x_coords: np.ndarray, y_coords: np.ndarray, src_crs: CRS, dst_crs: CRS
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Reprojection of grid coordinates that can be cached
+    Reprojection of grid coordinates, with an in-memory cache of size ``cache_size.reproject_grid`` (environment
+    variable ``GRID_PROCESS__cache_size__reproject_grid``, 0 to deactivate)
     """
 
     return reproject(x_coords, y_coords, src_crs, dst_crs)
@@ -1350,38 +1409,31 @@ def _reproject_grid_cached(
     x_coords: np.ndarray, y_coords: np.ndarray, src_crs: CRS, dst_crs: CRS
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Cached reprojection of grid coordinates
+    Cached reprojection of grid coordinates (see :func:`_reproject_grid`), as float64
     """
 
     if dst_crs != src_crs:
-        hkey = (x_coords.tobytes(), y_coords.tobytes(), x_coords.shape, dst_crs)
-        x_coords, y_coords = _reproject_grid(  # type: ignore[call-arg]
-            x_coords, y_coords, src_crs, dst_crs, hkey=hkey
-        )
+        x_coords, y_coords = _reproject_grid(x_coords, y_coords, src_crs, dst_crs)
 
     return x_coords.astype(np.float64, copy=False), y_coords.astype(np.float64, copy=False)
 
 
-@memoize(CONFIG.cache_size.reproject_grid)
+@memoize(
+    CONFIG.cache_size.reproject_grid,
+    key=lambda x_coords, y_coords, src_crs: (_array_key(x_coords), _array_key(y_coords), src_crs),
+)
 def _to_ecef(x_coords: np.ndarray, y_coords: np.ndarray, src_crs: CRS) -> np.ndarray:
     """
     Earth-centered earth-fixed (ECEF, EPSG:4978) coordinates [m] at zero ellipsoidal height, shape (n, 3), of
-    horizontal coordinates in ``src_crs``. That can be cached.
+    horizontal coordinates in ``src_crs``. With an in-memory cache of size ``cache_size.reproject_grid`` (environment
+    variable ``GRID_PROCESS__cache_size__reproject_grid``, 0 to deactivate), separate from the one of
+    :func:`_reproject_grid`. The cached array must not be modified.
     """
 
     transformer = Transformer.from_crs(sphere_as_wgs84(src_crs), ECEF, always_xy=True)
     x_coords = np.asarray(x_coords, dtype=np.float64)
     y_coords = np.asarray(y_coords, dtype=np.float64)
     return np.column_stack(transformer.transform(x_coords, y_coords, np.zeros_like(x_coords)))
-
-
-def _to_ecef_cached(x_coords: np.ndarray, y_coords: np.ndarray, src_crs: CRS) -> np.ndarray:
-    """
-    Cached conversion of horizontal coordinates to ECEF coordinates, see :func:`_to_ecef`.
-    """
-
-    hkey = (x_coords.tobytes(), y_coords.tobytes(), x_coords.shape, src_crs, "ECEF")
-    return _to_ecef(x_coords, y_coords, src_crs, hkey=hkey)  # type: ignore[call-arg]
 
 
 def _choose_kdtree_crs(
@@ -1464,7 +1516,7 @@ def _kdtree_coords(
     """
 
     if target_crs.is_geocentric:
-        ecef = _to_ecef_cached(x_coords, y_coords, src_crs)
+        ecef = _to_ecef(x_coords, y_coords, src_crs)
         return ecef.copy() if alt is None else np.column_stack((ecef, alt.astype(np.float64)))
 
     coords = _stack_coords(x_coords, y_coords) if alt is None else _stack_coords(x_coords, y_coords, alt)
@@ -1482,7 +1534,7 @@ def _poi_kdtree_coords(
 
     if target_crs.is_geocentric:
         xy = poi_info.get_coordinates().to_numpy(dtype=np.float64)
-        ecef = _to_ecef_cached(xy[:, 0], xy[:, 1], poi_info.crs.to_2d())
+        ecef = _to_ecef(xy[:, 0], xy[:, 1], poi_info.crs.to_2d())
         return ecef.copy() if alt is None else np.column_stack((ecef, alt.astype(np.float64)))
 
     pois_coords = _convert_poi(poi_info, target_crs, dtype)
@@ -1590,6 +1642,10 @@ def interp2grid(
           'linear', 'linear_3D' and 'cubic' are not supported in this case.
 
       Methods with altitude use it as an additional coordinate in meters.
+    - Nearest neighbor lookups and coordinate reprojections are cached in memory, so that later calls with the same
+      grids and POIs are faster. The cache sizes are set by the environment variables
+      GRID_PROCESS__cache_size__<name> (``nn_lookup``, ``nn_lookup_regular``, ``reproject_poi``, ``reproject_grid``),
+      where 0 deactivates a cache. They must be set before importing grid_process, see the Usage page.
     """
 
     def _array2ds(data: xr.DataArray) -> xr.Dataset:
@@ -1800,64 +1856,87 @@ def _flatten_concat_grids(  # pylint: disable=too-many-locals
         return reproject(x_ring.astype(np.float64), y_ring.astype(np.float64), dst_grid_crs, LV95)
 
     dst_grid_y, dst_grid_x, dst_grid_crs = dm.get_coords_name_crs(dst_grid, dst_spatial_dims, prefer_projected=True)
-    data, grid_y, grid_x, grid_crs = _flatten_coords_crs(data, spatial_dims)
-    flat_dim = spatial_dims[0] if len(spatial_dims) == 1 else "cell"
-    dst_flat, _, _, _ = _flatten_coords_crs(dst_grid, dst_spatial_dims, flat_dim)
+    grid_y, grid_x, grid_crs = dm.get_coords_name_crs(data, spatial_dims, prefer_projected=True)
 
     target_crs = _choose_kdtree_crs(
         grid_crs,
         dst_grid_crs,
-        src_larger=dst_flat.sizes[flat_dim] <= data.sizes[flat_dim],
+        src_larger=prod(dst_grid.sizes[dim] for dim in dst_spatial_dims)
+        <= prod(data.sizes[dim] for dim in spatial_dims),
         dst_lv95=_dst_lv95,
     )
     _check_griddata_crs(method, target_crs)
 
     height = method in HEIGHT_METHODS
     coords_flat = _kdtree_coords(
-        data[grid_x].values,
-        data[grid_y].values,
+        _flat_coord(data, grid_x, spatial_dims),
+        _flat_coord(data, grid_y, spatial_dims),
         grid_crs,
         target_crs,
-        data[dm.get_surf_alt(data)].values if height else None,
+        _flat_coord(data, dm.get_surf_alt(data), spatial_dims) if height else None,
     )
     dst_coords_flat = _kdtree_coords(
-        dst_flat[dst_grid_x].values,
-        dst_flat[dst_grid_y].values,
+        _flat_coord(dst_grid, dst_grid_x, dst_spatial_dims),
+        _flat_coord(dst_grid, dst_grid_y, dst_spatial_dims),
         dst_grid_crs,
         target_crs,
-        dst_flat[dm.get_surf_alt(dst_flat)].values if height else None,
+        _flat_coord(dst_grid, dm.get_surf_alt(dst_grid), dst_spatial_dims) if height else None,
     )
-    return coords_flat, data.values, dst_coords_flat
+    return coords_flat, _flat_values(data, spatial_dims), dst_coords_flat
 
 
-@overload
-def _flatten_coords_crs(
-    grid: xr.DataArray, spatial_dims: tuple[str, ...], flat_dim: str = "cell"
-) -> tuple[xr.DataArray, str, str, CRS]: ...
-@overload
-def _flatten_coords_crs(
-    grid: xr.Dataset, spatial_dims: tuple[str, ...], flat_dim: str = "cell"
-) -> tuple[xr.Dataset, str, str, CRS]: ...
-
-
-def _flatten_coords_crs(
-    grid: xr.DataArray | xr.Dataset,
-    spatial_dims: tuple[str, ...],
-    flat_dim: str = "cell",
-) -> tuple[xr.DataArray | xr.Dataset, str, str, CRS]:
+def _flat_coord(grid: xr.Dataset | xr.DataArray, name: str, spatial_dims: tuple[str, ...]) -> np.ndarray:
     """
-    Flatten input dataset if not already and extract spatial coordinates and corresponding crs to be used:
-    native coordinates if their CRS is projected with axes in meters, otherwise latitude and longitude
-    if present (see :func:`~grid_process.data_model.get_coords_name_crs`).
+    Values of the coordinate ``name`` of ``grid`` at each point of the flattened grid (in C order of
+    ``spatial_dims``, as :meth:`xarray.Dataset.stack` would give them), e.g. a 1D dimension coordinate broadcast
+    to the 2D grid, or 2D coordinates stored in another dimension order.
     """
 
-    grid_y, grid_x, grid_crs = dm.get_coords_name_crs(grid, spatial_dims, prefer_projected=True)
+    coord = grid[name]
+    if not set(coord.dims) <= set(spatial_dims):
+        raise ValueError(
+            f"The coordinate {name!r} has dimensions {coord.dims} other than the spatial dimensions {spatial_dims}"
+        )
+    values = coord.transpose(*(dim for dim in spatial_dims if dim in coord.dims)).values
+    if len(spatial_dims) == 1:
+        return values
+    shape = tuple(grid.sizes[dim] for dim in spatial_dims)
+    index = tuple(slice(None) if dim in coord.dims else np.newaxis for dim in spatial_dims)
+    return np.broadcast_to(values[index], shape).ravel()
 
-    if len(spatial_dims) > 1:
-        # flatten grid: 1D dimension coordinates become levels of the flat dimension
-        grid = grid.stack({flat_dim: spatial_dims}).transpose(flat_dim, ...)
 
-    return grid, grid_y, grid_x, grid_crs
+def _flat_values(data: xr.DataArray, spatial_dims: tuple[str, ...]) -> np.ndarray:
+    """
+    Values of ``data`` (with the spatial dimensions first) with the spatial dimensions flattened into the first
+    axis, shape (n_points, ...), in the same order as :func:`_flat_coord`.
+    """
+
+    return data.values.reshape((-1,) + data.shape[len(spatial_dims) :])
+
+
+def _valid_points(data_flat: np.ndarray) -> np.ndarray | None:
+    """
+    Boolean index of the points (first axis) of ``data_flat`` that are not NaN in all fields (trailing axes), or None
+    if all points are valid (no copy needed). Only the points that are NaN in the middle field are checked across all
+    fields: a point with a value there is valid. The middle field is used rather than the first one, which is NaN
+    everywhere for accumulated variables at the first lead time.
+    """
+
+    if data_flat.dtype.kind in "biu" or data_flat.shape[0] == 0:  # cannot hold NaN
+        return None
+    fields = data_flat.reshape(data_flat.shape[0], -1)
+    if fields.shape[1] == 0:  # no field: like xarray, all() of an empty selection is True
+        return np.zeros(data_flat.shape[0], dtype=bool)
+    isnull = np.isnan if data_flat.dtype.kind in "fc" else pd.isnull  # pd.isnull for NaT, None
+    candidates = np.flatnonzero(isnull(fields[:, fields.shape[1] // 2]))
+    if candidates.size == 0:
+        return None
+    all_nan = candidates[isnull(fields[candidates]).all(axis=1)]
+    if all_nan.size == 0:
+        return None
+    ind = np.ones(data_flat.shape[0], dtype=bool)
+    ind[all_nan] = False
+    return ind
 
 
 def _stack_coords(*coords: np.ndarray) -> np.ndarray:
@@ -1893,7 +1972,7 @@ def slice_boundingbox(
         pois_x = _wrap_lon(pois_x, _lon_center(data[grid_x].values))
     yx_bnds = ((pois_y.min().item(), pois_y.max().item()), (pois_x.min().item(), pois_x.max().item()))
 
-    buffer = _get_buffer(method, **kwargs)
+    buffer = get_buffer(method, **kwargs)
     sub_domain, _ = _get_sub_domain(data, spatial_dims, (grid_y, grid_x), yx_bnds, buffer, grid_crs.is_geographic)
     return data.isel(sub_domain)
 
@@ -1946,7 +2025,7 @@ def slice_coarsen(  # pylint: disable=too-many-locals
 
     yx_bnds = ((y_coords.min(), y_coords.max()), (x_coords.min(), x_coords.max()))
 
-    buffer = _get_buffer(method, **kwargs)
+    buffer = get_buffer(method, **kwargs)
     sub_domain, res = _get_sub_domain(data, spatial_dims, coords_crs[:2], yx_bnds, buffer, grid_crs.is_geographic)
     data_sub = data.isel(sub_domain)
 
@@ -1991,10 +2070,24 @@ def slice_coarsen(  # pylint: disable=too-many-locals
     return data_sub
 
 
-def _get_buffer(method: str, **kwargs: Any) -> int:
+def get_buffer(method: str, **kwargs: Any) -> int:
     """
-    Buffer specific to the interpolation method to add when slicing input dataset
-    to target grid or POIs
+    Buffer specific to the interpolation method to add when slicing the input dataset to the target grid or POIs
+    (see :func:`slice_boundingbox`).
+
+    Parameters
+    ----------
+    method : str
+        interpolation method, as in :func:`interp2poi` or :func:`interp2grid`
+    **kwargs
+        keyword arguments of the interpolation method. ``k`` (number of neighbors) and ``r_search`` (search radius
+        in grid points) widen the buffer; the others are ignored.
+
+    Returns
+    -------
+    int
+        buffer in number of grid points: 1, plus 1 for ``cubic`` and the 3D methods, plus ``ceil(sqrt(k / pi))``,
+        plus ``ceil(r_search)``.
     """
 
     buffer = 1
@@ -2087,6 +2180,9 @@ def _get_sub_domain(  # pylint: disable=too-many-locals
             factor = lon_buffer_factor(res_approx)
             x_bnds, x_factor = ((-np.inf, np.inf), 1.0) if factor is None else (x_bnds, factor)
         cond_xy = get_cond_xy(2 * res_approx, x_factor)
+        if np.count_nonzero(cond_xy) < 2:  # (nearly) no grid point near the destination, e.g. all POIs outside the
+            # grid: empty selection, as the resolution of fewer than 2 points is NaN (without "Mean of empty slice")
+            return {spatial_dims[0]: np.zeros_like(cond_xy)}, np.nan
         res = _get_flat_grid_res(data[grid_x][cond_xy], data[grid_y][cond_xy])
         cond_xy = get_cond_xy(buffer * res * 1.5, x_factor)
         return {spatial_dims[0]: cond_xy}, res

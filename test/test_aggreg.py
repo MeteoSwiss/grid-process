@@ -94,8 +94,10 @@ def test_split_by_timeres(poi_data_mixed_gran):
 def test_interval_stat(poi_data_mixed_gran):
     """Simple testcase for the interval_stat function from aggreg module"""
 
-    agg_func = lambda x: x.max("window")
-    results = agg.interval_stat(poi_data_mixed_gran, 24, 5, 3, agg_func, lt_duplicates=False)
+    def agg_max(x):
+        return x.max("window")
+
+    results = agg.interval_stat(poi_data_mixed_gran, 24, 5, 3, agg_max, lt_duplicates=False)
 
     start = poi_data_mixed_gran.time[poi_data_mixed_gran["time.hour"] == 3][0].values
     stop = poi_data_mixed_gran.time[poi_data_mixed_gran["time.hour"] == 8][-1].values
@@ -118,8 +120,10 @@ def test_interval_stat(poi_data_mixed_gran):
     assert (results.sel(time=slice(None, t_transit)).to_array() == expected_10min).all()
     assert (results.sel(time=slice(t_transit, None)).to_array() == expected_1hr).all()
 
-    agg_func = lambda x: x.sum("window")
-    results = poi_data_mixed_gran.aggreg.interval_stat(6, 6, 0, agg_func, lt_duplicates=True)
+    def agg_sum(x):
+        return x.sum("window")
+
+    results = poi_data_mixed_gran.aggreg.interval_stat(6, 6, 0, agg_sum, lt_duplicates=True)
 
     start = to_datetime(poi_data_mixed_gran.time[0].values).ceil("6h") + np.timedelta64(4, "h")
     stop = to_datetime(poi_data_mixed_gran.time[-1].values).floor("6h") - np.timedelta64(2, "h")
@@ -155,8 +159,10 @@ def test_interval_stat(poi_data_mixed_gran):
 
     poi_data = poi_data_mixed_gran.where(poi_data_mixed_gran.time.isin(times_sub), drop=True)
 
-    agg_func = lambda x: x.min("window")
-    results = agg.interval_stat(poi_data, 3, 3, 0, agg_func, lt_duplicates=False, interp_method="linear")
+    def agg_min(x):
+        return x.min("window")
+
+    results = agg.interval_stat(poi_data, 3, 3, 0, agg_min, lt_duplicates=False, interp_method="linear")
 
     interp_t = date_range(start=times_sub[0].values, end=times_sub[-1].values, freq="1h")
     expected = (
@@ -202,7 +208,8 @@ def test_extended_datamodel(model_data_validtime, poi_data_mixed_gran):
 
     from grid_process.data_model import VALIDTIME
 
-    agg_func = lambda x: x.mean("window")
+    def agg_func(x):
+        return x.mean("window")
 
     for validtime in VALIDTIME:
         ds_ext = model_data_validtime.rename(time=validtime)
