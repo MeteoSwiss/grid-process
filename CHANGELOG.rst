@@ -2,8 +2,24 @@
 Changelog
 =========
 
-Unreleased
-----------
+1.1.0 (2026-11-12)
+------------------
+
+**Changes of results** (compared to 1.0.0, see the entries below for details)
+
+* ``interp2poi`` and ``interp2grid`` (outside of the regular grid interpolation) search nearest neighbors and
+  triangulate in meters instead of latitude/longitude degrees: neighbors, IDW weights and ``linear``/``cubic``
+  results change slightly for grids that were searched in degrees, including native LV95 grids with
+  latitude/longitude coordinates
+* grids in rotated pole or latitude/longitude on a sphere without datum (e.g. a CF grid mapping with
+  ``earth_radius``) now get the datum shift to Swiss coordinates (about 180 m)
+* wrong values or NaN are fixed for grids with integer coordinates and for latitude/longitude grids whose longitude
+  convention (0..360 or -180..180) differs from the one of the POIs or destination grid
+* ``create_dst_grid`` (with ``topright`` and ``resolution``) and ``create_dst_grid_from_src`` return different
+  destination grids: exact resolution, and the extent of the source domain reprojected in the destination CRS
+* ``grid_interp._get_buffer`` is renamed to ``get_buffer`` (now public)
+
+**Changes**
 
 * added a ``py.typed`` marker so that type checkers use the inline type hints of ``grid-process`` (PEP 561)
 * added example notebooks to the documentation illustrating ``interp2poi`` and ``interp2grid`` with open data, with
