@@ -24,7 +24,7 @@ def pytest_configure(config):
     extending the data model works throughout the code
     """
 
-    os.environ["GRID_PROCESS__data_model__grid__unstructured_dim"] = '["cell", "points", "dummy_cell"]'
+    os.environ["GRID_PROCESS__data_model__grid__unstructured_dim"] = '["cell", "points", "values", "dummy_cell"]'
     os.environ["GRID_PROCESS__data_model__grid__y"] = '["y", "latitude", "lat", "dummy_y"]'
     os.environ["GRID_PROCESS__data_model__grid__x"] = '["x", "longitude", "lon", "dummy_x"]'
     os.environ["GRID_PROCESS__data_model__grid__surf_alt"] = (

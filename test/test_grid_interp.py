@@ -686,6 +686,11 @@ def test_interp2poi(model_data_2dflat, poi_def):
 
     # unregular grid interpolation
     results_nn = gri.interp2poi(model_data_2dflat, poi_def, "nearest")
+    if "cell" in model_data_2dflat.dims:  # as GRIB read with cfgrib/earthkit-data (no coordinate)
+        results_values = gri.interp2poi(
+            model_data_2dflat.drop_vars(("cell", "y", "x")).rename_dims(cell="values"), poi_def, "nearest"
+        )
+        xr.testing.assert_identical(results_values, results_nn.drop_vars(("y", "x"), errors="ignore"))
 
     # check for conserved dimensions
     model_data_dims = {key: value for key, value in model_data_2dflat.sizes.items() if key not in ("x", "y", "cell")}

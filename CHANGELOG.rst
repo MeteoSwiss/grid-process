@@ -24,6 +24,9 @@ Unreleased
 * changed the coarsening of the source grid by ``interp2grid`` to skip NaN (e.g. for the snow limit, NaN below the
   orography), with bottleneck. ICON-CH1 to the seamless 2 km grid (with cached neighbors) is about 1.4 times
   faster (e.g. ``nearest_alt`` 0.30 s → 0.21 s), with about 0.05 GB more peak memory (copy of the windows)
+* added ``values`` to the default names of the unstructured grid dimension
+  (``GRID_PROCESS__data_model__grid__unstructured_dim``): the dimension of non-regular GRIB grids read with cfgrib or
+  earthkit-data, e.g. ICON open data, no longer needs to be renamed
 
 1.1.0 (2026-11-12)
 ------------------
