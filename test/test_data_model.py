@@ -318,6 +318,9 @@ def test_get_flat_dim(data_cf_2dflat):
 
     if "points" in data_cf_2dflat.dims:
         assert dm.get_flat_dim(data_cf_2dflat) == "points"
+        # name given by cfgrib/earthkit-data to non-regular GRIB grids (e.g. ICON), without coordinate
+        grib_like = data_cf_2dflat.drop_vars(("points", "y_1", "x_1")).rename_dims(points="values")
+        assert dm.get_flat_dim(grib_like) == "values"
 
     else:
         assert dm.get_flat_dim(data_cf_2dflat) is None

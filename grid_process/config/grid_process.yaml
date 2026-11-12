@@ -12,7 +12,7 @@ lv95_max_offset: 700000
 
 data_model: # supported names
   grid:
-    unstructured_dim: ["cell", "points"]
+    unstructured_dim: ["cell", "points", "values"] # values: GRIB read with cfgrib/earthkit-data
     y: ["y", "latitude", "lat"]
     x: ["x", "longitude", "lon"]
     surf_alt: ["surface_altitude", "HSURF", "altitude"]
