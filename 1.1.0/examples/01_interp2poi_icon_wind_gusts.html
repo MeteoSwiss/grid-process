@@ -1,0 +1,2225 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Interpolation to stations: ICON-CH2 wind gusts &#8212; grid-process</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=753eb8b5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/01_interp2poi_icon_wind_gusts';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = '../_static/switcher_config.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.1.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Interpolation to stations: IFS-HRES 2 m temperature" href="02_interp2poi_ifs_temperature.html" />
+    <link rel="prev" title="Examples" href="../examples.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.1.0" />
+    <meta name="docbuild:last-update" content="12.11.2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-light" alt=""/>
+    <img src="../_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">grid-process</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../changelog.html">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../autoapi/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../changelog.html">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../autoapi/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Interpolation to stations: ICON-CH2 wind gusts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="02_interp2poi_ifs_temperature.html">Interpolation to stations: IFS-HRES 2 m temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="03_interp2grid_era5land_precipitation.html">Regridding: ERA5-Land yearly precipitation on the RhiresY grid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="04_interp2grid_valais_temperature.html">Regridding: IFS-HRES and ICON-CH2 2 m temperature on a 200 m grid over Valais</a></li>
+<li class="toctree-l1"><a class="reference internal" href="05_interp2poi_gfs_global_temperature.html">Interpolation to stations worldwide: GFS 2 m temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="06_interp2grid_era5_global_temperature.html">Regridding: ERA5 2 m temperature on the global IFS 0.1° grid</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../examples.html" class="nav-link">Examples</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Interpolation to stations: ICON-CH2 wind gusts</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="interpolation-to-stations-icon-ch2-wind-gusts">
+<h1>Interpolation to stations: ICON-CH2 wind gusts<a class="headerlink" href="#interpolation-to-stations-icon-ch2-wind-gusts" title="Link to this heading">#</a></h1>
+<p>This example illustrates <a class="reference internal" href="../autoapi/grid_process/grid_interp/index.html#grid_process.grid_interp.interp2poi" title="grid_process.grid_interp.interp2poi"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2poi()</span></code></a> with three methods:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">linear</span></code>: linear interpolation on the triangulation of the source grid points;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">idw</span></code>: inverse distance weighting of the <code class="docutils literal notranslate"><span class="pre">k</span></code> nearest grid points, with weights <code class="docutils literal notranslate"><span class="pre">d^(-weight_power)</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code>: among the grid points within <code class="docutils literal notranslate"><span class="pre">r_search</span></code> grid spacings, the one with the most similar
+altitude. This suits wind, which depends strongly on the exposure of the site.</p></li>
+</ul>
+<p>The hourly maximum 10 m wind gust (<code class="docutils literal notranslate"><span class="pre">VMAX_10M</span></code>) of the ICON-CH2 control forecast, on its native
+unstructured grid (about 2 km), is interpolated to the MeteoSwiss automatic weather stations measuring
+gusts, and compared with the observed hourly maximum gust.</p>
+<p><em>Data: MeteoSwiss open data, CC BY 4.0, source: MeteoSwiss. Country borders: Natural Earth.</em></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">timeit</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreadPoolExecutor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="c1"># import pyproj before earthkit.data to avoid a crash at exit (earthkit-data#1202)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyproj</span>  <span class="c1"># noqa: F401  # pylint: disable=unused-import</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">eccodes_cosmo_resources</span>
+
+<span class="c1"># ICON GRIB files need the COSMO definitions of ecCodes</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"ECCODES_DEFINITION_PATH"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">eccodes_cosmo_resources</span><span class="o">.</span><span class="n">get_definitions_path</span><span class="p">())</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"ECCODES_VERSION_CHECK_OFF"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"1"</span>
+<span class="c1"># grid_process data model (read at import): the SwissMetNet metadata columns give the POI labels and altitudes</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"GRID_PROCESS__data_model__poi__coord_from"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"station_abbr"</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"GRID_PROCESS__data_model__poi__alt_from"</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'["station_height_masl"]'</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cartopy.io.shapereader</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">shpreader</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">earthkit.data</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ekd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">grid_process.grid_interp</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gri</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">grid_process.timeseries</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tms</span>
+
+<span class="n">METHODS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"linear"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"method"</span><span class="p">:</span> <span class="s2">"linear"</span><span class="p">},</span>
+    <span class="s2">"idw"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"method"</span><span class="p">:</span> <span class="s2">"idw"</span><span class="p">,</span> <span class="s2">"k"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">"weight_power"</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+    <span class="s2">"nearest_alt"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"method"</span><span class="p">:</span> <span class="s2">"nearest_alt"</span><span class="p">,</span> <span class="s2">"r_search"</span><span class="p">:</span> <span class="mf">1.7</span><span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="source-data">
+<h2>Source data<a class="headerlink" href="#source-data" title="Link to this heading">#</a></h2>
+<p>ICON-CH2 runs stay on the MeteoSwiss open data portal for 24 hours. We take the oldest run, so that
+observations already cover the first lead times, and download the control member for all 121 lead
+times. The files cover the full model domain, as no spatial subset can be requested. <code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code>
+needs the model orography <code class="docutils literal notranslate"><span class="pre">HSURF</span></code>, provided with the grid coordinates in the horizontal constants file.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">COLLECTION</span> <span class="o">=</span> <span class="s2">"ogd-forecasting-icon-ch2"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">oldest_run</span><span class="p">(</span><span class="n">variable</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">margin</span><span class="p">:</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">30</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Oldest run whose first lead time (uploaded, hence deleted, first) is still available."""</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="s2">"https://data.geo.admin.ch/api/stac/v1/search"</span><span class="p">,</span>
+        <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">"collections"</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"ch.meteoschweiz.</span><span class="si">{</span><span class="n">COLLECTION</span><span class="si">}</span><span class="s2">"</span><span class="p">],</span>
+            <span class="s2">"forecast:variable"</span><span class="p">:</span> <span class="n">variable</span><span class="p">,</span>
+            <span class="s2">"forecast:perturbed"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">"forecast:horizon"</span><span class="p">:</span> <span class="s2">"P0DT00H00M00S"</span><span class="p">,</span>
+            <span class="s2">"sortby"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"field"</span><span class="p">:</span> <span class="s2">"properties.datetime"</span><span class="p">,</span> <span class="s2">"direction"</span><span class="p">:</span> <span class="s2">"asc"</span><span class="p">}],</span>
+        <span class="p">},</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">now</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">"features"</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">"properties"</span><span class="p">][</span><span class="s2">"expires"</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">now</span> <span class="o">+</span> <span class="n">margin</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">item</span><span class="p">[</span><span class="s2">"properties"</span><span class="p">][</span><span class="s2">"forecast:reference_datetime"</span><span class="p">]</span>
+    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"No run found on the open data portal"</span><span class="p">)</span>
+
+
+<span class="n">ref_time</span> <span class="o">=</span> <span class="n">oldest_run</span><span class="p">(</span><span class="s2">"VMAX_10M"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ICON-CH2 run: </span><span class="si">{</span><span class="n">ref_time</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="c1"># hide the download progress bars that earthkit always shows on stderr: they include the signed download URLs</span>
+<span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">redirect_stderr</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()):</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">ekd</span><span class="o">.</span><span class="n">from_source</span><span class="p">(</span>
+        <span class="s2">"meteoswiss-opendata"</span><span class="p">,</span>
+        <span class="n">collection</span><span class="o">=</span><span class="n">COLLECTION</span><span class="p">,</span>
+        <span class="n">variable</span><span class="o">=</span><span class="s2">"VMAX_10M"</span><span class="p">,</span>
+        <span class="n">ref_time</span><span class="o">=</span><span class="n">ref_time</span><span class="p">,</span>
+        <span class="n">perturbed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">lead_time</span><span class="o">=</span><span class="p">[</span><span class="sa">f</span><span class="s2">"P0DT</span><span class="si">{</span><span class="n">h</span><span class="si">}</span><span class="s2">H"</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">121</span><span class="p">)],</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">to_xarray</span><span class="p">(</span><span class="n">time_dims</span><span class="o">=</span><span class="p">[</span><span class="s2">"forecast_reference_time"</span><span class="p">,</span> <span class="s2">"step"</span><span class="p">],</span> <span class="n">squeeze</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">constants</span> <span class="o">=</span> <span class="n">ekd</span><span class="o">.</span><span class="n">from_source</span><span class="p">(</span><span class="s2">"meteoswiss-opendata-constants"</span><span class="p">,</span> <span class="n">collection</span><span class="o">=</span><span class="n">COLLECTION</span><span class="p">,</span> <span class="n">asset</span><span class="o">=</span><span class="s2">"horizontal"</span><span class="p">)</span>
+    <span class="n">hsurf</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">to_fieldlist</span><span class="p">()</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="s2">"parameter.variable"</span><span class="p">:</span> <span class="s2">"HSURF"</span><span class="p">})[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">squeeze</span><span class="p">([</span><span class="s2">"member"</span><span class="p">,</span> <span class="s2">"level"</span><span class="p">,</span> <span class="s2">"level_type"</span><span class="p">],</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">rename_dims</span><span class="p">(</span><span class="n">values</span><span class="o">=</span><span class="s2">"cell"</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">)</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span><span class="n">HSURF</span><span class="o">=</span><span class="p">(</span><span class="s2">"cell"</span><span class="p">,</span> <span class="n">hsurf</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">)))</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">tms</span><span class="o">.</span><span class="n">setindex_validtime</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>  <span class="c1"># forecast_reference_time and step -&gt; time</span>
+<span class="n">ds</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>ICON-CH2 run: 2026-10-28T00:00:00Z
+</pre></div>
+</div>
+<div class="output text_html"><div><svg style="position: absolute; width: 0; height: 0; overflow: hidden">
+<defs>
+<symbol id="icon-database" viewBox="0 0 32 32">
+<path d="M16 0c-8.837 0-16 2.239-16 5v4c0 2.761 7.163 5 16 5s16-2.239 16-5v-4c0-2.761-7.163-5-16-5z"></path>
+<path d="M16 17c-8.837 0-16-2.239-16-5v6c0 2.761 7.163 5 16 5s16-2.239 16-5v-6c0 2.761-7.163 5-16 5z"></path>
+<path d="M16 26c-8.837 0-16-2.239-16-5v6c0 2.761 7.163 5 16 5s16-2.239 16-5v-6c0 2.761-7.163 5-16 5z"></path>
+</symbol>
+<symbol id="icon-file-text2" viewBox="0 0 32 32">
+<path d="M28.681 7.159c-0.694-0.947-1.662-2.053-2.724-3.116s-2.169-2.030-3.116-2.724c-1.612-1.182-2.393-1.319-2.841-1.319h-15.5c-1.378 0-2.5 1.121-2.5 2.5v27c0 1.378 1.122 2.5 2.5 2.5h23c1.378 0 2.5-1.122 2.5-2.5v-19.5c0-0.448-0.137-1.23-1.319-2.841zM24.543 5.457c0.959 0.959 1.712 1.825 2.268 2.543h-4.811v-4.811c0.718 0.556 1.584 1.309 2.543 2.268zM28 29.5c0 0.271-0.229 0.5-0.5 0.5h-23c-0.271 0-0.5-0.229-0.5-0.5v-27c0-0.271 0.229-0.5 0.5-0.5 0 0 15.499-0 15.5 0v7c0 0.552 0.448 1 1 1h7v19.5z"></path>
+<path d="M23 26h-14c-0.552 0-1-0.448-1-1s0.448-1 1-1h14c0.552 0 1 0.448 1 1s-0.448 1-1 1z"></path>
+<path d="M23 22h-14c-0.552 0-1-0.448-1-1s0.448-1 1-1h14c0.552 0 1 0.448 1 1s-0.448 1-1 1z"></path>
+<path d="M23 18h-14c-0.552 0-1-0.448-1-1s0.448-1 1-1h14c0.552 0 1 0.448 1 1s-0.448 1-1 1z"></path>
+</symbol>
+</defs>
+</svg>
+<style>/* CSS stylesheet for displaying xarray objects in notebooks */
+
+:root {
+  --xr-font-color0: var(
+    --jp-content-font-color0,
+    var(--pst-color-text-base rgba(0, 0, 0, 1))
+  );
+  --xr-font-color2: var(
+    --jp-content-font-color2,
+    var(--pst-color-text-base, rgba(0, 0, 0, 0.54))
+  );
+  --xr-font-color3: var(
+    --jp-content-font-color3,
+    var(--pst-color-text-base, rgba(0, 0, 0, 0.38))
+  );
+  --xr-border-color: var(
+    --jp-border-color2,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 10))
+  );
+  --xr-disabled-color: var(
+    --jp-layout-color3,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 40))
+  );
+  --xr-background-color: var(
+    --jp-layout-color0,
+    var(--pst-color-on-background, white)
+  );
+  --xr-background-color-row-even: var(
+    --jp-layout-color1,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 5))
+  );
+  --xr-background-color-row-odd: var(
+    --jp-layout-color2,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 15))
+  );
+}
+
+html[theme="dark"],
+html[data-theme="dark"],
+body[data-theme="dark"],
+body.vscode-dark {
+  --xr-font-color0: var(
+    --jp-content-font-color0,
+    var(--pst-color-text-base, rgba(255, 255, 255, 1))
+  );
+  --xr-font-color2: var(
+    --jp-content-font-color2,
+    var(--pst-color-text-base, rgba(255, 255, 255, 0.54))
+  );
+  --xr-font-color3: var(
+    --jp-content-font-color3,
+    var(--pst-color-text-base, rgba(255, 255, 255, 0.38))
+  );
+  --xr-border-color: var(
+    --jp-border-color2,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 10))
+  );
+  --xr-disabled-color: var(
+    --jp-layout-color3,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 40))
+  );
+  --xr-background-color: var(
+    --jp-layout-color0,
+    var(--pst-color-on-background, #111111)
+  );
+  --xr-background-color-row-even: var(
+    --jp-layout-color1,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 5))
+  );
+  --xr-background-color-row-odd: var(
+    --jp-layout-color2,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 15))
+  );
+}
+
+.xr-wrap {
+  display: block !important;
+  min-width: 300px;
+  max-width: 700px;
+  line-height: 1.6;
+  padding-bottom: 4px;
+}
+
+.xr-text-repr-fallback {
+  /* fallback to plain text repr when CSS is not injected (untrusted notebook) */
+  display: none;
+}
+
+.xr-header {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.xr-header {
+  border-bottom: solid 1px var(--xr-border-color);
+  margin-bottom: 4px;
+}
+
+.xr-header > div,
+.xr-header > ul {
+  display: inline;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.xr-obj-type,
+.xr-obj-name {
+  margin-left: 2px;
+  margin-right: 10px;
+}
+
+.xr-obj-type,
+.xr-group-box-contents > label {
+  color: var(--xr-font-color2);
+  display: block;
+}
+
+.xr-sections {
+  padding-left: 0 !important;
+  display: grid;
+  grid-template-columns: 150px auto auto 1fr 0 20px 0 20px;
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
+
+.xr-section-item {
+  display: contents;
+}
+
+.xr-section-item > input,
+.xr-group-box-contents > input,
+.xr-array-wrap > input {
+  display: block;
+  opacity: 0;
+  height: 0;
+  margin: 0;
+}
+
+.xr-section-item > input + label,
+.xr-var-item > input + label {
+  color: var(--xr-disabled-color);
+}
+
+.xr-section-item > input:enabled + label,
+.xr-var-item > input:enabled + label,
+.xr-array-wrap > input:enabled + label,
+.xr-group-box-contents > input:enabled + label {
+  cursor: pointer;
+  color: var(--xr-font-color2);
+}
+
+.xr-section-item > input:focus-visible + label,
+.xr-var-item > input:focus-visible + label,
+.xr-array-wrap > input:focus-visible + label,
+.xr-group-box-contents > input:focus-visible + label {
+  outline: auto;
+}
+
+.xr-section-item > input:enabled + label:hover,
+.xr-var-item > input:enabled + label:hover,
+.xr-array-wrap > input:enabled + label:hover,
+.xr-group-box-contents > input:enabled + label:hover {
+  color: var(--xr-font-color0);
+}
+
+.xr-section-summary {
+  grid-column: 1;
+  color: var(--xr-font-color2);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.xr-section-summary > em {
+  font-weight: normal;
+}
+
+.xr-span-grid {
+  grid-column-end: -1;
+}
+
+.xr-section-summary > span {
+  display: inline-block;
+  padding-left: 0.3em;
+}
+
+.xr-group-box-contents > input:checked + label > span {
+  display: inline-block;
+  padding-left: 0.6em;
+}
+
+.xr-section-summary-in:disabled + label {
+  color: var(--xr-font-color2);
+}
+
+.xr-section-summary-in + label:before {
+  display: inline-block;
+  content: "►";
+  font-size: 11px;
+  width: 15px;
+  text-align: center;
+}
+
+.xr-section-summary-in:disabled + label:before {
+  color: var(--xr-disabled-color);
+}
+
+.xr-section-summary-in:checked + label:before {
+  content: "▼";
+}
+
+.xr-section-summary-in:checked + label > span {
+  display: none;
+}
+
+.xr-section-summary,
+.xr-section-inline-details,
+.xr-group-box-contents > label {
+  padding-top: 4px;
+}
+
+.xr-section-inline-details {
+  grid-column: 2 / -1;
+}
+
+.xr-section-details {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  margin-bottom: 5px;
+}
+
+.xr-section-summary-in ~ .xr-section-details {
+  display: none;
+}
+
+.xr-section-summary-in:checked ~ .xr-section-details {
+  display: contents;
+}
+
+.xr-children {
+  display: inline-grid;
+  grid-template-columns: 100%;
+  grid-column: 1 / -1;
+  padding-top: 4px;
+}
+
+.xr-group-box {
+  display: inline-grid;
+  grid-template-columns: 0px 30px auto;
+}
+
+.xr-group-box-vline {
+  grid-column-start: 1;
+  border-right: 0.2em solid;
+  border-color: var(--xr-border-color);
+  width: 0px;
+}
+
+.xr-group-box-hline {
+  grid-column-start: 2;
+  grid-row-start: 1;
+  height: 1em;
+  width: 26px;
+  border-bottom: 0.2em solid;
+  border-color: var(--xr-border-color);
+}
+
+.xr-group-box-contents {
+  grid-column-start: 3;
+  padding-bottom: 4px;
+}
+
+.xr-group-box-contents > label::before {
+  content: "📂";
+  padding-right: 0.3em;
+}
+
+.xr-group-box-contents > input:checked + label::before {
+  content: "📁";
+}
+
+.xr-group-box-contents > input:checked + label {
+  padding-bottom: 0px;
+}
+
+.xr-group-box-contents > input:checked ~ .xr-sections {
+  display: none;
+}
+
+.xr-group-box-contents > input + label > span {
+  display: none;
+}
+
+.xr-group-box-ellipsis {
+  font-size: 1.4em;
+  font-weight: 900;
+  color: var(--xr-font-color2);
+  letter-spacing: 0.15em;
+  cursor: default;
+}
+
+.xr-array-wrap {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 20px auto;
+}
+
+.xr-array-wrap > label {
+  grid-column: 1;
+  vertical-align: top;
+}
+
+.xr-preview {
+  color: var(--xr-font-color3);
+}
+
+.xr-array-preview,
+.xr-array-data {
+  padding: 0 5px !important;
+  grid-column: 2;
+}
+
+.xr-array-data,
+.xr-array-in:checked ~ .xr-array-preview {
+  display: none;
+}
+
+.xr-array-in:checked ~ .xr-array-data,
+.xr-array-preview {
+  display: inline-block;
+}
+
+.xr-dim-list {
+  display: inline-block !important;
+  list-style: none;
+  padding: 0 !important;
+  margin: 0;
+}
+
+.xr-dim-list li {
+  display: inline-block;
+  padding: 0;
+  margin: 0;
+}
+
+.xr-dim-list:before {
+  content: "(";
+}
+
+.xr-dim-list:after {
+  content: ")";
+}
+
+.xr-dim-list li:not(:last-child):after {
+  content: ",";
+  padding-right: 5px;
+}
+
+.xr-has-index {
+  font-weight: bold;
+}
+
+.xr-var-list,
+.xr-var-item {
+  display: contents;
+}
+
+.xr-var-item > div,
+.xr-var-item label,
+.xr-var-item > .xr-var-name span {
+  background-color: var(--xr-background-color-row-even);
+  border-color: var(--xr-background-color-row-odd);
+  margin-bottom: 0;
+  padding-top: 2px;
+}
+
+.xr-var-item > .xr-var-name:hover span {
+  padding-right: 5px;
+}
+
+.xr-var-list > li:nth-child(odd) > div,
+.xr-var-list > li:nth-child(odd) > label,
+.xr-var-list > li:nth-child(odd) > .xr-var-name span {
+  background-color: var(--xr-background-color-row-odd);
+  border-color: var(--xr-background-color-row-even);
+}
+
+.xr-var-name {
+  grid-column: 1;
+}
+
+.xr-var-dims {
+  grid-column: 2;
+}
+
+.xr-var-dtype {
+  grid-column: 3;
+  text-align: right;
+  color: var(--xr-font-color2);
+}
+
+.xr-var-preview {
+  grid-column: 4;
+}
+
+.xr-index-preview {
+  grid-column: 2 / 5;
+  color: var(--xr-font-color2);
+}
+
+.xr-var-name,
+.xr-var-dims,
+.xr-var-dtype,
+.xr-preview,
+.xr-attrs dt {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 10px;
+}
+
+.xr-var-name:hover,
+.xr-var-dims:hover,
+.xr-var-dtype:hover,
+.xr-attrs dt:hover {
+  overflow: visible;
+  width: auto;
+  z-index: 1;
+}
+
+.xr-var-attrs,
+.xr-var-data,
+.xr-index-data {
+  display: none;
+  border-top: 2px dotted var(--xr-background-color);
+  padding-bottom: 20px !important;
+  padding-top: 10px !important;
+}
+
+.xr-var-attrs-in + label,
+.xr-var-data-in + label,
+.xr-index-data-in + label {
+  padding: 0 1px;
+}
+
+.xr-var-attrs-in:checked ~ .xr-var-attrs,
+.xr-var-data-in:checked ~ .xr-var-data,
+.xr-index-data-in:checked ~ .xr-index-data {
+  display: block;
+}
+
+.xr-var-data > table {
+  float: right;
+}
+
+.xr-var-data > pre,
+.xr-index-data > pre,
+.xr-var-data > table > tbody > tr {
+  background-color: transparent !important;
+}
+
+.xr-var-name span,
+.xr-var-data,
+.xr-index-name div,
+.xr-index-data,
+.xr-attrs {
+  padding-left: 25px !important;
+}
+
+.xr-attrs,
+.xr-var-attrs,
+.xr-var-data,
+.xr-index-data {
+  grid-column: 1 / -1;
+}
+
+dl.xr-attrs {
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 125px auto;
+}
+
+.xr-attrs dt,
+.xr-attrs dd {
+  padding: 0;
+  margin: 0;
+  float: left;
+  padding-right: 10px;
+  width: auto;
+}
+
+.xr-attrs dt {
+  font-weight: normal;
+  grid-column: 1;
+}
+
+.xr-attrs dt:hover span {
+  display: inline-block;
+  background: var(--xr-background-color);
+  padding-right: 10px;
+}
+
+.xr-attrs dd {
+  grid-column: 2;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.xr-icon-database,
+.xr-icon-file-text2,
+.xr-no-icon {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1em;
+  height: 1.5em !important;
+  stroke-width: 0;
+  stroke: currentColor;
+  fill: currentColor;
+}
+
+.xr-var-attrs-in:checked + label > .xr-icon-file-text2,
+.xr-var-data-in:checked + label > .xr-icon-database,
+.xr-index-data-in:checked + label > .xr-icon-database {
+  color: var(--xr-font-color0);
+  filter: drop-shadow(1px 1px 5px var(--xr-font-color2));
+  stroke-width: 0.8px;
+}
+</style><pre class='xr-text-repr-fallback'>&lt;xarray.Dataset&gt; Size: 143MB
+Dimensions:                  (time: 121, cell: 283876)
+Coordinates:
+  * time                     (time) datetime64[us] 968B 2026-10-28 ... 2026-1...
+    forecast_reference_time  (time) datetime64[us] 968B 2026-10-28 ... 2026-1...
+    latitude                 (cell) float64 2MB 46.97 46.98 ... 50.06 50.05
+    longitude                (cell) float64 2MB -0.1542 -0.1638 ... 12.83 12.81
+    HSURF                    (cell) float32 1MB 94.11 87.99 ... 626.5 682.7
+Dimensions without coordinates: cell
+Data variables:
+    VMAX_10M                 (time, cell) float32 137MB 0.0 0.0 ... 3.398 3.741
+Attributes:
+    Conventions:  CF-1.8
+    institution:  ECMWF</pre><div class='xr-wrap' style='display:none'><div class='xr-header'><div class='xr-obj-type'>xarray.Dataset</div></div><ul class='xr-sections'><li class='xr-section-item'><input id='section-a0e02ab3-440e-47c2-945e-5bab24e25098' class='xr-section-summary-in' type='checkbox' disabled /><label for='section-a0e02ab3-440e-47c2-945e-5bab24e25098' class='xr-section-summary'>Dimensions:</label><div class='xr-section-inline-details'><ul class='xr-dim-list'><li><span class='xr-has-index'>time</span>: 121</li><li><span>cell</span>: 283876</li></ul></div></li><li class='xr-section-item'><input id='section-b866878c-f8a7-477f-ab72-64498c3c752f' class='xr-section-summary-in' type='checkbox' checked /><label for='section-b866878c-f8a7-477f-ab72-64498c3c752f' class='xr-section-summary' title='Expand/collapse section'>Coordinates: <span>(5)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><ul class='xr-var-list'><li class='xr-var-item'><div class='xr-var-name'><span class='xr-has-index'>time</span></div><div class='xr-var-dims'>(time)</div><div class='xr-var-dtype'>datetime64[us]</div><div class='xr-var-preview xr-preview'>2026-10-28 ... 2026-11-02</div><input id='attrs-e26c596d-aa00-4734-bc79-e6c93d7c3ea7' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-e26c596d-aa00-4734-bc79-e6c93d7c3ea7' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-85a59722-d4eb-4e0b-961d-d40bc636249f' class='xr-var-data-in' type='checkbox'><label for='data-85a59722-d4eb-4e0b-961d-d40bc636249f' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>array([&#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T01:00:00.000000&#x27;,
+       &#x27;2026-10-28T02:00:00.000000&#x27;, &#x27;2026-10-28T03:00:00.000000&#x27;,
+       &#x27;2026-10-28T04:00:00.000000&#x27;, &#x27;2026-10-28T05:00:00.000000&#x27;,
+       &#x27;2026-10-28T06:00:00.000000&#x27;, &#x27;2026-10-28T07:00:00.000000&#x27;,
+       &#x27;2026-10-28T08:00:00.000000&#x27;, &#x27;2026-10-28T09:00:00.000000&#x27;,
+       &#x27;2026-10-28T10:00:00.000000&#x27;, &#x27;2026-10-28T11:00:00.000000&#x27;,
+       &#x27;2026-10-28T12:00:00.000000&#x27;, &#x27;2026-10-28T13:00:00.000000&#x27;,
+       &#x27;2026-10-28T14:00:00.000000&#x27;, &#x27;2026-10-28T15:00:00.000000&#x27;,
+       &#x27;2026-10-28T16:00:00.000000&#x27;, &#x27;2026-10-28T17:00:00.000000&#x27;,
+       &#x27;2026-10-28T18:00:00.000000&#x27;, &#x27;2026-10-28T19:00:00.000000&#x27;,
+       &#x27;2026-10-28T20:00:00.000000&#x27;, &#x27;2026-10-28T21:00:00.000000&#x27;,
+       &#x27;2026-10-28T22:00:00.000000&#x27;, &#x27;2026-10-28T23:00:00.000000&#x27;,
+       &#x27;2026-10-29T00:00:00.000000&#x27;, &#x27;2026-10-29T01:00:00.000000&#x27;,
+       &#x27;2026-10-29T02:00:00.000000&#x27;, &#x27;2026-10-29T03:00:00.000000&#x27;,
+       &#x27;2026-10-29T04:00:00.000000&#x27;, &#x27;2026-10-29T05:00:00.000000&#x27;,
+       &#x27;2026-10-29T06:00:00.000000&#x27;, &#x27;2026-10-29T07:00:00.000000&#x27;,
+       &#x27;2026-10-29T08:00:00.000000&#x27;, &#x27;2026-10-29T09:00:00.000000&#x27;,
+       &#x27;2026-10-29T10:00:00.000000&#x27;, &#x27;2026-10-29T11:00:00.000000&#x27;,
+       &#x27;2026-10-29T12:00:00.000000&#x27;, &#x27;2026-10-29T13:00:00.000000&#x27;,
+       &#x27;2026-10-29T14:00:00.000000&#x27;, &#x27;2026-10-29T15:00:00.000000&#x27;,
+       &#x27;2026-10-29T16:00:00.000000&#x27;, &#x27;2026-10-29T17:00:00.000000&#x27;,
+       &#x27;2026-10-29T18:00:00.000000&#x27;, &#x27;2026-10-29T19:00:00.000000&#x27;,
+       &#x27;2026-10-29T20:00:00.000000&#x27;, &#x27;2026-10-29T21:00:00.000000&#x27;,
+       &#x27;2026-10-29T22:00:00.000000&#x27;, &#x27;2026-10-29T23:00:00.000000&#x27;,
+       &#x27;2026-10-30T00:00:00.000000&#x27;, &#x27;2026-10-30T01:00:00.000000&#x27;,
+       &#x27;2026-10-30T02:00:00.000000&#x27;, &#x27;2026-10-30T03:00:00.000000&#x27;,
+       &#x27;2026-10-30T04:00:00.000000&#x27;, &#x27;2026-10-30T05:00:00.000000&#x27;,
+       &#x27;2026-10-30T06:00:00.000000&#x27;, &#x27;2026-10-30T07:00:00.000000&#x27;,
+       &#x27;2026-10-30T08:00:00.000000&#x27;, &#x27;2026-10-30T09:00:00.000000&#x27;,
+       &#x27;2026-10-30T10:00:00.000000&#x27;, &#x27;2026-10-30T11:00:00.000000&#x27;,
+       &#x27;2026-10-30T12:00:00.000000&#x27;, &#x27;2026-10-30T13:00:00.000000&#x27;,
+       &#x27;2026-10-30T14:00:00.000000&#x27;, &#x27;2026-10-30T15:00:00.000000&#x27;,
+       &#x27;2026-10-30T16:00:00.000000&#x27;, &#x27;2026-10-30T17:00:00.000000&#x27;,
+       &#x27;2026-10-30T18:00:00.000000&#x27;, &#x27;2026-10-30T19:00:00.000000&#x27;,
+       &#x27;2026-10-30T20:00:00.000000&#x27;, &#x27;2026-10-30T21:00:00.000000&#x27;,
+       &#x27;2026-10-30T22:00:00.000000&#x27;, &#x27;2026-10-30T23:00:00.000000&#x27;,
+       &#x27;2026-10-31T00:00:00.000000&#x27;, &#x27;2026-10-31T01:00:00.000000&#x27;,
+       &#x27;2026-10-31T02:00:00.000000&#x27;, &#x27;2026-10-31T03:00:00.000000&#x27;,
+       &#x27;2026-10-31T04:00:00.000000&#x27;, &#x27;2026-10-31T05:00:00.000000&#x27;,
+       &#x27;2026-10-31T06:00:00.000000&#x27;, &#x27;2026-10-31T07:00:00.000000&#x27;,
+       &#x27;2026-10-31T08:00:00.000000&#x27;, &#x27;2026-10-31T09:00:00.000000&#x27;,
+       &#x27;2026-10-31T10:00:00.000000&#x27;, &#x27;2026-10-31T11:00:00.000000&#x27;,
+       &#x27;2026-10-31T12:00:00.000000&#x27;, &#x27;2026-10-31T13:00:00.000000&#x27;,
+       &#x27;2026-10-31T14:00:00.000000&#x27;, &#x27;2026-10-31T15:00:00.000000&#x27;,
+       &#x27;2026-10-31T16:00:00.000000&#x27;, &#x27;2026-10-31T17:00:00.000000&#x27;,
+       &#x27;2026-10-31T18:00:00.000000&#x27;, &#x27;2026-10-31T19:00:00.000000&#x27;,
+       &#x27;2026-10-31T20:00:00.000000&#x27;, &#x27;2026-10-31T21:00:00.000000&#x27;,
+       &#x27;2026-10-31T22:00:00.000000&#x27;, &#x27;2026-10-31T23:00:00.000000&#x27;,
+       &#x27;2026-11-01T00:00:00.000000&#x27;, &#x27;2026-11-01T01:00:00.000000&#x27;,
+       &#x27;2026-11-01T02:00:00.000000&#x27;, &#x27;2026-11-01T03:00:00.000000&#x27;,
+       &#x27;2026-11-01T04:00:00.000000&#x27;, &#x27;2026-11-01T05:00:00.000000&#x27;,
+       &#x27;2026-11-01T06:00:00.000000&#x27;, &#x27;2026-11-01T07:00:00.000000&#x27;,
+       &#x27;2026-11-01T08:00:00.000000&#x27;, &#x27;2026-11-01T09:00:00.000000&#x27;,
+       &#x27;2026-11-01T10:00:00.000000&#x27;, &#x27;2026-11-01T11:00:00.000000&#x27;,
+       &#x27;2026-11-01T12:00:00.000000&#x27;, &#x27;2026-11-01T13:00:00.000000&#x27;,
+       &#x27;2026-11-01T14:00:00.000000&#x27;, &#x27;2026-11-01T15:00:00.000000&#x27;,
+       &#x27;2026-11-01T16:00:00.000000&#x27;, &#x27;2026-11-01T17:00:00.000000&#x27;,
+       &#x27;2026-11-01T18:00:00.000000&#x27;, &#x27;2026-11-01T19:00:00.000000&#x27;,
+       &#x27;2026-11-01T20:00:00.000000&#x27;, &#x27;2026-11-01T21:00:00.000000&#x27;,
+       &#x27;2026-11-01T22:00:00.000000&#x27;, &#x27;2026-11-01T23:00:00.000000&#x27;,
+       &#x27;2026-11-02T00:00:00.000000&#x27;], dtype=&#x27;datetime64[us]&#x27;)</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span>forecast_reference_time</span></div><div class='xr-var-dims'>(time)</div><div class='xr-var-dtype'>datetime64[us]</div><div class='xr-var-preview xr-preview'>2026-10-28 ... 2026-10-28</div><input id='attrs-cf4ec434-a2b2-409c-96bd-e414bb8cd5ba' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-cf4ec434-a2b2-409c-96bd-e414bb8cd5ba' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-c0d62758-1b9e-48cd-bce7-fedeba391a18' class='xr-var-data-in' type='checkbox'><label for='data-c0d62758-1b9e-48cd-bce7-fedeba391a18' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>array([&#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+...
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;], dtype=&#x27;datetime64[us]&#x27;)</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span>latitude</span></div><div class='xr-var-dims'>(cell)</div><div class='xr-var-dtype'>float64</div><div class='xr-var-preview xr-preview'>46.97 46.98 46.98 ... 50.06 50.05</div><input id='attrs-3af76966-d9fd-4244-9370-5476779cef43' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-3af76966-d9fd-4244-9370-5476779cef43' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-15365434-90be-48e7-bfe9-a086dc63730e' class='xr-var-data-in' type='checkbox'><label for='data-15365434-90be-48e7-bfe9-a086dc63730e' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>units :</span></dt><dd>degrees_north</dd><dt><span>standard_name :</span></dt><dd>latitude</dd><dt><span>long_name :</span></dt><dd>latitude</dd></dl></div><div class='xr-var-data'><pre>array([46.96624624, 46.97915824, 46.97912522, ..., 50.07642044,
+       50.05960406, 50.04976481], shape=(283876,))</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span>longitude</span></div><div class='xr-var-dims'>(cell)</div><div class='xr-var-dtype'>float64</div><div class='xr-var-preview xr-preview'>-0.1542 -0.1638 ... 12.83 12.81</div><input id='attrs-538f38d3-7903-4cbb-ad4d-9e2bf2b75a40' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-538f38d3-7903-4cbb-ad4d-9e2bf2b75a40' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-444866aa-e5a6-4db3-8ae0-37cc88a6de2d' class='xr-var-data-in' type='checkbox'><label for='data-444866aa-e5a6-4db3-8ae0-37cc88a6de2d' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>units :</span></dt><dd>degrees_east</dd><dt><span>standard_name :</span></dt><dd>longitude</dd><dt><span>long_name :</span></dt><dd>longitude</dd></dl></div><div class='xr-var-data'><pre>array([-0.15415126, -0.1638424 , -0.19141743, ..., 12.81934808,
+       12.82542837, 12.81099756], shape=(283876,))</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span>HSURF</span></div><div class='xr-var-dims'>(cell)</div><div class='xr-var-dtype'>float32</div><div class='xr-var-preview xr-preview'>94.11 87.99 96.11 ... 626.5 682.7</div><input id='attrs-b825b203-ffec-42c6-acf7-44e329b5073a' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-b825b203-ffec-42c6-acf7-44e329b5073a' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-d32cd3f2-6d8c-49e4-91c8-15802be666da' class='xr-var-data-in' type='checkbox'><label for='data-d32cd3f2-6d8c-49e4-91c8-15802be666da' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>array([ 94.114426,  87.989426,  96.114426, ..., 603.48944 , 626.48944 ,
+       682.73944 ], shape=(283876,), dtype=float32)</pre></div></li></ul></div></li><li class='xr-section-item'><input id='section-74a6dd07-21d9-4699-8911-05b1b0dc50df' class='xr-section-summary-in' type='checkbox' checked /><label for='section-74a6dd07-21d9-4699-8911-05b1b0dc50df' class='xr-section-summary' title='Expand/collapse section'>Data variables: <span>(1)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><ul class='xr-var-list'><li class='xr-var-item'><div class='xr-var-name'><span>VMAX_10M</span></div><div class='xr-var-dims'>(time, cell)</div><div class='xr-var-dtype'>float32</div><div class='xr-var-preview xr-preview'>0.0 0.0 0.0 ... 3.052 3.398 3.741</div><input id='attrs-fab1e7dd-01db-47e6-a019-6febf671ed08' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-fab1e7dd-01db-47e6-a019-6febf671ed08' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-63f12d18-0c5a-4e5c-b56f-c7557a7cd23c' class='xr-var-data-in' type='checkbox'><label for='data-63f12d18-0c5a-4e5c-b56f-c7557a7cd23c' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>long_name :</span></dt><dd>maximum Wind 10m</dd><dt><span>units :</span></dt><dd>meter / second</dd><dt><span>level_type :</span></dt><dd>height_above_ground_level</dd><dt><span>_earthkit :</span></dt><dd>{&quot;message&quot;: {&quot;__bytes_b64__&quot;: &quot;R1JJQv//AAIAAAAAAAAAxwAAABUBANcA/w8BAQfqChwAAAABBQAAAB4CAP0AB+oKHAE7GgAAAAAAAAAAAQABAAD//wAAACMDAAAEVOQAAABlBgAAAgG7vVoJhVSZJDx6SqTIdikgAAAAPQQAAAALAhYEAI4AAAAAAAAAAGcAAAAACv///////8AAFQfqChwAAAABAAAAAAICAAAAAAD/AAAAAAAAABUFAARU5AAAQ4iAAIAKAAAAAAAAAAYG/wAAAAUHNzc3Nw==&quot;}, &quot;bitsPerValue&quot;: 16, &quot;grid_spec&quot;: {&quot;area&quot;: [50.6, -0.9, 41.9, 17.8], &quot;grid&quot;: &quot;ICON-CH2_C&quot;, &quot;uid&quot;: &quot;bbbd5a09855499243c7a4aa4c8762920&quot;}}</dd></dl></div><div class='xr-var-data'><pre>array([[0.       , 0.       , 0.       , ..., 1.1943359, 1.9111328,
+        2.7617188],
+       [0.       , 0.       , 0.       , ..., 1.4013672, 2.5585938,
+        3.5234375],
+       [0.       , 0.       , 0.       , ..., 2.180664 , 3.6914062,
+        3.3623047],
+       ...,
+       [0.       , 0.       , 0.       , ..., 3.4716797, 4.0742188,
+        4.305664 ],
+       [0.       , 0.       , 0.       , ..., 3.4716797, 3.975586 ,
+        4.2402344],
+       [0.       , 0.       , 0.       , ..., 3.0517578, 3.3984375,
+        3.741211 ]], shape=(121, 283876), dtype=float32)</pre></div></li></ul></div></li><li class='xr-section-item'><input id='section-dcd5ba12-d236-4ac9-a8ee-2f15cf614d7a' class='xr-section-summary-in' type='checkbox' checked /><label for='section-dcd5ba12-d236-4ac9-a8ee-2f15cf614d7a' class='xr-section-summary' title='Expand/collapse section'>Attributes: <span>(2)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><dl class='xr-attrs'><dt><span>Conventions :</span></dt><dd>CF-1.8</dd><dt><span>institution :</span></dt><dd>ECMWF</dd></dl></div></li></ul></div></div></div></div>
+</div>
+</section>
+<section id="stations-and-observations">
+<h2>Stations and observations<a class="headerlink" href="#stations-and-observations" title="Link to this heading">#</a></h2>
+<p>The stations measuring gusts are selected from the data inventory. Their metadata provide the
+coordinates and the altitude used by <code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code>. Instead of renaming the metadata columns, the
+environment variables set in the setup cell adapt the <code class="docutils literal notranslate"><span class="pre">grid_process</span></code> data model: the <code class="docutils literal notranslate"><span class="pre">station_abbr</span></code> column
+becomes the <code class="docutils literal notranslate"><span class="pre">poi</span></code> coordinate of the output and <code class="docutils literal notranslate"><span class="pre">station_height_masl</span></code> gives the altitude. The observed hourly maximum gust (<code class="docutils literal notranslate"><span class="pre">fkl010h1</span></code>, 1 s peak) and <code class="docutils literal notranslate"><span class="pre">VMAX_10M</span></code> both
+refer to the hour ending at the valid time. The maps show the latest lead time with observations,
+taken from the files of the current day.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">SMN_URL</span> <span class="o">=</span> <span class="s2">"https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn"</span>
+<span class="n">GUST</span> <span class="o">=</span> <span class="s2">"fkl010h1"</span>
+
+<span class="n">inventory</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">SMN_URL</span><span class="si">}</span><span class="s2">/ogd-smn_meta_datainventory.csv"</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">";"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"cp1252"</span><span class="p">)</span>
+<span class="n">gust_stations</span> <span class="o">=</span> <span class="n">inventory</span><span class="o">.</span><span class="n">loc</span><span class="p">[(</span><span class="n">inventory</span><span class="o">.</span><span class="n">parameter_shortname</span> <span class="o">==</span> <span class="n">GUST</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">inventory</span><span class="o">.</span><span class="n">data_till</span><span class="o">.</span><span class="n">isna</span><span class="p">(),</span> <span class="s2">"station_abbr"</span><span class="p">]</span>
+
+<span class="n">meta</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">SMN_URL</span><span class="si">}</span><span class="s2">/ogd-smn_meta_stations.csv"</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">";"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"cp1252"</span><span class="p">)</span>
+<span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span><span class="p">[</span><span class="n">meta</span><span class="p">[</span><span class="s2">"station_abbr"</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">gust_stations</span><span class="p">)]</span>
+<span class="n">pois</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span>
+    <span class="n">meta</span><span class="p">[[</span><span class="s2">"station_abbr"</span><span class="p">,</span> <span class="s2">"station_name"</span><span class="p">,</span> <span class="s2">"station_height_masl"</span><span class="p">]],</span>
+    <span class="n">geometry</span><span class="o">=</span><span class="n">gpd</span><span class="o">.</span><span class="n">points_from_xy</span><span class="p">(</span><span class="n">meta</span><span class="p">[</span><span class="s2">"station_coordinates_lv95_east"</span><span class="p">],</span> <span class="n">meta</span><span class="p">[</span><span class="s2">"station_coordinates_lv95_north"</span><span class="p">]),</span>
+    <span class="n">crs</span><span class="o">=</span><span class="s2">"EPSG:2056"</span><span class="p">,</span>
+<span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"station_abbr"</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">read_smn</span><span class="p">(</span><span class="n">station_abbr</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">granularity</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">periods</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"recent"</span><span class="p">,</span> <span class="s2">"now"</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Read station data files (granularity 't': 10 min, 'h': hourly); timestamps are in UTC."""</span>
+    <span class="n">abbr</span> <span class="o">=</span> <span class="n">station_abbr</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">SMN_URL</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">abbr</span><span class="si">}</span><span class="s2">/ogd-smn_</span><span class="si">{</span><span class="n">abbr</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">granularity</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">period</span><span class="si">}</span><span class="s2">.csv"</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">";"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"cp1252"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">period</span> <span class="ow">in</span> <span class="n">periods</span>
+    <span class="p">]</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">"time"</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"reference_timestamp"</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="s2">"</span><span class="si">%d</span><span class="s2">.%m.%Y %H:%M"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">(</span><span class="s2">"time"</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"time"</span><span class="p">)</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">observed_gusts</span><span class="p">(</span><span class="n">station_abbr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Hourly maximum gusts since today 00 UTC (the "now" files); empty if the station has no file."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">read_smn</span><span class="p">(</span><span class="n">station_abbr</span><span class="p">,</span> <span class="s2">"h"</span><span class="p">,</span> <span class="p">(</span><span class="s2">"now"</span><span class="p">,))[</span><span class="n">GUST</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>  <span class="c1"># missing file</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s2">"float64"</span><span class="p">)</span>
+
+
+<span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+    <span class="n">gusts</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">pois</span><span class="p">[</span><span class="s2">"station_abbr"</span><span class="p">],</span> <span class="n">executor</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">observed_gusts</span><span class="p">,</span> <span class="n">pois</span><span class="p">[</span><span class="s2">"station_abbr"</span><span class="p">]))))</span>
+<span class="c1"># the maps show the latest lead time with observations</span>
+<span class="n">valid_time</span> <span class="o">=</span> <span class="n">gusts</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">how</span><span class="o">=</span><span class="s2">"all"</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">indexes</span><span class="p">[</span><span class="s2">"time"</span><span class="p">])</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+<span class="n">pois</span><span class="p">[</span><span class="s2">"observation"</span><span class="p">]</span> <span class="o">=</span> <span class="n">gusts</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">valid_time</span><span class="p">]</span>
+<span class="n">lead_h</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">valid_time</span> <span class="o">-</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">ref_time</span><span class="p">)</span><span class="o">.</span><span class="n">tz_convert</span><span class="p">(</span><span class="kc">None</span><span class="p">))</span> <span class="o">/</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pois</span><span class="p">)</span><span class="si">}</span><span class="s2"> stations, </span><span class="si">{</span><span class="n">pois</span><span class="o">.</span><span class="n">observation</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">}</span><span class="s2"> with an observation at </span><span class="si">{</span><span class="n">valid_time</span><span class="si">}</span><span class="s2"> (lead time </span><span class="si">{</span><span class="n">lead_h</span><span class="si">}</span><span class="s2"> h)"</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>151 stations, 151 with an observation at 2026-10-29 00:00:00 (lead time 24 h)
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="interpolation">
+<h2>Interpolation<a class="headerlink" href="#interpolation" title="Link to this heading">#</a></h2>
+<p>Each method is called once on all lead times. The duration of this first call is kept for the
+benchmark below.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">first_call</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">kwargs</span> <span class="ow">in</span> <span class="n">METHODS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="n">results</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">gri</span><span class="o">.</span><span class="n">interp2poi</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">pois</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">first_call</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+    <span class="n">pois</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">label</span><span class="p">][</span><span class="s2">"VMAX_10M"</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">time</span><span class="o">=</span><span class="n">valid_time</span><span class="p">)</span><span class="o">.</span><span class="n">to_series</span><span class="p">()</span>
+<span class="n">results</span><span class="p">[</span><span class="s2">"nearest_alt"</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div><svg style="position: absolute; width: 0; height: 0; overflow: hidden">
+<defs>
+<symbol id="icon-database" viewBox="0 0 32 32">
+<path d="M16 0c-8.837 0-16 2.239-16 5v4c0 2.761 7.163 5 16 5s16-2.239 16-5v-4c0-2.761-7.163-5-16-5z"></path>
+<path d="M16 17c-8.837 0-16-2.239-16-5v6c0 2.761 7.163 5 16 5s16-2.239 16-5v-6c0 2.761-7.163 5-16 5z"></path>
+<path d="M16 26c-8.837 0-16-2.239-16-5v6c0 2.761 7.163 5 16 5s16-2.239 16-5v-6c0 2.761-7.163 5-16 5z"></path>
+</symbol>
+<symbol id="icon-file-text2" viewBox="0 0 32 32">
+<path d="M28.681 7.159c-0.694-0.947-1.662-2.053-2.724-3.116s-2.169-2.030-3.116-2.724c-1.612-1.182-2.393-1.319-2.841-1.319h-15.5c-1.378 0-2.5 1.121-2.5 2.5v27c0 1.378 1.122 2.5 2.5 2.5h23c1.378 0 2.5-1.122 2.5-2.5v-19.5c0-0.448-0.137-1.23-1.319-2.841zM24.543 5.457c0.959 0.959 1.712 1.825 2.268 2.543h-4.811v-4.811c0.718 0.556 1.584 1.309 2.543 2.268zM28 29.5c0 0.271-0.229 0.5-0.5 0.5h-23c-0.271 0-0.5-0.229-0.5-0.5v-27c0-0.271 0.229-0.5 0.5-0.5 0 0 15.499-0 15.5 0v7c0 0.552 0.448 1 1 1h7v19.5z"></path>
+<path d="M23 26h-14c-0.552 0-1-0.448-1-1s0.448-1 1-1h14c0.552 0 1 0.448 1 1s-0.448 1-1 1z"></path>
+<path d="M23 22h-14c-0.552 0-1-0.448-1-1s0.448-1 1-1h14c0.552 0 1 0.448 1 1s-0.448 1-1 1z"></path>
+<path d="M23 18h-14c-0.552 0-1-0.448-1-1s0.448-1 1-1h14c0.552 0 1 0.448 1 1s-0.448 1-1 1z"></path>
+</symbol>
+</defs>
+</svg>
+<style>/* CSS stylesheet for displaying xarray objects in notebooks */
+
+:root {
+  --xr-font-color0: var(
+    --jp-content-font-color0,
+    var(--pst-color-text-base rgba(0, 0, 0, 1))
+  );
+  --xr-font-color2: var(
+    --jp-content-font-color2,
+    var(--pst-color-text-base, rgba(0, 0, 0, 0.54))
+  );
+  --xr-font-color3: var(
+    --jp-content-font-color3,
+    var(--pst-color-text-base, rgba(0, 0, 0, 0.38))
+  );
+  --xr-border-color: var(
+    --jp-border-color2,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 10))
+  );
+  --xr-disabled-color: var(
+    --jp-layout-color3,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 40))
+  );
+  --xr-background-color: var(
+    --jp-layout-color0,
+    var(--pst-color-on-background, white)
+  );
+  --xr-background-color-row-even: var(
+    --jp-layout-color1,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 5))
+  );
+  --xr-background-color-row-odd: var(
+    --jp-layout-color2,
+    hsl(from var(--pst-color-on-background, white) h s calc(l - 15))
+  );
+}
+
+html[theme="dark"],
+html[data-theme="dark"],
+body[data-theme="dark"],
+body.vscode-dark {
+  --xr-font-color0: var(
+    --jp-content-font-color0,
+    var(--pst-color-text-base, rgba(255, 255, 255, 1))
+  );
+  --xr-font-color2: var(
+    --jp-content-font-color2,
+    var(--pst-color-text-base, rgba(255, 255, 255, 0.54))
+  );
+  --xr-font-color3: var(
+    --jp-content-font-color3,
+    var(--pst-color-text-base, rgba(255, 255, 255, 0.38))
+  );
+  --xr-border-color: var(
+    --jp-border-color2,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 10))
+  );
+  --xr-disabled-color: var(
+    --jp-layout-color3,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 40))
+  );
+  --xr-background-color: var(
+    --jp-layout-color0,
+    var(--pst-color-on-background, #111111)
+  );
+  --xr-background-color-row-even: var(
+    --jp-layout-color1,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 5))
+  );
+  --xr-background-color-row-odd: var(
+    --jp-layout-color2,
+    hsl(from var(--pst-color-on-background, #111111) h s calc(l + 15))
+  );
+}
+
+.xr-wrap {
+  display: block !important;
+  min-width: 300px;
+  max-width: 700px;
+  line-height: 1.6;
+  padding-bottom: 4px;
+}
+
+.xr-text-repr-fallback {
+  /* fallback to plain text repr when CSS is not injected (untrusted notebook) */
+  display: none;
+}
+
+.xr-header {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.xr-header {
+  border-bottom: solid 1px var(--xr-border-color);
+  margin-bottom: 4px;
+}
+
+.xr-header > div,
+.xr-header > ul {
+  display: inline;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.xr-obj-type,
+.xr-obj-name {
+  margin-left: 2px;
+  margin-right: 10px;
+}
+
+.xr-obj-type,
+.xr-group-box-contents > label {
+  color: var(--xr-font-color2);
+  display: block;
+}
+
+.xr-sections {
+  padding-left: 0 !important;
+  display: grid;
+  grid-template-columns: 150px auto auto 1fr 0 20px 0 20px;
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
+
+.xr-section-item {
+  display: contents;
+}
+
+.xr-section-item > input,
+.xr-group-box-contents > input,
+.xr-array-wrap > input {
+  display: block;
+  opacity: 0;
+  height: 0;
+  margin: 0;
+}
+
+.xr-section-item > input + label,
+.xr-var-item > input + label {
+  color: var(--xr-disabled-color);
+}
+
+.xr-section-item > input:enabled + label,
+.xr-var-item > input:enabled + label,
+.xr-array-wrap > input:enabled + label,
+.xr-group-box-contents > input:enabled + label {
+  cursor: pointer;
+  color: var(--xr-font-color2);
+}
+
+.xr-section-item > input:focus-visible + label,
+.xr-var-item > input:focus-visible + label,
+.xr-array-wrap > input:focus-visible + label,
+.xr-group-box-contents > input:focus-visible + label {
+  outline: auto;
+}
+
+.xr-section-item > input:enabled + label:hover,
+.xr-var-item > input:enabled + label:hover,
+.xr-array-wrap > input:enabled + label:hover,
+.xr-group-box-contents > input:enabled + label:hover {
+  color: var(--xr-font-color0);
+}
+
+.xr-section-summary {
+  grid-column: 1;
+  color: var(--xr-font-color2);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.xr-section-summary > em {
+  font-weight: normal;
+}
+
+.xr-span-grid {
+  grid-column-end: -1;
+}
+
+.xr-section-summary > span {
+  display: inline-block;
+  padding-left: 0.3em;
+}
+
+.xr-group-box-contents > input:checked + label > span {
+  display: inline-block;
+  padding-left: 0.6em;
+}
+
+.xr-section-summary-in:disabled + label {
+  color: var(--xr-font-color2);
+}
+
+.xr-section-summary-in + label:before {
+  display: inline-block;
+  content: "►";
+  font-size: 11px;
+  width: 15px;
+  text-align: center;
+}
+
+.xr-section-summary-in:disabled + label:before {
+  color: var(--xr-disabled-color);
+}
+
+.xr-section-summary-in:checked + label:before {
+  content: "▼";
+}
+
+.xr-section-summary-in:checked + label > span {
+  display: none;
+}
+
+.xr-section-summary,
+.xr-section-inline-details,
+.xr-group-box-contents > label {
+  padding-top: 4px;
+}
+
+.xr-section-inline-details {
+  grid-column: 2 / -1;
+}
+
+.xr-section-details {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  margin-bottom: 5px;
+}
+
+.xr-section-summary-in ~ .xr-section-details {
+  display: none;
+}
+
+.xr-section-summary-in:checked ~ .xr-section-details {
+  display: contents;
+}
+
+.xr-children {
+  display: inline-grid;
+  grid-template-columns: 100%;
+  grid-column: 1 / -1;
+  padding-top: 4px;
+}
+
+.xr-group-box {
+  display: inline-grid;
+  grid-template-columns: 0px 30px auto;
+}
+
+.xr-group-box-vline {
+  grid-column-start: 1;
+  border-right: 0.2em solid;
+  border-color: var(--xr-border-color);
+  width: 0px;
+}
+
+.xr-group-box-hline {
+  grid-column-start: 2;
+  grid-row-start: 1;
+  height: 1em;
+  width: 26px;
+  border-bottom: 0.2em solid;
+  border-color: var(--xr-border-color);
+}
+
+.xr-group-box-contents {
+  grid-column-start: 3;
+  padding-bottom: 4px;
+}
+
+.xr-group-box-contents > label::before {
+  content: "📂";
+  padding-right: 0.3em;
+}
+
+.xr-group-box-contents > input:checked + label::before {
+  content: "📁";
+}
+
+.xr-group-box-contents > input:checked + label {
+  padding-bottom: 0px;
+}
+
+.xr-group-box-contents > input:checked ~ .xr-sections {
+  display: none;
+}
+
+.xr-group-box-contents > input + label > span {
+  display: none;
+}
+
+.xr-group-box-ellipsis {
+  font-size: 1.4em;
+  font-weight: 900;
+  color: var(--xr-font-color2);
+  letter-spacing: 0.15em;
+  cursor: default;
+}
+
+.xr-array-wrap {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 20px auto;
+}
+
+.xr-array-wrap > label {
+  grid-column: 1;
+  vertical-align: top;
+}
+
+.xr-preview {
+  color: var(--xr-font-color3);
+}
+
+.xr-array-preview,
+.xr-array-data {
+  padding: 0 5px !important;
+  grid-column: 2;
+}
+
+.xr-array-data,
+.xr-array-in:checked ~ .xr-array-preview {
+  display: none;
+}
+
+.xr-array-in:checked ~ .xr-array-data,
+.xr-array-preview {
+  display: inline-block;
+}
+
+.xr-dim-list {
+  display: inline-block !important;
+  list-style: none;
+  padding: 0 !important;
+  margin: 0;
+}
+
+.xr-dim-list li {
+  display: inline-block;
+  padding: 0;
+  margin: 0;
+}
+
+.xr-dim-list:before {
+  content: "(";
+}
+
+.xr-dim-list:after {
+  content: ")";
+}
+
+.xr-dim-list li:not(:last-child):after {
+  content: ",";
+  padding-right: 5px;
+}
+
+.xr-has-index {
+  font-weight: bold;
+}
+
+.xr-var-list,
+.xr-var-item {
+  display: contents;
+}
+
+.xr-var-item > div,
+.xr-var-item label,
+.xr-var-item > .xr-var-name span {
+  background-color: var(--xr-background-color-row-even);
+  border-color: var(--xr-background-color-row-odd);
+  margin-bottom: 0;
+  padding-top: 2px;
+}
+
+.xr-var-item > .xr-var-name:hover span {
+  padding-right: 5px;
+}
+
+.xr-var-list > li:nth-child(odd) > div,
+.xr-var-list > li:nth-child(odd) > label,
+.xr-var-list > li:nth-child(odd) > .xr-var-name span {
+  background-color: var(--xr-background-color-row-odd);
+  border-color: var(--xr-background-color-row-even);
+}
+
+.xr-var-name {
+  grid-column: 1;
+}
+
+.xr-var-dims {
+  grid-column: 2;
+}
+
+.xr-var-dtype {
+  grid-column: 3;
+  text-align: right;
+  color: var(--xr-font-color2);
+}
+
+.xr-var-preview {
+  grid-column: 4;
+}
+
+.xr-index-preview {
+  grid-column: 2 / 5;
+  color: var(--xr-font-color2);
+}
+
+.xr-var-name,
+.xr-var-dims,
+.xr-var-dtype,
+.xr-preview,
+.xr-attrs dt {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 10px;
+}
+
+.xr-var-name:hover,
+.xr-var-dims:hover,
+.xr-var-dtype:hover,
+.xr-attrs dt:hover {
+  overflow: visible;
+  width: auto;
+  z-index: 1;
+}
+
+.xr-var-attrs,
+.xr-var-data,
+.xr-index-data {
+  display: none;
+  border-top: 2px dotted var(--xr-background-color);
+  padding-bottom: 20px !important;
+  padding-top: 10px !important;
+}
+
+.xr-var-attrs-in + label,
+.xr-var-data-in + label,
+.xr-index-data-in + label {
+  padding: 0 1px;
+}
+
+.xr-var-attrs-in:checked ~ .xr-var-attrs,
+.xr-var-data-in:checked ~ .xr-var-data,
+.xr-index-data-in:checked ~ .xr-index-data {
+  display: block;
+}
+
+.xr-var-data > table {
+  float: right;
+}
+
+.xr-var-data > pre,
+.xr-index-data > pre,
+.xr-var-data > table > tbody > tr {
+  background-color: transparent !important;
+}
+
+.xr-var-name span,
+.xr-var-data,
+.xr-index-name div,
+.xr-index-data,
+.xr-attrs {
+  padding-left: 25px !important;
+}
+
+.xr-attrs,
+.xr-var-attrs,
+.xr-var-data,
+.xr-index-data {
+  grid-column: 1 / -1;
+}
+
+dl.xr-attrs {
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 125px auto;
+}
+
+.xr-attrs dt,
+.xr-attrs dd {
+  padding: 0;
+  margin: 0;
+  float: left;
+  padding-right: 10px;
+  width: auto;
+}
+
+.xr-attrs dt {
+  font-weight: normal;
+  grid-column: 1;
+}
+
+.xr-attrs dt:hover span {
+  display: inline-block;
+  background: var(--xr-background-color);
+  padding-right: 10px;
+}
+
+.xr-attrs dd {
+  grid-column: 2;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.xr-icon-database,
+.xr-icon-file-text2,
+.xr-no-icon {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1em;
+  height: 1.5em !important;
+  stroke-width: 0;
+  stroke: currentColor;
+  fill: currentColor;
+}
+
+.xr-var-attrs-in:checked + label > .xr-icon-file-text2,
+.xr-var-data-in:checked + label > .xr-icon-database,
+.xr-index-data-in:checked + label > .xr-icon-database {
+  color: var(--xr-font-color0);
+  filter: drop-shadow(1px 1px 5px var(--xr-font-color2));
+  stroke-width: 0.8px;
+}
+</style><pre class='xr-text-repr-fallback'>&lt;xarray.Dataset&gt; Size: 77kB
+Dimensions:                  (poi: 151, time: 121)
+Coordinates:
+  * poi                      (poi) &lt;U3 2kB &#x27;ABO&#x27; &#x27;AEG&#x27; &#x27;AIG&#x27; ... &#x27;WYN&#x27; &#x27;ZER&#x27;
+  * time                     (time) datetime64[us] 968B 2026-10-28 ... 2026-1...
+    forecast_reference_time  (time) datetime64[us] 968B 2026-10-28 ... 2026-1...
+Data variables:
+    VMAX_10M                 (poi, time) float32 73kB 1.588 1.588 ... 2.444
+Attributes:
+    institution:  ECMWF</pre><div class='xr-wrap' style='display:none'><div class='xr-header'><div class='xr-obj-type'>xarray.Dataset</div></div><ul class='xr-sections'><li class='xr-section-item'><input id='section-5fbc168f-014c-485d-a5a0-5efd0960bcc7' class='xr-section-summary-in' type='checkbox' disabled /><label for='section-5fbc168f-014c-485d-a5a0-5efd0960bcc7' class='xr-section-summary'>Dimensions:</label><div class='xr-section-inline-details'><ul class='xr-dim-list'><li><span class='xr-has-index'>poi</span>: 151</li><li><span class='xr-has-index'>time</span>: 121</li></ul></div></li><li class='xr-section-item'><input id='section-3ef5d573-aae3-4bd9-b4e7-2d9a051fc152' class='xr-section-summary-in' type='checkbox' checked /><label for='section-3ef5d573-aae3-4bd9-b4e7-2d9a051fc152' class='xr-section-summary' title='Expand/collapse section'>Coordinates: <span>(3)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><ul class='xr-var-list'><li class='xr-var-item'><div class='xr-var-name'><span class='xr-has-index'>poi</span></div><div class='xr-var-dims'>(poi)</div><div class='xr-var-dtype'>&lt;U3</div><div class='xr-var-preview xr-preview'>&#x27;ABO&#x27; &#x27;AEG&#x27; &#x27;AIG&#x27; ... &#x27;WYN&#x27; &#x27;ZER&#x27;</div><input id='attrs-50d38306-20d6-4f0c-a809-4d959235eb6d' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-50d38306-20d6-4f0c-a809-4d959235eb6d' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-4a3caf39-9bd5-4d00-9e09-e5361a2b7b60' class='xr-var-data-in' type='checkbox'><label for='data-4a3caf39-9bd5-4d00-9e09-e5361a2b7b60' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>array([&#x27;ABO&#x27;, &#x27;AEG&#x27;, &#x27;AIG&#x27;, &#x27;ALT&#x27;, &#x27;AND&#x27;, &#x27;ANT&#x27;, &#x27;ARH&#x27;, &#x27;ARO&#x27;, &#x27;ATT&#x27;, &#x27;BAS&#x27;,
+       &#x27;BEH&#x27;, &#x27;BER&#x27;, &#x27;BEZ&#x27;, &#x27;BIA&#x27;, &#x27;BIE&#x27;, &#x27;BIN&#x27;, &#x27;BIV&#x27;, &#x27;BIZ&#x27;, &#x27;BLA&#x27;, &#x27;BOL&#x27;,
+       &#x27;BOU&#x27;, &#x27;BRL&#x27;, &#x27;BRZ&#x27;, &#x27;BUF&#x27;, &#x27;BUS&#x27;, &#x27;CDF&#x27;, &#x27;CDM&#x27;, &#x27;CEV&#x27;, &#x27;CGI&#x27;, &#x27;CHA&#x27;,
+       &#x27;CHB&#x27;, &#x27;CHD&#x27;, &#x27;CHM&#x27;, &#x27;CHU&#x27;, &#x27;CHZ&#x27;, &#x27;CIM&#x27;, &#x27;CMA&#x27;, &#x27;COM&#x27;, &#x27;COV&#x27;, &#x27;COY&#x27;,
+       &#x27;CRM&#x27;, &#x27;DAV&#x27;, &#x27;DEM&#x27;, &#x27;DIA&#x27;, &#x27;DIS&#x27;, &#x27;DOL&#x27;, &#x27;EBK&#x27;, &#x27;EGH&#x27;, &#x27;EGO&#x27;, &#x27;EIN&#x27;,
+       &#x27;ELM&#x27;, &#x27;ENG&#x27;, &#x27;EVI&#x27;, &#x27;EVO&#x27;, &#x27;FAH&#x27;, &#x27;FLU&#x27;, &#x27;FRE&#x27;, &#x27;FRU&#x27;, &#x27;GEN&#x27;, &#x27;GES&#x27;,
+       &#x27;GIH&#x27;, &#x27;GLA&#x27;, &#x27;GOE&#x27;, &#x27;GOR&#x27;, &#x27;GOS&#x27;, &#x27;GRA&#x27;, &#x27;GRE&#x27;, &#x27;GRH&#x27;, &#x27;GRO&#x27;, &#x27;GSB&#x27;,
+       &#x27;GUE&#x27;, &#x27;GUT&#x27;, &#x27;GVE&#x27;, &#x27;HAI&#x27;, &#x27;HLL&#x27;, &#x27;HOE&#x27;, &#x27;INT&#x27;, &#x27;JUN&#x27;, &#x27;KLO&#x27;, &#x27;KOP&#x27;,
+       &#x27;LAE&#x27;, &#x27;LAG&#x27;, &#x27;LAT&#x27;, &#x27;LEI&#x27;, &#x27;LUG&#x27;, &#x27;LUZ&#x27;, &#x27;MAG&#x27;, &#x27;MAH&#x27;, &#x27;MAR&#x27;, &#x27;MAS&#x27;,
+       &#x27;MER&#x27;, &#x27;MLS&#x27;, &#x27;MOA&#x27;, &#x27;MOB&#x27;, &#x27;MOE&#x27;, &#x27;MTE&#x27;, &#x27;MTR&#x27;, &#x27;MUB&#x27;, &#x27;MVE&#x27;, &#x27;NAP&#x27;,
+       &#x27;NAS&#x27;, &#x27;NEU&#x27;, &#x27;OBR&#x27;, &#x27;ORO&#x27;, &#x27;OTL&#x27;, &#x27;PAY&#x27;, &#x27;PFA&#x27;, &#x27;PIL&#x27;, &#x27;PIO&#x27;, &#x27;PLF&#x27;,
+       &#x27;PMA&#x27;, &#x27;PRE&#x27;, &#x27;PUY&#x27;, &#x27;QUI&#x27;, &#x27;RAG&#x27;, &#x27;REH&#x27;, &#x27;ROB&#x27;, &#x27;ROE&#x27;, &#x27;RUE&#x27;, &#x27;SAE&#x27;,
+       &#x27;SAG&#x27;, &#x27;SAM&#x27;, &#x27;SBE&#x27;, &#x27;SBO&#x27;, &#x27;SCM&#x27;, &#x27;SCU&#x27;, &#x27;SHA&#x27;, &#x27;SIA&#x27;, &#x27;SIM&#x27;, &#x27;SIO&#x27;,
+       &#x27;SMA&#x27;, &#x27;SMM&#x27;, &#x27;SPF&#x27;, &#x27;SRS&#x27;, &#x27;STG&#x27;, &#x27;STK&#x27;, &#x27;TAE&#x27;, &#x27;THU&#x27;, &#x27;TIT&#x27;, &#x27;ULR&#x27;,
+       &#x27;VAB&#x27;, &#x27;VAD&#x27;, &#x27;VEV&#x27;, &#x27;VIO&#x27;, &#x27;VIS&#x27;, &#x27;VIT&#x27;, &#x27;VLS&#x27;, &#x27;WAE&#x27;, &#x27;WFJ&#x27;, &#x27;WYN&#x27;,
+       &#x27;ZER&#x27;], dtype=&#x27;&lt;U3&#x27;)</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span class='xr-has-index'>time</span></div><div class='xr-var-dims'>(time)</div><div class='xr-var-dtype'>datetime64[us]</div><div class='xr-var-preview xr-preview'>2026-10-28 ... 2026-11-02</div><input id='attrs-7fc672c5-4948-4261-bb97-d3ac057886c5' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-7fc672c5-4948-4261-bb97-d3ac057886c5' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-b84a3e2d-27a8-420c-a0ca-6fb0ffdf6c8f' class='xr-var-data-in' type='checkbox'><label for='data-b84a3e2d-27a8-420c-a0ca-6fb0ffdf6c8f' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>array([&#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T01:00:00.000000&#x27;,
+       &#x27;2026-10-28T02:00:00.000000&#x27;, &#x27;2026-10-28T03:00:00.000000&#x27;,
+       &#x27;2026-10-28T04:00:00.000000&#x27;, &#x27;2026-10-28T05:00:00.000000&#x27;,
+       &#x27;2026-10-28T06:00:00.000000&#x27;, &#x27;2026-10-28T07:00:00.000000&#x27;,
+       &#x27;2026-10-28T08:00:00.000000&#x27;, &#x27;2026-10-28T09:00:00.000000&#x27;,
+       &#x27;2026-10-28T10:00:00.000000&#x27;, &#x27;2026-10-28T11:00:00.000000&#x27;,
+       &#x27;2026-10-28T12:00:00.000000&#x27;, &#x27;2026-10-28T13:00:00.000000&#x27;,
+       &#x27;2026-10-28T14:00:00.000000&#x27;, &#x27;2026-10-28T15:00:00.000000&#x27;,
+       &#x27;2026-10-28T16:00:00.000000&#x27;, &#x27;2026-10-28T17:00:00.000000&#x27;,
+       &#x27;2026-10-28T18:00:00.000000&#x27;, &#x27;2026-10-28T19:00:00.000000&#x27;,
+       &#x27;2026-10-28T20:00:00.000000&#x27;, &#x27;2026-10-28T21:00:00.000000&#x27;,
+       &#x27;2026-10-28T22:00:00.000000&#x27;, &#x27;2026-10-28T23:00:00.000000&#x27;,
+       &#x27;2026-10-29T00:00:00.000000&#x27;, &#x27;2026-10-29T01:00:00.000000&#x27;,
+       &#x27;2026-10-29T02:00:00.000000&#x27;, &#x27;2026-10-29T03:00:00.000000&#x27;,
+       &#x27;2026-10-29T04:00:00.000000&#x27;, &#x27;2026-10-29T05:00:00.000000&#x27;,
+       &#x27;2026-10-29T06:00:00.000000&#x27;, &#x27;2026-10-29T07:00:00.000000&#x27;,
+       &#x27;2026-10-29T08:00:00.000000&#x27;, &#x27;2026-10-29T09:00:00.000000&#x27;,
+       &#x27;2026-10-29T10:00:00.000000&#x27;, &#x27;2026-10-29T11:00:00.000000&#x27;,
+       &#x27;2026-10-29T12:00:00.000000&#x27;, &#x27;2026-10-29T13:00:00.000000&#x27;,
+       &#x27;2026-10-29T14:00:00.000000&#x27;, &#x27;2026-10-29T15:00:00.000000&#x27;,
+       &#x27;2026-10-29T16:00:00.000000&#x27;, &#x27;2026-10-29T17:00:00.000000&#x27;,
+       &#x27;2026-10-29T18:00:00.000000&#x27;, &#x27;2026-10-29T19:00:00.000000&#x27;,
+       &#x27;2026-10-29T20:00:00.000000&#x27;, &#x27;2026-10-29T21:00:00.000000&#x27;,
+       &#x27;2026-10-29T22:00:00.000000&#x27;, &#x27;2026-10-29T23:00:00.000000&#x27;,
+       &#x27;2026-10-30T00:00:00.000000&#x27;, &#x27;2026-10-30T01:00:00.000000&#x27;,
+       &#x27;2026-10-30T02:00:00.000000&#x27;, &#x27;2026-10-30T03:00:00.000000&#x27;,
+       &#x27;2026-10-30T04:00:00.000000&#x27;, &#x27;2026-10-30T05:00:00.000000&#x27;,
+       &#x27;2026-10-30T06:00:00.000000&#x27;, &#x27;2026-10-30T07:00:00.000000&#x27;,
+       &#x27;2026-10-30T08:00:00.000000&#x27;, &#x27;2026-10-30T09:00:00.000000&#x27;,
+       &#x27;2026-10-30T10:00:00.000000&#x27;, &#x27;2026-10-30T11:00:00.000000&#x27;,
+       &#x27;2026-10-30T12:00:00.000000&#x27;, &#x27;2026-10-30T13:00:00.000000&#x27;,
+       &#x27;2026-10-30T14:00:00.000000&#x27;, &#x27;2026-10-30T15:00:00.000000&#x27;,
+       &#x27;2026-10-30T16:00:00.000000&#x27;, &#x27;2026-10-30T17:00:00.000000&#x27;,
+       &#x27;2026-10-30T18:00:00.000000&#x27;, &#x27;2026-10-30T19:00:00.000000&#x27;,
+       &#x27;2026-10-30T20:00:00.000000&#x27;, &#x27;2026-10-30T21:00:00.000000&#x27;,
+       &#x27;2026-10-30T22:00:00.000000&#x27;, &#x27;2026-10-30T23:00:00.000000&#x27;,
+       &#x27;2026-10-31T00:00:00.000000&#x27;, &#x27;2026-10-31T01:00:00.000000&#x27;,
+       &#x27;2026-10-31T02:00:00.000000&#x27;, &#x27;2026-10-31T03:00:00.000000&#x27;,
+       &#x27;2026-10-31T04:00:00.000000&#x27;, &#x27;2026-10-31T05:00:00.000000&#x27;,
+       &#x27;2026-10-31T06:00:00.000000&#x27;, &#x27;2026-10-31T07:00:00.000000&#x27;,
+       &#x27;2026-10-31T08:00:00.000000&#x27;, &#x27;2026-10-31T09:00:00.000000&#x27;,
+       &#x27;2026-10-31T10:00:00.000000&#x27;, &#x27;2026-10-31T11:00:00.000000&#x27;,
+       &#x27;2026-10-31T12:00:00.000000&#x27;, &#x27;2026-10-31T13:00:00.000000&#x27;,
+       &#x27;2026-10-31T14:00:00.000000&#x27;, &#x27;2026-10-31T15:00:00.000000&#x27;,
+       &#x27;2026-10-31T16:00:00.000000&#x27;, &#x27;2026-10-31T17:00:00.000000&#x27;,
+       &#x27;2026-10-31T18:00:00.000000&#x27;, &#x27;2026-10-31T19:00:00.000000&#x27;,
+       &#x27;2026-10-31T20:00:00.000000&#x27;, &#x27;2026-10-31T21:00:00.000000&#x27;,
+       &#x27;2026-10-31T22:00:00.000000&#x27;, &#x27;2026-10-31T23:00:00.000000&#x27;,
+       &#x27;2026-11-01T00:00:00.000000&#x27;, &#x27;2026-11-01T01:00:00.000000&#x27;,
+       &#x27;2026-11-01T02:00:00.000000&#x27;, &#x27;2026-11-01T03:00:00.000000&#x27;,
+       &#x27;2026-11-01T04:00:00.000000&#x27;, &#x27;2026-11-01T05:00:00.000000&#x27;,
+       &#x27;2026-11-01T06:00:00.000000&#x27;, &#x27;2026-11-01T07:00:00.000000&#x27;,
+       &#x27;2026-11-01T08:00:00.000000&#x27;, &#x27;2026-11-01T09:00:00.000000&#x27;,
+       &#x27;2026-11-01T10:00:00.000000&#x27;, &#x27;2026-11-01T11:00:00.000000&#x27;,
+       &#x27;2026-11-01T12:00:00.000000&#x27;, &#x27;2026-11-01T13:00:00.000000&#x27;,
+       &#x27;2026-11-01T14:00:00.000000&#x27;, &#x27;2026-11-01T15:00:00.000000&#x27;,
+       &#x27;2026-11-01T16:00:00.000000&#x27;, &#x27;2026-11-01T17:00:00.000000&#x27;,
+       &#x27;2026-11-01T18:00:00.000000&#x27;, &#x27;2026-11-01T19:00:00.000000&#x27;,
+       &#x27;2026-11-01T20:00:00.000000&#x27;, &#x27;2026-11-01T21:00:00.000000&#x27;,
+       &#x27;2026-11-01T22:00:00.000000&#x27;, &#x27;2026-11-01T23:00:00.000000&#x27;,
+       &#x27;2026-11-02T00:00:00.000000&#x27;], dtype=&#x27;datetime64[us]&#x27;)</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span>forecast_reference_time</span></div><div class='xr-var-dims'>(time)</div><div class='xr-var-dtype'>datetime64[us]</div><div class='xr-var-preview xr-preview'>2026-10-28 ... 2026-10-28</div><input id='attrs-379a1f7c-665a-4a0e-a4a4-313a06e2064f' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-379a1f7c-665a-4a0e-a4a4-313a06e2064f' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-46ed41ca-ccfb-4696-9e7b-251dc3c25855' class='xr-var-data-in' type='checkbox'><label for='data-46ed41ca-ccfb-4696-9e7b-251dc3c25855' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>array([&#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+...
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;, &#x27;2026-10-28T00:00:00.000000&#x27;,
+       &#x27;2026-10-28T00:00:00.000000&#x27;], dtype=&#x27;datetime64[us]&#x27;)</pre></div></li></ul></div></li><li class='xr-section-item'><input id='section-3f65d8fd-7899-47d8-afa3-2368f67cf8d5' class='xr-section-summary-in' type='checkbox' checked /><label for='section-3f65d8fd-7899-47d8-afa3-2368f67cf8d5' class='xr-section-summary' title='Expand/collapse section'>Data variables: <span>(1)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><ul class='xr-var-list'><li class='xr-var-item'><div class='xr-var-name'><span>VMAX_10M</span></div><div class='xr-var-dims'>(poi, time)</div><div class='xr-var-dtype'>float32</div><div class='xr-var-preview xr-preview'>1.588 1.588 1.73 ... 2.169 2.444</div><input id='attrs-3651bf71-4b38-405f-b90a-5337a07710e7' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-3651bf71-4b38-405f-b90a-5337a07710e7' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-62d9871d-59b1-4a38-a232-72c9726811fd' class='xr-var-data-in' type='checkbox'><label for='data-62d9871d-59b1-4a38-a232-72c9726811fd' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>long_name :</span></dt><dd>maximum Wind 10m</dd><dt><span>units :</span></dt><dd>meter / second</dd><dt><span>level_type :</span></dt><dd>height_above_ground_level</dd><dt><span>_earthkit :</span></dt><dd>{&quot;message&quot;: {&quot;__bytes_b64__&quot;: &quot;R1JJQv//AAIAAAAAAAAAxwAAABUBANcA/w8BAQfqChwAAAABBQAAAB4CAP0AB+oKHAE7GgAAAAAAAAAAAQABAAD//wAAACMDAAAEVOQAAABlBgAAAgG7vVoJhVSZJDx6SqTIdikgAAAAPQQAAAALAhYEAI4AAAAAAAAAAGcAAAAACv///////8AAFQfqChwAAAABAAAAAAICAAAAAAD/AAAAAAAAABUFAARU5AAAQ4iAAIAKAAAAAAAAAAYG/wAAAAUHNzc3Nw==&quot;}, &quot;bitsPerValue&quot;: 16, &quot;grid_spec&quot;: {&quot;area&quot;: [50.6, -0.9, 41.9, 17.8], &quot;grid&quot;: &quot;ICON-CH2_C&quot;, &quot;uid&quot;: &quot;bbbd5a09855499243c7a4aa4c8762920&quot;}}</dd></dl></div><div class='xr-var-data'><pre>array([[1.5878906 , 1.5878906 , 1.7304688 , ..., 1.3935547 , 0.8613281 ,
+        2.0703125 ],
+       [0.609375  , 1.4638672 , 2.1230469 , ..., 2.9726562 , 2.7246094 ,
+        2.6142578 ],
+       [1.9267578 , 3.571289  , 3.4111328 , ..., 1.0644531 , 0.48242188,
+        0.62597656],
+       ...,
+       [3.9804688 , 4.8740234 , 5.879883  , ..., 5.53125   , 5.388672  ,
+        5.482422  ],
+       [4.489258  , 4.489258  , 3.2207031 , ..., 7.9208984 , 6.7978516 ,
+        5.453125  ],
+       [0.578125  , 3.4091797 , 1.7753906 , ..., 2.2958984 , 2.1689453 ,
+        2.444336  ]], shape=(151, 121), dtype=float32)</pre></div></li></ul></div></li><li class='xr-section-item'><input id='section-aa34afb8-5209-47a5-a78b-efcac7d249a5' class='xr-section-summary-in' type='checkbox' checked /><label for='section-aa34afb8-5209-47a5-a78b-efcac7d249a5' class='xr-section-summary' title='Expand/collapse section'>Attributes: <span>(1)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><dl class='xr-attrs'><dt><span>institution :</span></dt><dd>ECMWF</dd></dl></div></li></ul></div></div></div></div>
+</div>
+</section>
+<section id="visual-comparison">
+<h2>Visual comparison<a class="headerlink" href="#visual-comparison" title="Link to this heading">#</a></h2>
+<p>Observed gusts at the latest lead time with observations, and the difference between each method and the observation,
+on a common colour scale centred on zero.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">borders</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">shpreader</span><span class="o">.</span><span class="n">natural_earth</span><span class="p">(</span><span class="n">resolution</span><span class="o">=</span><span class="s2">"10m"</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s2">"cultural"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"admin_0_countries"</span><span class="p">))</span>
+<span class="n">switzerland</span> <span class="o">=</span> <span class="n">borders</span><span class="p">[</span><span class="n">borders</span><span class="p">[</span><span class="s2">"ADMIN"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Switzerland"</span><span class="p">]</span><span class="o">.</span><span class="n">set_crs</span><span class="p">(</span><span class="s2">"EPSG:4326"</span><span class="p">)</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="s2">"EPSG:2056"</span><span class="p">)</span>
+
+<span class="n">diff</span> <span class="o">=</span> <span class="n">pois</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">METHODS</span><span class="p">)]</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pois</span><span class="p">[</span><span class="s2">"observation"</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">diff_lim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())))</span>
+<span class="n">panels</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">"observation"</span><span class="p">,</span> <span class="n">pois</span><span class="p">[</span><span class="s2">"observation"</span><span class="p">],</span> <span class="s2">"viridis"</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">pois</span><span class="p">[</span><span class="s2">"observation"</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()))]</span>
+<span class="n">panels</span> <span class="o">+=</span> <span class="p">[(</span><span class="sa">f</span><span class="s2">"method=</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> − observation"</span><span class="p">,</span> <span class="n">diff</span><span class="p">[</span><span class="n">label</span><span class="p">],</span> <span class="s2">"RdBu_r"</span><span class="p">,</span> <span class="o">-</span><span class="n">diff_lim</span><span class="p">,</span> <span class="n">diff_lim</span><span class="p">)</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">METHODS</span><span class="p">]</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">layout</span><span class="o">=</span><span class="s2">"constrained"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span> <span class="n">panels</span><span class="p">):</span>
+    <span class="n">switzerland</span><span class="o">.</span><span class="n">boundary</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.5"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+    <span class="n">pois</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="s2">"value"</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">column</span><span class="o">=</span><span class="s2">"value"</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"0.3"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.3</span>
+    <span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">collections</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">location</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span> <span class="n">shrink</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"observed gust [m/s]"</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">collections</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">,</span> <span class="n">shrink</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"model − observation [m/s]"</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ICON-CH2 control, run </span><span class="si">{</span><span class="n">ref_time</span><span class="si">}</span><span class="s2">, valid </span><span class="si">{</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">valid_time</span><span class="p">)</span><span class="si">:</span><span class="s2">%Y-%m-%d %H:%M</span><span class="si">}</span><span class="s2"> UTC"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/b03d724d7b795986372744cfa5ac8cac4bf9449b3e080a506db14da97edc0518.png" src="../_images/b03d724d7b795986372744cfa5ac8cac4bf9449b3e080a506db14da97edc0518.png" />
+</div>
+</div>
+</section>
+<section id="performance-benchmark">
+<h2>Performance benchmark<a class="headerlink" href="#performance-benchmark" title="Link to this heading">#</a></h2>
+<p>The first call includes building the neighbour search structures (or the triangulation for <code class="docutils literal notranslate"><span class="pre">linear</span></code>).
+<code class="docutils literal notranslate"><span class="pre">grid_process</span></code> caches the neighbour search, so subsequent calls on the same grid and stations (e.g. for
+other variables or runs) are faster: their runtime is the mean ± standard deviation over 5 repetitions. The <code class="docutils literal notranslate"><span class="pre">try_reg</span></code> option has no effect here, since ICON-CH2 is an unstructured grid.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">benchmark</span><span class="p">(</span>
+    <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">],</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">target</span><span class="p">:</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span> <span class="o">|</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">methods</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="n">first_call_times</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="n">repeat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Runtime of the first call and mean ± standard deviation of the subsequent calls of each method."""</span>
+    <span class="n">rows</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">method</span><span class="p">,</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">methods</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">timeit</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">),</span> <span class="n">number</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">repeat</span><span class="p">))</span>
+        <span class="n">rows</span><span class="p">[</span><span class="n">method</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"first call [s]"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">first_call_times</span><span class="p">[</span><span class="n">method</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="s2">"subsequent calls [s]"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">times</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">times</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">"index"</span><span class="p">)</span><span class="o">.</span><span class="n">rename_axis</span><span class="p">(</span><span class="s2">"method"</span><span class="p">)</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ds</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> grid cells × </span><span class="si">{</span><span class="n">ds</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> lead times -&gt; </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pois</span><span class="p">)</span><span class="si">}</span><span class="s2"> stations"</span><span class="p">)</span>
+<span class="n">benchmark</span><span class="p">(</span><span class="n">gri</span><span class="o">.</span><span class="n">interp2poi</span><span class="p">,</span> <span class="n">ds</span><span class="p">,</span> <span class="n">pois</span><span class="p">,</span> <span class="n">METHODS</span><span class="p">,</span> <span class="n">first_call</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>283876 grid cells × 121 lead times -&gt; 151 stations
+</pre></div>
+</div>
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>first call [s]</th>
+      <th>subsequent calls [s]</th>
+    </tr>
+    <tr>
+      <th>method</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>linear</th>
+      <td>0.191</td>
+      <td>0.176 ± 0.005</td>
+    </tr>
+    <tr>
+      <th>idw</th>
+      <td>0.023</td>
+      <td>0.015 ± 0.002</td>
+    </tr>
+    <tr>
+      <th>nearest_alt</th>
+      <td>0.036</td>
+      <td>0.014 ± 0.000</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
+</div>
+</section>
+<section id="takeaways">
+<h2>Takeaways<a class="headerlink" href="#takeaways" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>At the resolution of ICON-CH2 (about 2 km) the three methods give similar gusts at most stations. The
+differences between methods are usually smaller than the differences to the observations.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">linear</span></code> and <code class="docutils literal notranslate"><span class="pre">idw</span></code> average neighbouring grid points and give smooth values. <code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code> takes a
+single grid point selected for its altitude, which may be more or less exposed than its horizontal
+neighbours. Its values therefore differ most at mountain stations.</p></li>
+<li><p>A 1 s peak gust measured at one site is very local: comparing stations at a single time is a
+qualitative check, not a verification.</p></li>
+<li><p>Once the neighbour search is cached, <code class="docutils literal notranslate"><span class="pre">idw</span></code> and <code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code> are cheap. <code class="docutils literal notranslate"><span class="pre">linear</span></code> triangulates the
+unstructured grid at every call and is the slowest method.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../examples.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Examples</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="02_interp2poi_ifs_temperature.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Interpolation to stations: IFS-HRES 2 m temperature</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#source-data">Source data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stations-and-observations">Stations and observations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#interpolation">Interpolation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#visual-comparison">Visual comparison</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#performance-benchmark">Performance benchmark</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#takeaways">Takeaways</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item"><!-- This will display the version of the docs -->
+grid-process, version: 1.1.0-c31dd86</div>
+      
+        <div class="footer-item"><p class="last-updated">
+  Last updated on 12.11.2026.
+  <br/>
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, MeteoSwiss.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

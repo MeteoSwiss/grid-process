@@ -1,0 +1,189 @@
+grid_process.aggreg
+===================
+
+.. py:module:: grid_process.aggreg
+
+.. autoapi-nested-parse::
+
+   Module to perform temporal aggregations
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   grid_process.aggreg.logger
+   grid_process.aggreg.dataset_accessor
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   grid_process.aggreg.Aggreg
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   grid_process.aggreg.reshape4intervals_wtst
+   grid_process.aggreg.reshape4intervals
+   grid_process.aggreg.split_by_timeres
+   grid_process.aggreg.interval_stat
+   grid_process.aggreg.mode
+   grid_process.aggreg.count
+
+
+Module Contents
+---------------
+
+.. py:data:: logger
+
+.. py:class:: Aggreg(ds: xarray.Dataset)
+
+   Xarray accessors class for aggregations
+
+
+.. py:data:: dataset_accessor
+
+.. py:function:: reshape4intervals_wtst(ds: xarray.Dataset, granularity: int, interval: int, offset: int = 0) -> xarray.Dataset
+
+   Wrapper for :func:`reshape4intervals` to reshape a dataset into intervals,
+   additionally handling local time conversion and producing interval
+   duplicates for summer and winter time.
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- dataset with a valid time dimension to be reshaped. Must contain one constant
+                  time resolution
+                * **granularity** (*int*) -- time in hours in between two consecutive interval starts
+                * **interval** (*int*) -- time in hours of interval duration
+                * **offset** (*int, optional*) -- time in hours by which interval starts should be shifted from 00:00 am.
+                  E.g. if 6, intervals include the one starting at 6am (4 and 5 am UTC)
+
+   :returns: **ds_out** -- reshaped dataset with dimensions valid time x `window`. Valid time contains
+             timestamps for respective interval, `window` has length of the interval
+             and contains all timesteps belonging to the interval
+   :rtype: xarray.Dataset
+
+   .. seealso:: :func:`reshape4intervals`, :func:`interval_stat`
+
+
+.. py:function:: reshape4intervals(ds: xarray.Dataset, granularity: int, interval: int, offset: int = 0) -> xarray.Dataset
+
+   Reshape a dataset into time intervals. The intervals are represented by
+   the `window` dimension.
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- dataset with valid time dimension to be reshaped. Must contain one constant
+                  time resolution
+                * **granularity** (*int*) -- time in hours in between two consecutive interval starts
+                * **interval** (*int*) -- time in hours of interval duration
+                * **offset** (*int, optional*) -- time in hours by which interval starts should be shifted from 00:00 am.
+                  E.g. if 6, intervals include the one starting at 6am
+
+   :returns: **ds_out** -- reshaped dataset with dimensions valid time x `window`. Valid time
+             contains timestamps for respective interval, `window` has length of the
+             interval and contains all timesteps belonging to the interval
+   :rtype: xarray.Dataset
+
+   .. seealso:: :func:`reshape4intervals_wtst`, :func:`interval_stat`
+
+
+.. py:function:: split_by_timeres(ds: xarray.Dataset) -> list[xarray.Dataset]
+
+   Split a dataset where the time granularity changes. In case several
+   switches of granularity are present, the split is done at the last
+   granularity switch.
+
+   :Parameters: **ds** (*xarray.Dataset*) -- dataset with valid time dimension and non constant time resolution
+
+   :returns: **out** -- First element contains the first part of the dataset (with potentially
+             another granularity switch hidden). Second element contains the last
+             part of the dataset with constant granularity. In case the dataset is
+             already at constant granularity or is of length 1 in valid time dimension,
+             the output list has length 1
+   :rtype: list of two xarray.Dataset
+
+
+.. py:function:: interval_stat(ds: xarray.Dataset, granularity: int, interval: int, offset: int, agg_func: collections.abc.Callable, lt_duplicates: bool = True, interp_method: grid_process.timeseries.InterpMethods | None = None, **agg_func_kwargs: Any) -> xarray.Dataset
+
+   Aggregate values in time over a moving window defined by a time
+   ``granularity``, ``interval`` and ``offset``. Aggregation is based on the
+   aggregating function ``agg_func``. The timeseries must have a granularity
+   of maximum one hour or an ``interp_method`` must be specified for prior
+   interpolation. The granularity does not need to be constant.
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- Must have a valid time dimension, potentially with non-constant time resolution.
+                  Typical valid time dimension names are supported, and can be extended via environment variables:
+
+                    - Valid time: export GRID_PROCESS__data_model__validtime (e.g., '["time", "valid_time", "dummy_time"]')
+                    - When the coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can be
+                      used directly.
+                * **granularity** (*int*) -- time in hours in between two consecutive interval starts
+                * **interval** (*int*) -- time in hours of interval duration
+                * **offset** (*int*) -- time in hours by which interval starts should be shifted from 00:00 am.
+                  E.g. if 6, intervals include the one starting after 6am
+                * **agg_func** (*callable*) -- specify temporal aggregation function to use. The function must operate
+                  on `window` dimension. E.g. ``agg_func = lambda x: x.mean('window')``
+                * **lt_duplicates** (*bool, optional*) -- if True, aggregations are done in the DWH compliant style, which means
+                  intervals are calculated with respect to both UTC+1 and UTC+2. Default
+                  is True
+                * **interp_method** (*str, optional*) -- specify the temporal interpolation method to use if part of the
+                  timeseries has a greater time resolution than one hour. Default is no
+                  prior temporal interpolation (thus assuming the timeseries has max
+                  granularity of 1hr). Must be a method accepted by
+                  :func:`~grid_process.timeseries.interptogranularity`
+                * **\*\*agg_func_kwargs** (*any*) -- keyword arguments passed to the ``agg_func``
+
+   :returns: **ds_out** -- dataset with aggregated values. Uncomplete intervals are exluded.
+   :rtype: xarray.Dataset
+
+   .. seealso:: :func:`reshape4intervals_wtst`, :func:`reshape4intervals`, :func:`~grid_process.timeseries.interptogranularity`
+
+   .. note::
+
+      Alternatively, one can use xarray.Dataset.resample in some cases,
+      especially when aggregating over uncomplete intervals is preferred.
+      However, this behaviour can be problematic for cumulative aggregations
+      (i.e. sum). Note that xarray.Dataset.resample has many more interesting
+      options than this function although it does not allow to specify an
+      interval and granularity separately.
+
+
+.. py:function:: mode(reshaped_ds: xarray.Dataset, ordered_mode: dict[collections.abc.Hashable, list[Any]] | None = None) -> xarray.Dataset
+
+   Take the most frequent category (mode) among categorical variables along
+   `window` dimension. Could be used as input parameter ``agg_func`` for
+   :func:`interval_stat`.
+
+   :Parameters: * **reshaped_ds** (*xarray.Dataset*) -- dataset with dimension `window` along which the mode is taken
+                * **ordered_mode** (*dict {varname: list[any]}, optional*) -- ordered list of possible catergories for each data variable in the
+                  input dataset. If set, the returned category will match the priority
+                  order of this list in case of a tie between 2 or more categories
+
+   :returns: **ds_out** -- dataset with `window` dimension reduced
+   :rtype: xarray.Dataset
+
+   .. seealso:: :func:`interval_stat`, :func:`count`
+
+
+.. py:function:: count(reshaped_da: xarray.DataArray, categ: collections.abc.Iterable | None = None) -> dict[Any, xarray.DataArray]
+
+   Count the number of occurences along the `window` dimension for each
+   element present in the input DataArray or in the ``categ`` list.
+
+   :Parameters: * **reshaped_da** (*xarray.DataArray*) -- array with dimension `window` along which the count is done
+                * **categ** (*Iterable, optional*) -- ordered iterable of categories for which to count the occurences. If not
+                  set, ``categ`` is the unique categories in the input DataArray
+
+   :returns: **counts** -- the keys are the different elements found in the array and the values
+             are arrays with the `window` dimension reduced and containing the
+             respective count
+   :rtype: dict of xarray.DataArray
+
+   .. seealso:: :func:`mode`
+
+

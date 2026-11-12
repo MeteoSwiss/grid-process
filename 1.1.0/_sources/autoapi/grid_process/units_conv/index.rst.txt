@@ -1,0 +1,140 @@
+grid_process.units_conv
+=======================
+
+.. py:module:: grid_process.units_conv
+
+.. autoapi-nested-parse::
+
+   Module to control, parse and convert units
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   grid_process.units_conv.logger
+   grid_process.units_conv.dataarray_accessor
+   grid_process.units_conv.dataset_accessor
+   grid_process.units_conv.ureg
+
+
+Exceptions
+----------
+
+.. autoapisummary::
+
+   grid_process.units_conv.UnitsError
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   grid_process.units_conv.DaUnits
+   grid_process.units_conv.DsUnits
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   grid_process.units_conv.da_to
+   grid_process.units_conv.ds_to
+   grid_process.units_conv.consistency_check
+   grid_process.units_conv.units_check
+
+
+Module Contents
+---------------
+
+.. py:data:: logger
+
+.. py:exception:: UnitsError
+
+   Bases: :py:obj:`Exception`
+
+
+   Class to raise units errors
+
+
+.. py:class:: DaUnits(da: xarray.DataArray)
+
+   Xarray accessors class for units utility functions on DataArray
+
+
+.. py:class:: DsUnits(ds: xarray.Dataset)
+
+   Xarray accessors class for units utility functions on Dataset
+
+
+.. py:data:: dataarray_accessor
+
+.. py:data:: dataset_accessor
+
+.. py:data:: ureg
+   :type:  pint.UnitRegistry
+
+.. py:function:: da_to(da: xarray.DataArray, dst_units: str) -> xarray.DataArray
+
+   Convert units in a xarray.DataArray.
+
+   :Parameters: * **da** (*xarray.DataArray*) -- with attribute "units"
+                * **dst_units** (*str*) -- destination units
+
+   :returns: **da_out** -- contains the data array with converted units
+   :rtype: xarray.DataArray
+
+   :raises pint.errors.DimensionalityError: if the conversion is not possible
+
+
+.. py:function:: ds_to(ds: xarray.Dataset, dst_units: str | dict[collections.abc.Hashable, str]) -> xarray.Dataset
+
+   Convert units in a xarray.Dataset.
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- with variable attributes "units"
+                * **dst_units** (*str or dict*) -- destination units for each data variable to be converted.
+                  Variable names not specified in ``dst_units`` are kept in the same units.
+                  If passed as a single string, all variables in the dataset are converted to the
+                  same units
+
+   :returns: **ds_out** -- contains the dataset with converted units
+   :rtype: xarray.Dataset
+
+   :raises pint.errors.DimensionalityError: if the conversion is not possible
+
+
+.. py:function:: consistency_check(datasets: collections.abc.Sequence[xarray.Dataset], check_vars: bool = True) -> dict[str, dict[str, str]]
+
+   Checks that the input datasets have same data variables and units. If it is
+   the case, returns the 'units' attributes of each data variable otherwise
+   raises an error.
+
+   :Parameters: * **datasets** (*sequence of xarray.Dataset*) -- each data variable in the datasets must have a 'units' attributes
+                * **check_vars** (*bool, optional*) -- if False, allows datasets to have different variables, but common ones
+                  must have same units. Default is True
+
+   :returns: **out** -- contains the 'units' attribute of the data variables in the input
+             datasets. In case same units are specified in various format, the
+             dominant format is kept if there is one otherwise the format from the
+             first dataset in the input sequence
+   :rtype: dict
+
+   :raises UnitsError: if same variables across the input datasets have different units
+   :raises ValueError: when ``check_vars=True`` and the input datasets do not have exact same
+       set of variables
+
+
+.. py:function:: units_check(datasets: collections.abc.Sequence[xarray.Dataset]) -> None
+
+   Check that the data variables in the datasets all have same single units.
+   If not, it raises an error.
+
+   :Parameters: **datasets** (*sequence of xarray.Dataset*) -- each data variable in the datasets must have a 'units' attributes
+
+   :raises UnitsError: if any variable in any of the input datasets have different units
+
+

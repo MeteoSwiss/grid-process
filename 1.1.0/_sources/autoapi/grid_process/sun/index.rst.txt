@@ -1,0 +1,238 @@
+grid_process.sun
+================
+
+.. py:module:: grid_process.sun
+
+.. autoapi-nested-parse::
+
+   Module to wrap some sun position utility functions
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   grid_process.sun.logger
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   grid_process.sun.zenith
+   grid_process.sun.cos_zenith
+   grid_process.sun.params_zenith
+   grid_process.sun.hour_angle
+   grid_process.sun.elevation
+   grid_process.sun.azim_elev
+   grid_process.sun.rise_set
+   grid_process.sun.daytime
+   grid_process.sun.topo_rise_set
+   grid_process.sun.topo_shading_cor
+
+
+Module Contents
+---------------
+
+.. py:data:: logger
+
+.. py:function:: zenith(times: xarray.DataArray, lat: xarray.DataArray, lon: xarray.DataArray, refrac_cor: bool = True) -> xarray.DataArray
+
+   Analytical expression of solar zenith angle based on spherical
+   trigonometry.
+
+   :Parameters: * **times** (*xarray.DataArray, 1D*) -- contains timestamps to be checked in UTC
+                * **lat** (*xarray.DataArray 1D or 2D*) -- contains latitudes of the points to be checked
+                * **lon** (*xarray.DataArray 1D or 2D*) -- contains longitudes of the points to be checked
+                * **refrac_cor** (*bool*) -- whether to account for atmospheric refraction. It is significant only when
+                  the sun is close to horizon, in which case atmospheric refraction correction
+                  is about 0.6 [degrees]. Default is True
+
+   :returns: **zen** -- zenith in [degrees] for each time/point couple
+   :rtype: xarray.DataArray 2D or 3D
+
+   .. rubric:: References
+
+   * J. A. Duffie and W. A. Beckman,  "Solar Engineering of Thermal
+     Processes, 3rd Edition" pp. 14, J. Wiley and Sons, New York (2006)
+
+   * J. H. Seinfeld and S. N. Pandis, "Atmospheric Chemistry and
+     Physics" p. 132, J. Wiley (1998)
+
+   * Daryl R. Myers, "Solar Radiation: Practical Modeling for
+     Renewable Energy Applications", p. 5 CRC Press (2013)
+
+   * `Wikipedia: Solar Zenith Angle
+     <https://en.wikipedia.org/wiki/Solar_zenith_angle>`_
+
+   * `PVCDROM: Sun's Position
+     <http://www.pveducation.org/pvcdrom/2-properties-sunlight/
+     suns-position>`_
+
+   .. seealso:: :func:`azim_elev`, :func:`elevation`
+
+
+.. py:function:: cos_zenith(times: xarray.DataArray, lat: xarray.DataArray, lon: xarray.DataArray) -> xarray.DataArray
+
+   Compute the cosine of the solar zenith angle. Atmospheric refraction is NOT
+   considered
+
+
+.. py:function:: params_zenith(times: xarray.DataArray, lat: xarray.DataArray, lon: xarray.DataArray) -> tuple[xarray.DataArray, xarray.DataArray, xarray.DataArray]
+
+   get the different parameters to compute zenith angle
+
+
+.. py:function:: hour_angle(times: xarray.DataArray, lon: xarray.DataArray) -> xarray.DataArray
+
+   Hour angle [radians] in local solar time. Zero at local solar noon.
+
+   :Parameters: * **times** (*xarray.DataArray, 1D*) -- contains timestamps in UTC for which to calculate the hour angle
+                * **lon** (*xarray.DataArray 1D or 2D*) -- contains longitudes of the points to be checked
+
+
+.. py:function:: elevation(times: xarray.DataArray, lat: xarray.DataArray, lon: xarray.DataArray, refrac_cor: bool = True) -> xarray.DataArray
+
+   Analytical expression of solar elevation angle based on spherical
+   trigonometry
+
+   :Parameters: * **times** (*xarray.DataArray, 1D*) -- contains timestamps to be checked in UTC
+                * **lat** (*xarray.DataArray 1D or 2D*) -- contains latitudes of the points to be checked
+                * **lon** (*xarray.DataArray 1D or 2D*) -- contains longitudes of the points to be checked
+                * **refrac_cor** (*bool*) -- whether to account for atmospheric refraction. It is significant only when
+                  the sun is close to horizon, in which case atmospheric refraction correction
+                  is about 0.6 [degrees]. Default is True
+
+   :returns: **elev** -- elevation in [degrees] for each time/point couple
+   :rtype: xarray.DataArray 2D or 3D
+
+   .. seealso:: :func:`azim_elev`, :func:`zenith`
+
+
+.. py:function:: azim_elev(times: xarray.DataArray, lat: xarray.DataArray, lon: xarray.DataArray, refrac_cor: bool = True) -> tuple[xarray.DataArray, xarray.DataArray]
+
+   Analytical expression of solar azimuth and elevation angles based on spherical
+   trigonometry
+
+   :Parameters: * **times** (*xarray.DataArray, 1D*) -- contains timestamps to be checked in UTC
+                * **lat** (*xarray.DataArray 1D or 2D*) -- contains latitudes of the points to be checked
+                * **lon** (*xarray.DataArray 1D or 2D*) -- contains longitudes of the points to be checked
+                * **refrac_cor** (*bool*) -- whether to account for atmospheric refraction. It is significant only when
+                  the sun is close to horizon, in which case atmospheric refraction correction
+                  is about 0.6 [degrees]. Default is True
+
+   :returns: * **azim** (*xarray.DataArray 2D or 3D*) -- azimuth in [degrees] for each time/point couple
+             * **elev** (*xarray.DataArray 2D or 3D*) -- elevation in [degrees] for each time/point couple
+
+   .. rubric:: References
+
+   * J. A. Duffie and W. A. Beckman,  "Solar Engineering of Thermal
+     Processes, 3rd Edition" pp. 14, J. Wiley and Sons, New York (2006)
+
+   * J. H. Seinfeld and S. N. Pandis, "Atmospheric Chemistry and Physics"
+     p. 132, J. Wiley (1998)
+
+   * `Wikipedia: Solar Azimuth Angle
+     <https://en.wikipedia.org/wiki/Solar_azimuth_angle>`_
+
+   * `PVCDROM: Azimuth Angle <http://www.pveducation.org/pvcdrom/2-
+     properties-sunlight/azimuth-angle>`_
+
+   .. seealso:: :func:`elevation`, :func:`zenith`
+
+
+.. py:function:: rise_set(times: xarray.DataArray, lat: xarray.DataArray, lon: xarray.DataArray, refrac_cor: bool = True) -> tuple[xarray.DataArray, xarray.DataArray]
+
+   Geometric calculation of solar sunrise and sunset times
+
+   .. warning:: The geometric calculation assumes a circular earth orbit with
+       the sun as a point source at its center, and neglects the effect of
+       atmospheric refraction on zenith. The error depends on location and
+       time of year but is of order 10 minutes.
+
+   :Parameters: * **times** (*xarray.DataArray, 1D*) -- contains timestamps to be checked in UTC
+                * **lat** (*xarray.DataArray 1D or 2D*) -- contains latitudes of the points to be checked
+                * **lon** (*xarray.DataArray 1D or 2D*) -- contains longitudes of the points to be checked
+                * **refrac_cor** (*bool*) -- whether to account for atmospheric refraction. When true, the sunrise / sunset
+                  occurs about 4 minutes earlier / later. Default is True
+
+   :returns: * **sunrise** (*xarray.DataArray 2D or 3D*) -- sunrise times for each time/point couple in UTC
+             * **sunset** (*xarray.DataArray 2D or 3D*) -- sunset times for each time/point couple in UTC
+
+   .. rubric:: References
+
+   * J. A. Duffie and W. A. Beckman,  "Solar Engineering of Thermal
+     Processes, 3rd Edition," J. Wiley and Sons, New York (2006)
+
+   * Frank Vignola et al., "Solar And Infrared Radiation Measurements,"
+     CRC Press (2012)
+
+
+.. py:function:: daytime(times: xarray.DataArray, lat: xarray.DataArray, lon: xarray.DataArray, refrac_cor: bool = True) -> xarray.DataArray
+
+   Return a boolean xarray.DataArray specifying whether times are daytime for
+   each point defined by the lat and lon arrays. Daytime is defined here as the
+   center of the sun being above the non-topographic flat horizon (i.e. sun elevation > 0)
+
+   :Parameters: * **times** (*xarray.DataArray, 1D*) -- contains timestamps to be checked in UTC
+                * **lat** (*xarray.DataArray 1D or 2D*) -- contains latitudes of the points to be checked
+                * **lon** (*xarray.DataArray 1D or 2D*) -- contains longitudes of the points to be checked
+                * **refrac_cor** (*bool*) -- whether to account for atmospheric refraction. When true, the sunrise / sunset
+                  occurs about 4 minutes earlier / later. Default is True
+
+   :returns: **da_out** -- indicates for each time/point couple whether it is daytime
+   :rtype: xarray.DataArray of bool
+
+   .. seealso:: :func:`rise_set`
+
+
+.. py:function:: topo_rise_set(times: xarray.DataArray, lat: xarray.DataArray, lon: xarray.DataArray, horizon: xarray.DataArray) -> xarray.Dataset
+
+   Computes topographic sunrise and sunset based on horizon data. Sunrise / sunset
+   is defined as the first / last time the sun path cross the horizon line
+
+   :Parameters: * **times** (*xarray.DataArray, 1D*) -- contains timestamps to be checked in UTC. Must be regularly sampled and
+                  cover full daytime periods
+                * **lat** (*xarray.DataArray 1D or 2D*) -- contains latitudes of the points to be checked
+                * **lon** (*xarray.DataArray 1D or 2D*) -- contains longitudes of the points to be checked
+                * **horizon** (*xarray.DataArray 2D or 3D*) -- topographic horizon in [degrees] of the points to be checked, regularly
+                  sampled along a dimension `azimuth`
+
+   :returns: **ds** -- contains topographic sunrise and sunset in UTC for each point and day of
+             year in input ``times``
+   :rtype: xarray.Dataset 2D or 3D
+
+   .. seealso:: :func:`azim_elev`, :func:`rise_set`, :func:`daytime`
+
+   .. note::
+
+      The higher is the time frequency of ``times``, the more accurate will be the
+      sunrise and sunset times as it is interpolated between the two time points
+      when the sun cross the topographic horizon.
+
+
+.. py:function:: topo_shading_cor(times: xarray.DataArray, lat: xarray.DataArray, lon: xarray.DataArray, horizon: xarray.DataArray, sampling_freq: str = '10min') -> xarray.DataArray
+
+   Computes topographic shading correction factor for variables
+
+   :Parameters: * **times** (*xarray.DataArray, 1D*) -- contains timestamps for which correction factor are computed. Must have
+                  constant time granularity and be in UTC
+                * **lat** (*xarray.DataArray 1D or 2D*) -- contains latitudes of the points to be checked
+                * **lon** (*xarray.DataArray 1D or 2D*) -- contains longitudes of the points to be checked
+                * **horizon** (*xarray.DataArray 2D or 3D*) -- topographic horizon in [degrees] of the points to be checked, regularly
+                  sampled along a dimension `azimuth`
+                * **sampling_freq** (*frequency string as accepted by pandas date functionalities*) -- time frequency to compare sun elevation with topographic horizon. The
+                  higher the more precise will be the correction factors but at the cost
+                  of longer computation time. Should be at least higher than the frequency
+                  of the input ``times`` array
+
+   :returns: **da_out** -- contains topographic correction factors for each timestamps in input arg
+             ``times``
+   :rtype: xarray.DataArray 2D or 3D
+
+   .. seealso:: :func:`azim_elev`, :func:`topo_rise_set`, :func:`daytime`
+
+

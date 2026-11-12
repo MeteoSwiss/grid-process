@@ -1,0 +1,55 @@
+grid_process.ds_utils
+=====================
+
+.. py:module:: grid_process.ds_utils
+
+.. autoapi-nested-parse::
+
+   Module with general utility functions that operate on xarray.Dataset
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   grid_process.ds_utils.logger
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   grid_process.ds_utils.ds_to_da
+   grid_process.ds_utils.cast_dtype
+
+
+Module Contents
+---------------
+
+.. py:data:: logger
+
+.. py:function:: ds_to_da(ds: xarray.Dataset) -> tuple[xarray.DataArray, dict[collections.abc.Hashable, dict[collections.abc.Hashable, Any]]]
+
+   Transform a dataset containing model data and one or several data
+   variables to a dataarray with the variables stacked as a new dimension.
+   The function also returns the attributes of the data variables for further
+   use.
+
+   :Parameters: **ds** (*xarray.Dataset*) -- contain one or more variables
+
+   :returns: * **da** (*xarray.DataArray*) -- contains the data variables from the input dataset stacked in a new
+               `variable` dimension
+             * **vars_attrs** (*dictionary*) -- contains the attributes of each data variables in the input dataset.
+
+   .. seealso:: :func:`~grid_process.da_utils.da_to_ds`
+
+
+.. py:function:: cast_dtype(ds_out: xarray.Dataset, ds_in: xarray.Dataset) -> None
+
+   Cast back each data variable in the output dataset to the original dtype
+   of the input dataset. The operation is done in-place.
+
+
