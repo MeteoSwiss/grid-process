@@ -1009,7 +1009,7 @@ def interp2poi(
         return _interp_regular(data, spatial_dims, poi_info, method)  # type: ignore[arg-type]
 
     data = slice_boundingbox(data, poi_info, method, spatial_dims, **kwargs)
-    data, vars_attrs = ds_to_da(data)  # type: ignore[assignment]
+    data, vars_attrs = ds_to_da(data, copy=False)  # type: ignore[assignment]
     data = data.transpose(*spatial_dims, ...)
     coords_flat, data_flat, pois_coords = _flatten_concat(
         data,  # type: ignore[arg-type]
@@ -1697,7 +1697,7 @@ def interp2grid(
     dst_grid = dst_grid.transpose(*dst_spatial_dims)
 
     data = slice_coarsen(data, dst_grid, method, src_spatial_dims, dst_spatial_dims, **kwargs)
-    data, vars_attrs = ds_to_da(data)  # type: ignore[assignment]
+    data, vars_attrs = ds_to_da(data, copy=False)  # type: ignore[assignment]
     data = data.transpose(*src_spatial_dims, ...)
     coords_flat, data_flat, dst_coords_flat = _flatten_concat_grids(
         data,  # type: ignore[arg-type]

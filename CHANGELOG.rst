@@ -2,6 +2,19 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+**Changes**
+
+* changed ``interp2poi`` and ``interp2grid`` to no longer copy a dataset with a single data variable before
+  interpolation (new ``copy`` parameter of ``ds_utils.ds_to_da``, default ``True``). For the operational grids
+  (with cached neighbors), POIs are interpolated up to about 1.5 times faster (e.g. ICON-CH2 ``nearest`` 0.18 s →
+  0.12 s) with 0.1 to 0.2 GB less memory for ICON, and IFS to the seamless 2 km grid with ``nearest_alt`` 0.39 s →
+  0.24 s. A sliced source that is not contiguous in memory is now copied into contiguous rows per grid point, which
+  is slower for large sources: ICON-CH2 in LV95 to the seamless 2 km grid with ``nearest_alt`` or ``temp_fixgrad``
+  0.23 s → 0.29 s and 0.34 s → 0.39 s
+
 1.1.0 (2026-11-12)
 ------------------
 

@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 def ds_to_da(
     ds: xr.Dataset,
+    copy: bool = True,
 ) -> tuple[xr.DataArray, dict[Hashable, dict[Hashable, Any]]]:
     """
     Transform a dataset containing model data and one or several data
@@ -30,6 +31,10 @@ def ds_to_da(
     ----------
     ds : xarray.Dataset
         contain one or more variables
+    copy : bool, optional
+        if False and ``ds`` has a single data variable spanning all its dimensions, the dataarray is a view of its
+        data, without a copy: writing into it modifies ``ds``. Several variables are always stacked (copied).
+        Default is True.
 
     Returns
     -------
@@ -45,6 +50,14 @@ def ds_to_da(
     """
 
     vars_attrs = {varname: da.attrs for varname, da in ds.data_vars.items()}
+    if not copy and len(ds.data_vars) == 1:
+        name = next(iter(ds.data_vars))
+        if set(ds[name].dims) == set(ds.dims):  # otherwise to_array keeps coordinates on other dimensions
+            # same as to_array, whose np.stack copies the data
+            da = ds[name].expand_dims(variable=[name])
+            da.attrs = dict(ds.attrs)
+            da.name = None
+            return da, vars_attrs
     da = ds.to_array()
     return da, vars_attrs
 
