@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=9d8c6047"></script>
+    <script src="_static/documentation_options.js?v=b63c5e1d"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'changelog';</script>
@@ -420,6 +420,9 @@ is slower for large sources: ICON-CH2 in LV95 to the seamless 2 km grid with <co
 <li><p>changed the coarsening of the source grid by <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> to skip NaN (e.g. for the snow limit, NaN below the
 orography), with bottleneck. ICON-CH1 to the seamless 2 km grid (with cached neighbors) is about 1.4 times
 faster (e.g. <code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code> 0.30 s → 0.21 s), with about 0.05 GB more peak memory (copy of the windows)</p></li>
+<li><p>added <code class="docutils literal notranslate"><span class="pre">values</span></code> to the default names of the unstructured grid dimension
+(<code class="docutils literal notranslate"><span class="pre">GRID_PROCESS__data_model__grid__unstructured_dim</span></code>): the dimension of non-regular GRIB grids read with cfgrib or
+earthkit-data, e.g. ICON open data, no longer needs to be renamed</p></li>
 </ul>
 </section>
 <section id="id1">
@@ -591,7 +594,7 @@ interpolation method and its arguments, e.g. to slice the input data with <code 
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-8a43f7c</div>
+grid-process, version: dev-3e9baa8</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 12.11.2026.
