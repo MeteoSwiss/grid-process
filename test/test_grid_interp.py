@@ -1822,3 +1822,54 @@ def test_get_buffer(method, kwargs, expected):
     from grid_process.grid_interp import get_buffer  # pylint: disable=import-outside-toplevel
 
     assert get_buffer(method, **kwargs) == expected
+
+
+def test_window_nanmean():
+    """
+    Coarsening skips NaN (a block is NaN only if all its values are), keeps float32, and leaves integers to np.mean
+    """
+
+    from grid_process.grid_interp import _window_nanmean  # pylint: disable=import-outside-toplevel
+
+    values = np.arange(32, dtype=np.float32).reshape(2, 4, 4)
+    values[0, 0, 1] = np.nan  # block (0, 0) of the first field: 3 valid values
+    values[1, 2:, 2:] = np.nan  # block (1, 1) of the second field: all NaN
+    da = xr.DataArray(values, dims=("step", "y", "x"))
+
+    out = da.coarsen(y=2, x=2, boundary="trim").reduce(_window_nanmean)
+
+    assert out.dtype == np.float32
+    with warnings.catch_warnings():  # np.nanmean warns for the all-NaN block, bottleneck does not
+        warnings.simplefilter("ignore", RuntimeWarning)
+        expected = np.nanmean(values.reshape(2, 2, 2, 2, 2), axis=(2, 4))
+    np.testing.assert_allclose(out.values, expected, rtol=1e-6)
+    assert out.values[0, 0, 0] == np.float32((0 + 4 + 5) / 3)
+    assert np.isnan(out.values[1, 1, 1])
+    assert np.isnan(out.values).sum() == 1
+
+    ints = xr.DataArray(np.arange(16, dtype=np.int16).reshape(4, 4), dims=("y", "x"))
+    np.testing.assert_array_equal(
+        ints.coarsen(y=2, x=2).reduce(_window_nanmean), ints.coarsen(y=2, x=2).reduce(np.mean)
+    )
+
+
+def test_window_nanmean_large_window():
+    """Large float32 windows with NaN: close to the float64 mean (float32 sums), all-NaN blocks stay NaN"""
+
+    from grid_process.grid_interp import _window_nanmean  # pylint: disable=import-outside-toplevel
+
+    rng = np.random.default_rng(0)
+    values = (rng.standard_normal((3, 2, 20, 30)) * 10 + 280).astype(np.float32)
+    values[rng.random(values.shape) < 0.3] = np.nan
+    values[0, 0, :10, :10] = np.nan  # an all-NaN block
+    da = xr.DataArray(values, dims=("step", "member", "y", "x"))
+
+    out = da.coarsen(y=10, x=10).reduce(_window_nanmean)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        expected = np.nanmean(values.astype(np.float64).reshape(3, 2, 2, 10, 3, 10), axis=(3, 5))
+    assert out.dtype == np.float32
+    np.testing.assert_allclose(out.values, expected, rtol=1e-6)
+    assert np.isnan(out.values[0, 0, 0, 0])
+    assert np.isnan(out.values).sum() == 1
