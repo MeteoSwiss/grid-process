@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=e0d173ce"></script>
+    <script src="../../../_static/documentation_options.js?v=7f3557d2"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/optimization/index';</script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="11.11.2026"/>
+    <meta name="docbuild:last-update" content="12.11.2026"/>
   </head>
   
   
@@ -457,7 +457,7 @@
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.optimization.memoize" title="grid_process.optimization.memoize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">memoize</span></code></a>(→ collections.abc.Callable[[F], F])</p></td>
-<td><p>LRU cache decorator implementation for any arbitrary input since the</p></td>
+<td><p>In-memory least recently used (LRU) cache decorator for functions with arbitrary (e.g. unhashable numpy array)</p></td>
 </tr>
 </tbody>
 </table>
@@ -477,9 +477,38 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="grid_process.optimization.memoize">
-<span class="sig-name descname"><span class="pre">memoize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">maxsize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">collections.abc.Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">F</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">F</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/grid_process/optimization.html#memoize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.optimization.memoize" title="Link to this definition">#</a></dt>
-<dd><p>LRU cache decorator implementation for any arbitrary input since the
-caching is purely based on the optional keyword argument <code class="docutils literal notranslate"><span class="pre">hkey</span></code>.</p>
+<span class="sig-name descname"><span class="pre">memoize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">maxsize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">collections.abc.Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">collections.abc.Hashable</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">collections.abc.Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">F</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">F</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/grid_process/optimization.html#memoize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.optimization.memoize" title="Link to this definition">#</a></dt>
+<dd><p>In-memory least recently used (LRU) cache decorator for functions with arbitrary (e.g. unhashable numpy array)
+arguments. The cache key is either computed by the <code class="docutils literal notranslate"><span class="pre">key</span></code> function or given by the caller.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>maxsize</strong> (<em>int, optional</em>) – maximum number of cached results. When exceeded, the least recently used result is evicted. With
+<code class="docutils literal notranslate"><span class="pre">maxsize</span> <span class="pre">&lt;=</span> <span class="pre">0</span></code>, nothing is cached and the decorator adds no overhead. Default is 10.</p></li>
+<li><p><strong>key</strong> (<em>callable, optional</em>) – function called with the arguments of the decorated function, returning the (hashable) cache key, e.g.
+<code class="docutils literal notranslate"><span class="pre">lambda</span> <span class="pre">arr,</span> <span class="pre">k:</span> <span class="pre">(arr.tobytes(),</span> <span class="pre">k)</span></code>. It is only called when caching is active (<code class="docutils literal notranslate"><span class="pre">maxsize</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>), and
+the decorated function is then called with its usual arguments.
+If not given, the key is the optional keyword argument <code class="docutils literal notranslate"><span class="pre">hkey</span></code> passed at each call
+(e.g. <code class="docutils literal notranslate"><span class="pre">func(arr,</span> <span class="pre">hkey=my_key)</span></code>), which is removed before calling the function. Calls without <code class="docutils literal notranslate"><span class="pre">hkey</span></code>
+(or with <code class="docutils literal notranslate"><span class="pre">hkey=None</span></code>) are not cached.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the decorator. Each decorated function has its own cache, kept in memory until the end of the process.
+The cache can be used from several threads. Each process has its own cache: a process created by <code class="docutils literal notranslate"><span class="pre">fork</span></code>
+starts with a copy of the parent’s cache (the fork waits until no thread is reading or writing it), one
+created by <code class="docutils literal notranslate"><span class="pre">spawn</span></code> or <code class="docutils literal notranslate"><span class="pre">forkserver</span></code> with an empty cache.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The cache size of the functions cached by grid-process is read when the module is imported, from
+<code class="docutils literal notranslate"><span class="pre">grid_process/config/grid_process.yaml</span></code> or the environment variables <code class="docutils literal notranslate"><span class="pre">GRID_PROCESS__cache_size__&lt;name&gt;</span></code>
+(e.g. <code class="docutils literal notranslate"><span class="pre">GRID_PROCESS__cache_size__nn_lookup=0</span></code> to deactivate the cache of nearest neighbor lookups).</p>
+</div>
 </dd></dl>
 
 </section>
@@ -565,10 +594,10 @@ caching is purely based on the optional keyword argument <code class="docutils l
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-e479e16</div>
+grid-process, version: dev-95d3ab4</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 11.11.2026.
+  Last updated on 12.11.2026.
   <br/>
 </p></div>
       

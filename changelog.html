@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=e0d173ce"></script>
+    <script src="_static/documentation_options.js?v=7f3557d2"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'changelog';</script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="11.11.2026"/>
+    <meta name="docbuild:last-update" content="12.11.2026"/>
   </head>
   
   
@@ -445,6 +445,24 @@ reprojected corners of its latitude/longitude bounding box, which could be much 
 in LV95) or miss parts of the domain (e.g. 28 km for IFS in LV95)</p></li>
 <li><p>fixed <code class="docutils literal notranslate"><span class="pre">set_grid_mapping</span></code> with CF grid mappings holding numpy arrays or non-float64 numpy values (e.g. a
 <code class="docutils literal notranslate"><span class="pre">standard_parallel</span></code> array read from a netCDF file), which raised a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code></p></li>
+<li><p>changed <code class="docutils literal notranslate"><span class="pre">memoize</span></code>: the least recently used result is evicted (instead of the oldest one), the cache key can be
+computed by an optional <code class="docutils literal notranslate"><span class="pre">key</span></code> function (only when caching is active), a cache size of 0 deactivates caching
+without overhead, and the cache is safe to use from several threads, also when the process forks (the fork waits
+until no thread is using the cache). The <code class="docutils literal notranslate"><span class="pre">hkey</span></code> keyword argument still works</p></li>
+<li><p>fixed the in-memory caches of the POI and grid reprojections, whose keys left out the source CRS, and the cache
+of the regular grid nearest interpolation, which failed with a POI dimension name other than <code class="docutils literal notranslate"><span class="pre">poi</span></code>
+(<code class="docutils literal notranslate"><span class="pre">GRID_PROCESS__data_model__poi__dim</span></code>)</p></li>
+<li><p>documented the in-memory caches of <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> and how to set their sizes or deactivate
+them with the environment variables <code class="docutils literal notranslate"><span class="pre">GRID_PROCESS__cache_size__&lt;name&gt;</span></code> (Usage page)</p></li>
+<li><p>changed <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> outside of the regular grid interpolation to flatten structured
+grids with numpy instead of <code class="docutils literal notranslate"><span class="pre">xarray.stack</span></code>, and <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> to look for the grid points with NaN in all
+fields (excluded, as before) only among those with NaN in the middle field. Later calls with cached neighbors are
+faster on large grids (e.g. 0.13 s to 0.05 s for a global 0.25 degree grid to 33 POIs, 1.6 s to 0.5 s from this
+grid to a global 0.1 degree grid), with identical results</p></li>
+<li><p>fixed <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> raising an <code class="docutils literal notranslate"><span class="pre">IndexError</span></code> when all POIs are outside an unstructured grid (no grid point left
+after slicing): they now get NaN, as outside of the regular grid interpolation</p></li>
+<li><p>made <code class="docutils literal notranslate"><span class="pre">grid_interp.get_buffer</span></code> public (renamed from <code class="docutils literal notranslate"><span class="pre">_get_buffer</span></code>): the slicing buffer in grid points of an
+interpolation method and its arguments, e.g. to slice the input data with <code class="docutils literal notranslate"><span class="pre">slice_boundingbox</span></code> beforehand</p></li>
 </ul>
 </section>
 <section id="id1">
@@ -534,10 +552,10 @@ in LV95) or miss parts of the domain (e.g. 28 km for IFS in LV95)</p></li>
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-e479e16</div>
+grid-process, version: dev-95d3ab4</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 11.11.2026.
+  Last updated on 12.11.2026.
   <br/>
 </p></div>
       

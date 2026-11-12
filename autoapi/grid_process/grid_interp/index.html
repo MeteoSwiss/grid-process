@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=e0d173ce"></script>
+    <script src="../../../_static/documentation_options.js?v=7f3557d2"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/grid_interp/index';</script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="11.11.2026"/>
+    <meta name="docbuild:last-update" content="12.11.2026"/>
   </head>
   
   
@@ -531,7 +531,7 @@
 <td><p>Find the k nearest grid points and corresponding distances for a set of</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.nn_lookup_cached" title="grid_process.grid_interp.nn_lookup_cached"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nn_lookup_cached</span></code></a>(→ tuple[numpy.ndarray, numpy.ndarray])</p></td>
-<td><p>Wrapper to <a class="reference internal" href="#grid_process.grid_interp.nn_lookup" title="grid_process.grid_interp.nn_lookup"><code class="xref py py-func docutils literal notranslate"><span class="pre">nn_lookup()</span></code></a> function to use it with a cache</p></td>
+<td><p><a class="reference internal" href="#grid_process.grid_interp.nn_lookup" title="grid_process.grid_interp.nn_lookup"><code class="xref py py-func docutils literal notranslate"><span class="pre">nn_lookup()</span></code></a> with an in-memory cache of the results, keyed on the coordinates and <code class="docutils literal notranslate"><span class="pre">k</span></code>. Its size is set by</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.nn_lookup_regular" title="grid_process.grid_interp.nn_lookup_regular"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nn_lookup_regular</span></code></a>(→ list[numpy.ndarray | xarray.DataArray])</p></td>
 <td><p>Find the nearest grid point for a set of POIs when the source</p></td>
@@ -544,6 +544,9 @@
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.slice_coarsen" title="grid_process.grid_interp.slice_coarsen"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_coarsen</span></code></a>(→ xarray.Dataset)</p></td>
 <td><p>Slice input dataset to the extend of the destination grid and coarsen it if the</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.get_buffer" title="grid_process.grid_interp.get_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buffer</span></code></a>(→ int)</p></td>
+<td><p>Buffer specific to the interpolation method to add when slicing the input dataset to the target grid or POIs</p></td>
 </tr>
 </tbody>
 </table>
@@ -986,6 +989,10 @@ set with the environment variable GRID_PROCESS__lv95_max_offset) of the LV95 cen
 </div></blockquote>
 <p>Methods with altitude use it as an additional coordinate in meters.</p>
 </li>
+<li><p>Nearest neighbor lookups and coordinate reprojections are cached in memory, so that later calls with the same
+grids and POIs are faster. The cache sizes are set by the environment variables
+GRID_PROCESS__cache_size__&lt;name&gt; (<code class="docutils literal notranslate"><span class="pre">nn_lookup</span></code>, <code class="docutils literal notranslate"><span class="pre">nn_lookup_regular</span></code>, <code class="docutils literal notranslate"><span class="pre">reproject_poi</span></code>, <code class="docutils literal notranslate"><span class="pre">reproject_grid</span></code>),
+where 0 deactivates a cache. They must be set before importing grid_process, see the Usage page.</p></li>
 </ul>
 </dd></dl>
 
@@ -1021,7 +1028,8 @@ coordinates dimensions (2 to 4)</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="grid_process.grid_interp.nn_lookup_cached">
 <span class="sig-name descname"><span class="pre">nn_lookup_cached</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid_coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#nn_lookup_cached"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.nn_lookup_cached" title="Link to this definition">#</a></dt>
-<dd><p>Wrapper to <a class="reference internal" href="#grid_process.grid_interp.nn_lookup" title="grid_process.grid_interp.nn_lookup"><code class="xref py py-func docutils literal notranslate"><span class="pre">nn_lookup()</span></code></a> function to use it with a cache</p>
+<dd><p><a class="reference internal" href="#grid_process.grid_interp.nn_lookup" title="grid_process.grid_interp.nn_lookup"><code class="xref py py-func docutils literal notranslate"><span class="pre">nn_lookup()</span></code></a> with an in-memory cache of the results, keyed on the coordinates and <code class="docutils literal notranslate"><span class="pre">k</span></code>. Its size is set by
+<code class="docutils literal notranslate"><span class="pre">cache_size.nn_lookup</span></code> (environment variable <code class="docutils literal notranslate"><span class="pre">GRID_PROCESS__cache_size__nn_lookup</span></code>, 0 to deactivate).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -1147,6 +1155,10 @@ set with the environment variable GRID_PROCESS__lv95_max_offset) of the LV95 cen
 </div></blockquote>
 <p>Methods with altitude use it as an additional coordinate in meters.</p>
 </li>
+<li><p>Nearest neighbor lookups and coordinate reprojections are cached in memory, so that later calls with the same
+grids and POIs are faster. The cache sizes are set by the environment variables
+GRID_PROCESS__cache_size__&lt;name&gt; (<code class="docutils literal notranslate"><span class="pre">nn_lookup</span></code>, <code class="docutils literal notranslate"><span class="pre">nn_lookup_regular</span></code>, <code class="docutils literal notranslate"><span class="pre">reproject_poi</span></code>, <code class="docutils literal notranslate"><span class="pre">reproject_grid</span></code>),
+where 0 deactivates a cache. They must be set before importing grid_process, see the Usage page.</p></li>
 </ul>
 </dd></dl>
 
@@ -1162,6 +1174,29 @@ plus a buffer depending on the interpolation method and corresponding kwargs.</p
 <span class="sig-name descname"><span class="pre">slice_coarsen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dst_grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spatial_dims</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dst_spatial_dims</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">xarray.Dataset</span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#slice_coarsen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.slice_coarsen" title="Link to this definition">#</a></dt>
 <dd><p>Slice input dataset to the extend of the destination grid and coarsen it if the
 destination grid has lower resolution (downsampling).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="grid_process.grid_interp.get_buffer">
+<span class="sig-name descname"><span class="pre">get_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="../../../_modules/grid_process/grid_interp.html#get_buffer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#grid_process.grid_interp.get_buffer" title="Link to this definition">#</a></dt>
+<dd><p>Buffer specific to the interpolation method to add when slicing the input dataset to the target grid or POIs
+(see <a class="reference internal" href="#grid_process.grid_interp.slice_boundingbox" title="grid_process.grid_interp.slice_boundingbox"><code class="xref py py-func docutils literal notranslate"><span class="pre">slice_boundingbox()</span></code></a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> (<em>str</em>) – interpolation method, as in <a class="reference internal" href="#grid_process.grid_interp.interp2poi" title="grid_process.grid_interp.interp2poi"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2poi()</span></code></a> or <a class="reference internal" href="#grid_process.grid_interp.interp2grid" title="grid_process.grid_interp.interp2grid"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2grid()</span></code></a></p></li>
+<li><p><strong>**kwargs</strong> – keyword arguments of the interpolation method. <code class="docutils literal notranslate"><span class="pre">k</span></code> (number of neighbors) and <code class="docutils literal notranslate"><span class="pre">r_search</span></code> (search radius
+in grid points) widen the buffer; the others are ignored.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>buffer in number of grid points: 1, plus 1 for <code class="docutils literal notranslate"><span class="pre">cubic</span></code> and the 3D methods, plus <code class="docutils literal notranslate"><span class="pre">ceil(sqrt(k</span> <span class="pre">/</span> <span class="pre">pi))</span></code>,
+plus <code class="docutils literal notranslate"><span class="pre">ceil(r_search)</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py data">
@@ -1263,6 +1298,7 @@ destination grid has lower resolution (downsampling).</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.interp2grid"><code class="docutils literal notranslate"><span class="pre">interp2grid()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.slice_boundingbox"><code class="docutils literal notranslate"><span class="pre">slice_boundingbox()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.slice_coarsen"><code class="docutils literal notranslate"><span class="pre">slice_coarsen()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.get_buffer"><code class="docutils literal notranslate"><span class="pre">get_buffer()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.GRIDDATA_METHODS"><code class="docutils literal notranslate"><span class="pre">GRIDDATA_METHODS</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.FLAT_NEIGHBORHOOD"><code class="docutils literal notranslate"><span class="pre">FLAT_NEIGHBORHOOD</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.grid_interp.HEIGHT_METHODS"><code class="docutils literal notranslate"><span class="pre">HEIGHT_METHODS</span></code></a></li>
@@ -1294,10 +1330,10 @@ destination grid has lower resolution (downsampling).</p>
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-e479e16</div>
+grid-process, version: dev-95d3ab4</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 11.11.2026.
+  Last updated on 12.11.2026.
   <br/>
 </p></div>
       

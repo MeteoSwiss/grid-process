@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=e0d173ce"></script>
+    <script src="../../_static/documentation_options.js?v=7f3557d2"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/grid_process/optimization';</script>
@@ -55,7 +55,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="11.11.2026"/>
+    <meta name="docbuild:last-update" content="12.11.2026"/>
   </head>
   
   
@@ -407,9 +407,12 @@
 <span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Hashable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">wraps</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">cast</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Hashable</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -418,34 +421,95 @@
 
 <div class="viewcode-block" id="memoize">
 <a class="viewcode-back" href="../../autoapi/grid_process/optimization/index.html#grid_process.optimization.memoize">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">memoize</span><span class="p">(</span><span class="n">maxsize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">F</span><span class="p">],</span> <span class="n">F</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">memoize</span><span class="p">(</span><span class="n">maxsize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">F</span><span class="p">],</span> <span class="n">F</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    LRU cache decorator implementation for any arbitrary input since the</span>
-<span class="sd">    caching is purely based on the optional keyword argument ``hkey``.</span>
+<span class="sd">    In-memory least recently used (LRU) cache decorator for functions with arbitrary (e.g. unhashable numpy array)</span>
+<span class="sd">    arguments. The cache key is either computed by the ``key`` function or given by the caller.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    maxsize : int, optional</span>
+<span class="sd">        maximum number of cached results. When exceeded, the least recently used result is evicted. With</span>
+<span class="sd">        ``maxsize &lt;= 0``, nothing is cached and the decorator adds no overhead. Default is 10.</span>
+<span class="sd">    key : callable, optional</span>
+<span class="sd">        function called with the arguments of the decorated function, returning the (hashable) cache key, e.g.</span>
+<span class="sd">        ``lambda arr, k: (arr.tobytes(), k)``. It is only called when caching is active (``maxsize &gt; 0``), and</span>
+<span class="sd">        the decorated function is then called with its usual arguments.</span>
+<span class="sd">        If not given, the key is the optional keyword argument ``hkey`` passed at each call</span>
+<span class="sd">        (e.g. ``func(arr, hkey=my_key)``), which is removed before calling the function. Calls without ``hkey``</span>
+<span class="sd">        (or with ``hkey=None``) are not cached.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    callable</span>
+<span class="sd">        the decorator. Each decorated function has its own cache, kept in memory until the end of the process.</span>
+<span class="sd">        The cache can be used from several threads. Each process has its own cache: a process created by ``fork``</span>
+<span class="sd">        starts with a copy of the parent's cache (the fork waits until no thread is reading or writing it), one</span>
+<span class="sd">        created by ``spawn`` or ``forkserver`` with an empty cache.</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    The cache size of the functions cached by grid-process is read when the module is imported, from</span>
+<span class="sd">    ``grid_process/config/grid_process.yaml`` or the environment variables ``GRID_PROCESS__cache_size__&lt;name&gt;``</span>
+<span class="sd">    (e.g. ``GRID_PROCESS__cache_size__nn_lookup=0`` to deactivate the cache of nearest neighbor lookups).</span>
 <span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">real_memoize</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">F</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">F</span><span class="p">:</span>
-        <span class="n">cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">hkeys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">maxsize</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">func</span>
 
-        <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">_memoize</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-            <span class="n">hkey</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"hkey"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">hkey</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"@memoize: </span><span class="si">%s</span><span class="s2"> cached!"</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
-                <span class="k">return</span> <span class="n">cache</span><span class="p">[</span><span class="n">hkey</span><span class="p">]</span>
+            <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">_no_cache</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"hkey"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">_no_cache</span><span class="p">)</span>
+
+        <span class="n">cache</span><span class="p">:</span> <span class="n">OrderedDict</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="c1"># held only for the cache reads and writes: nothing slow (e.g. func) or forking may run while it is held</span>
+        <span class="n">lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">os</span><span class="p">,</span> <span class="s2">"register_at_fork"</span><span class="p">):</span>  <span class="c1"># POSIX only</span>
+            <span class="c1"># a fork waits until no other thread holds the lock: the child gets a consistent cache and a free lock</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">register_at_fork</span><span class="p">(</span><span class="n">before</span><span class="o">=</span><span class="n">lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">,</span> <span class="n">after_in_parent</span><span class="o">=</span><span class="n">lock</span><span class="o">.</span><span class="n">release</span><span class="p">,</span> <span class="n">after_in_child</span><span class="o">=</span><span class="n">lock</span><span class="o">.</span><span class="n">release</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_cached_call</span><span class="p">(</span><span class="n">hkey</span><span class="p">:</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hkey</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">lock</span><span class="p">:</span>
+                    <span class="n">hit</span> <span class="o">=</span> <span class="n">hkey</span> <span class="ow">in</span> <span class="n">cache</span>
+                    <span class="k">if</span> <span class="n">hit</span><span class="p">:</span>
+                        <span class="n">cache</span><span class="o">.</span><span class="n">move_to_end</span><span class="p">(</span><span class="n">hkey</span><span class="p">)</span>
+                        <span class="n">result</span> <span class="o">=</span> <span class="n">cache</span><span class="p">[</span><span class="n">hkey</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">hit</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"@memoize: </span><span class="si">%s</span><span class="s2"> cached!"</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">result</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"@memoize: </span><span class="si">%s</span><span class="s2"> computing ..."</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
             <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">hkey</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">cache</span><span class="p">[</span><span class="n">hkey</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
-                <span class="n">hkeys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hkey</span><span class="p">)</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">hkeys</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">maxsize</span><span class="p">:</span>
-                    <span class="n">cache</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">hkeys</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"@memoize: </span><span class="si">%s</span><span class="s2"> cache size is </span><span class="si">%s</span><span class="s2">}"</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cache</span><span class="p">))</span>
-
+                <span class="k">with</span> <span class="n">lock</span><span class="p">:</span>
+                    <span class="n">cache</span><span class="p">[</span><span class="n">hkey</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+                    <span class="n">cache</span><span class="o">.</span><span class="n">move_to_end</span><span class="p">(</span><span class="n">hkey</span><span class="p">)</span>
+                    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">maxsize</span><span class="p">:</span>
+                        <span class="n">cache</span><span class="o">.</span><span class="n">popitem</span><span class="p">(</span><span class="n">last</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="n">size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"@memoize: </span><span class="si">%s</span><span class="s2"> cache size is </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">result</span>
 
-        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">_memoize</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">get_key</span> <span class="o">=</span> <span class="n">key</span>
+
+            <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">_memoize_key</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">_cached_call</span><span class="p">(</span><span class="n">get_key</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">_memoize_key</span><span class="p">)</span>
+
+        <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_memoize_hkey</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+            <span class="n">hkey</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"hkey"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">_cached_call</span><span class="p">(</span><span class="n">hkey</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">_memoize_hkey</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">real_memoize</span></div>
 
@@ -487,10 +551,10 @@
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-e479e16</div>
+grid-process, version: dev-95d3ab4</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 11.11.2026.
+  Last updated on 12.11.2026.
   <br/>
 </p></div>
       

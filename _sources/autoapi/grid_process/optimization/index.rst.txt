@@ -33,9 +33,30 @@ Module Contents
 
 .. py:data:: F
 
-.. py:function:: memoize(maxsize: int = 10) -> collections.abc.Callable[[F], F]
+.. py:function:: memoize(maxsize: int = 10, key: collections.abc.Callable[..., collections.abc.Hashable] | None = None) -> collections.abc.Callable[[F], F]
 
-   LRU cache decorator implementation for any arbitrary input since the
-   caching is purely based on the optional keyword argument ``hkey``.
+   In-memory least recently used (LRU) cache decorator for functions with arbitrary (e.g. unhashable numpy array)
+   arguments. The cache key is either computed by the ``key`` function or given by the caller.
+
+   :Parameters: * **maxsize** (*int, optional*) -- maximum number of cached results. When exceeded, the least recently used result is evicted. With
+                  ``maxsize <= 0``, nothing is cached and the decorator adds no overhead. Default is 10.
+                * **key** (*callable, optional*) -- function called with the arguments of the decorated function, returning the (hashable) cache key, e.g.
+                  ``lambda arr, k: (arr.tobytes(), k)``. It is only called when caching is active (``maxsize > 0``), and
+                  the decorated function is then called with its usual arguments.
+                  If not given, the key is the optional keyword argument ``hkey`` passed at each call
+                  (e.g. ``func(arr, hkey=my_key)``), which is removed before calling the function. Calls without ``hkey``
+                  (or with ``hkey=None``) are not cached.
+
+   :returns: the decorator. Each decorated function has its own cache, kept in memory until the end of the process.
+             The cache can be used from several threads. Each process has its own cache: a process created by ``fork``
+             starts with a copy of the parent's cache (the fork waits until no thread is reading or writing it), one
+             created by ``spawn`` or ``forkserver`` with an empty cache.
+   :rtype: callable
+
+   .. note::
+
+      The cache size of the functions cached by grid-process is read when the module is imported, from
+      ``grid_process/config/grid_process.yaml`` or the environment variables ``GRID_PROCESS__cache_size__<name>``
+      (e.g. ``GRID_PROCESS__cache_size__nn_lookup=0`` to deactivate the cache of nearest neighbor lookups).
 
 
