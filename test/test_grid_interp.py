@@ -1799,3 +1799,26 @@ def test_interp2poi_all_pois_outside_unstructured_grid():
     assert out["t"].dtype == np.float32
     np.testing.assert_array_equal(out["step"], [0, 1])
     assert out["t"].isnull().all()
+
+
+@pytest.mark.parametrize(
+    ("method", "kwargs", "expected"),
+    [
+        ("nearest", {}, 1),
+        ("linear", {}, 1),
+        ("cubic", {}, 2),
+        ("idw_3D", {"k": 4}, 4),
+        ("idw", {"k": 9, "weight_power": 0.25}, 3),
+        ("nearest_alt", {"r_search": 1.7}, 3),
+        ("temp", {"z_fact": 15, "k": 50, "weight_power": 0.75}, 5),
+    ],
+)
+def test_get_buffer(method, kwargs, expected):
+    """
+    The slicing buffer grows with the number of neighbors ``k``, the search radius ``r_search``, and for ``cubic``
+    and the 3D methods
+    """
+
+    from grid_process.grid_interp import get_buffer  # pylint: disable=import-outside-toplevel
+
+    assert get_buffer(method, **kwargs) == expected

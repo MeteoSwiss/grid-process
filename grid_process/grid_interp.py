@@ -1972,7 +1972,7 @@ def slice_boundingbox(
         pois_x = _wrap_lon(pois_x, _lon_center(data[grid_x].values))
     yx_bnds = ((pois_y.min().item(), pois_y.max().item()), (pois_x.min().item(), pois_x.max().item()))
 
-    buffer = _get_buffer(method, **kwargs)
+    buffer = get_buffer(method, **kwargs)
     sub_domain, _ = _get_sub_domain(data, spatial_dims, (grid_y, grid_x), yx_bnds, buffer, grid_crs.is_geographic)
     return data.isel(sub_domain)
 
@@ -2025,7 +2025,7 @@ def slice_coarsen(  # pylint: disable=too-many-locals
 
     yx_bnds = ((y_coords.min(), y_coords.max()), (x_coords.min(), x_coords.max()))
 
-    buffer = _get_buffer(method, **kwargs)
+    buffer = get_buffer(method, **kwargs)
     sub_domain, res = _get_sub_domain(data, spatial_dims, coords_crs[:2], yx_bnds, buffer, grid_crs.is_geographic)
     data_sub = data.isel(sub_domain)
 
@@ -2070,10 +2070,24 @@ def slice_coarsen(  # pylint: disable=too-many-locals
     return data_sub
 
 
-def _get_buffer(method: str, **kwargs: Any) -> int:
+def get_buffer(method: str, **kwargs: Any) -> int:
     """
-    Buffer specific to the interpolation method to add when slicing input dataset
-    to target grid or POIs
+    Buffer specific to the interpolation method to add when slicing the input dataset to the target grid or POIs
+    (see :func:`slice_boundingbox`).
+
+    Parameters
+    ----------
+    method : str
+        interpolation method, as in :func:`interp2poi` or :func:`interp2grid`
+    **kwargs
+        keyword arguments of the interpolation method. ``k`` (number of neighbors) and ``r_search`` (search radius
+        in grid points) widen the buffer; the others are ignored.
+
+    Returns
+    -------
+    int
+        buffer in number of grid points: 1, plus 1 for ``cubic`` and the 3D methods, plus ``ceil(sqrt(k / pi))``,
+        plus ``ceil(r_search)``.
     """
 
     buffer = 1

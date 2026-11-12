@@ -64,6 +64,8 @@ Unreleased
   grid to a global 0.1 degree grid), with identical results
 * fixed ``interp2poi`` raising an ``IndexError`` when all POIs are outside an unstructured grid (no grid point left
   after slicing): they now get NaN, as outside of the regular grid interpolation
+* made ``grid_interp.get_buffer`` public (renamed from ``_get_buffer``): the slicing buffer in grid points of an
+  interpolation method and its arguments, e.g. to slice the input data with ``slice_boundingbox`` beforehand
 
 1.0.0
 -----
