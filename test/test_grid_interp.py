@@ -6,6 +6,8 @@
 
 """Tests for the grid_interp module"""
 
+import warnings
+
 import pytest
 import numpy as np
 import xarray as xr
@@ -1767,3 +1769,33 @@ def test_valid_points():
     expected = ~xr.DataArray(scattered, dims=("cell", "member", "step")).isnull().all(("member", "step")).values
     assert not expected.all()
     np.testing.assert_array_equal(_valid_points(scattered), expected)
+
+
+def test_interp2poi_all_pois_outside_unstructured_grid():
+    """
+    POIs all outside an unstructured grid (no grid point left after slicing) get NaN, with the other dimensions,
+    without numpy warnings
+    """
+
+    import grid_process.grid_interp as gri  # pylint: disable=import-outside-toplevel
+
+    rng = np.random.default_rng(0)
+    data = xr.Dataset(
+        {"t": (("step", "cell"), rng.random((2, 50), dtype=np.float32))},
+        coords={
+            "step": [0, 1],
+            "latitude": ("cell", rng.uniform(46, 47, 50)),
+            "longitude": ("cell", rng.uniform(7, 8, 50)),
+        },
+        attrs={"crs": "EPSG:4326"},
+    )
+    pois = gpd.GeoDataFrame({"name": ["paris"]}, geometry=gpd.points_from_xy([2.35], [48.85]), crs="EPSG:4326")
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)  # e.g. "Mean of empty slice"
+        out = gri.interp2poi(data, pois, "nearest")
+
+    assert out["t"].dims == ("poi", "step")
+    assert out["t"].dtype == np.float32
+    np.testing.assert_array_equal(out["step"], [0, 1])
+    assert out["t"].isnull().all()

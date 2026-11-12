@@ -62,6 +62,8 @@ Unreleased
   fields (excluded, as before) only among those with NaN in the middle field. Later calls with cached neighbors are
   faster on large grids (e.g. 0.13 s to 0.05 s for a global 0.25 degree grid to 33 POIs, 1.6 s to 0.5 s from this
   grid to a global 0.1 degree grid), with identical results
+* fixed ``interp2poi`` raising an ``IndexError`` when all POIs are outside an unstructured grid (no grid point left
+  after slicing): they now get NaN, as outside of the regular grid interpolation
 
 1.0.0
 -----

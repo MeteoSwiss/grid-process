@@ -974,6 +974,8 @@ def interp2poi(
         Returns a dataset full of NaNs with correct dimensions
         """
 
+        # an unstructured grid can have no point left after slicing (all POIs outside): pad so its first point exists
+        data = data.pad({dim: (0, 1) for dim in spatial_dims if data.sizes[dim] == 0})
         da = (
             data.isel({dim: 0 for dim in spatial_dims}, drop=True)
             .expand_dims({POI_DIM: poi_info[POI_COORD_COL].to_numpy(dtype=str)})
@@ -2164,6 +2166,9 @@ def _get_sub_domain(  # pylint: disable=too-many-locals
             factor = lon_buffer_factor(res_approx)
             x_bnds, x_factor = ((-np.inf, np.inf), 1.0) if factor is None else (x_bnds, factor)
         cond_xy = get_cond_xy(2 * res_approx, x_factor)
+        if np.count_nonzero(cond_xy) < 2:  # (nearly) no grid point near the destination, e.g. all POIs outside the
+            # grid: empty selection, as the resolution of fewer than 2 points is NaN (without "Mean of empty slice")
+            return {spatial_dims[0]: np.zeros_like(cond_xy)}, np.nan
         res = _get_flat_grid_res(data[grid_x][cond_xy], data[grid_y][cond_xy])
         cond_xy = get_cond_xy(buffer * res * 1.5, x_factor)
         return {spatial_dims[0]: cond_xy}, res
