@@ -7,10 +7,28 @@ Unreleased
 
 **Changes of results** (compared to 1.1.0, see the entries below for details)
 
-* the coarsening of the source grid by ``interp2grid`` (to a coarser destination grid) skips NaN: a coarsened
-  cell with some NaN values gets the mean of its valid values instead of NaN, only cells with all values NaN stay NaN
-* coarsened float32 values differ from before by float32 rounding, growing with the window size (for 2 m
-  temperature, up to 3e-5 K for a 2 x 2 window and 2e-4 K for 10 x 10)
+* ``interp2grid`` averages a source grid finer than the destination grid per destination cell, instead of per
+  window of source grid points aligned on the source grid. The results change most where the windows were offset
+  from the destination cells: the 50 m DEM of the seamless weather provider to the seamless 2 km grid
+  (``linear``) by 61.6 m RMSE (380 m max), as the windows were 1 km off the cells in x and ``linear`` averaged two
+  of them (a 4 x 2 km box); gridefix ICON-CH1 to the seamless 2 km grid by 2 W m-2 (``idw``) to 6 W m-2
+  (``nearest_alt``) RMSE for the diffuse radiation, INCA by less
+* NaN are ignored in the averaging: a cell is NaN only if all its source values are NaN (e.g. for the snow limit,
+  NaN below the orography). Destination cells at the edge of the source are no longer NaN (e.g. 314 cells for the
+  DEM above with ``try_reg=False``, a row for ERA5 to a global 1 degree grid)
+* unstructured source grids are averaged too: native ICON-CH1 to the seamless 2 km grid changes by 0.25 to 0.5 K
+  RMSE for the 2 m temperature, and gets closer to gridefix ICON-CH1 (surface altitude RMSE 108 m → 56 m with
+  ``idw``, 91 m → 71 m with ``linear``)
+* ``nearest`` and ``linear`` to a coarser destination grid give the mean of the source points of each destination
+  cell, whatever ``try_reg``, instead of interpolating between the averaged windows; the other methods interpolate
+  from the mean position of the points of each cell. The averaged values are float32 for float32 and 8 or 16 bit
+  integer data, float64 otherwise (``try_reg=True`` returned the source dtype, e.g. truncated int16 means), and the
+  dimensions are in the order of the source
+* ``slice_coarsen`` returns an unstructured dataset (dimension ``cell`` by default, coordinates in the destination
+  CRS) when it averages the source grid
+* the slicing buffer of ``interp2grid``, ``slice_coarsen`` and ``slice_boundingbox`` counts grid steps of the
+  coarser of the source and destination grids, and the grid step of unstructured sources is estimated from the
+  area per point (more robust, e.g. for ICON triangles)
 
 **Changes**
 
@@ -21,9 +39,18 @@ Unreleased
   0.24 s. A sliced source that is not contiguous in memory is now copied into contiguous rows per grid point, which
   is slower for large sources: ICON-CH2 in LV95 to the seamless 2 km grid with ``nearest_alt`` or ``temp_fixgrad``
   0.23 s → 0.29 s and 0.34 s → 0.39 s
-* changed the coarsening of the source grid by ``interp2grid`` to skip NaN (e.g. for the snow limit, NaN below the
-  orography), with bottleneck. ICON-CH1 to the seamless 2 km grid (with cached neighbors) is about 1.4 times
-  faster (e.g. ``nearest_alt`` 0.30 s → 0.21 s), with about 0.05 GB more peak memory (copy of the windows)
+* changed the averaging of a source grid finer than the destination grid by ``interp2grid`` (and
+  ``slice_coarsen``): the mean of the source points of each destination cell (the cell of their nearest destination
+  node along x and y), with a sparse matrix product, for regular and unstructured sources (unstructured sources
+  were not averaged, with a warning), if the destination grid has regular 1D coordinates in its CRS (otherwise
+  with a warning). For the seamless 2 km grid (with cached neighbors): gridefix ICON-CH1 ``idw`` 0.43 s → 0.27 s,
+  ``nearest_alt`` 0.31 s → 0.16 s, ``linear`` 0.54 s → 0.13 s, with up to 0.13 GB more peak memory (copy of the
+  sliced source into contiguous rows per grid point, e.g. ``nearest_alt`` 0.07 GB → 0.20 GB); the 50 m DEM
+  ``linear`` 0.13 s → 0.07 s; native ICON-CH1 ``linear`` 0.03 s instead of 1.05 s without averaging.
+  ``interp2grid`` on the output of ``slice_coarsen`` (with the same destination grid and method) gives the same
+  result as on the source grid
+* added ``slice_grid``: slices a source grid to a destination grid, keeping its structure and CRS (the grid
+  counterpart of ``slice_boundingbox``)
 * added ``values`` to the default names of the unstructured grid dimension
   (``GRID_PROCESS__data_model__grid__unstructured_dim``): the dimension of non-regular GRIB grids read with cfgrib or
   earthkit-data, e.g. ICON open data, no longer needs to be renamed

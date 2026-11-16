@@ -235,8 +235,18 @@ def outer_ring(x_coords: np.ndarray, y_coords: np.ndarray) -> tuple[np.ndarray, 
         1D coordinates of the outer ring points (first and last rows, then first and last columns)
     """
 
-    if x_coords.ndim == 1:
-        x_coords, y_coords = np.meshgrid(x_coords, y_coords)
+    if x_coords.ndim == 1:  # without building the 2D grid
+        n_inner = max(y_coords.size - 2, 0)
+        return (
+            np.concatenate([x_coords, x_coords, np.tile(x_coords[[0, -1]], n_inner)]),
+            np.concatenate(
+                [
+                    np.full_like(x_coords, y_coords[0], dtype=y_coords.dtype),
+                    np.full_like(x_coords, y_coords[-1], dtype=y_coords.dtype),
+                    np.repeat(y_coords[1:-1], 2),
+                ]
+            ),
+        )
 
     def ring(coords: np.ndarray) -> np.ndarray:
         return np.append(coords[[0, -1], :].ravel(), coords[1:-1, [0, -1]].ravel())

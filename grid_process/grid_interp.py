@@ -11,17 +11,17 @@ Module for spatial interpolation of gridded datasets
 """
 
 import logging
-from functools import partial
-from typing import Any, Literal
+from functools import partial, reduce
+from typing import Any, Literal, NamedTuple
 from collections.abc import Callable, Hashable
 from math import isclose, prod, ceil
 
-import bottleneck as bn
 import numpy as np
 from numpy.typing import NDArray
 import pandas as pd
 import xarray as xr
 import geopandas as gpd
+from scipy import sparse
 from scipy.interpolate import griddata
 from scipy.spatial import KDTree
 from pyproj import CRS, Transformer
@@ -54,6 +54,12 @@ POI_MODEL = CONFIG.data_model.poi
 POI_DIM = POI_MODEL.dim
 POI_COORD_COL = POI_MODEL.coord_from
 SRC_ATTRS_KEEP = ("source", "title", "institution", "history", "references", "comment")
+DST_ATTRS_KEEP = ("grid_mapping", "crs", "bounding_box")  # CRS attributes of the destination grid
+# A source grid with at least this mean number of points per destination cell (e.g. 2 x 2 points with some margin)
+# is averaged per destination cell before interpolating, see slice_coarsen
+COARSEN_MIN_DENSITY = 2.25
+ON_NODE_TOL = 1e-3  # [destination grid step] max distance of a source point to a destination node to be on it
+NO_CELL = -(2**40)  # cell index of the source points without destination cell (non-finite reprojection)
 # CRS of the nearest neighbor searches and triangulations when both grids are geographic (lat/lon, rotated pole):
 # Swiss LV95 if the destination is close enough to Switzerland, otherwise earth-centered earth-fixed (ECEF)
 LV95 = CRS.from_epsg(2056)
@@ -1602,7 +1608,8 @@ def interp2grid(
     try_reg : bool, default True
         If True, attempts regular grid interpolation for structured source grids with 1D coordinates when ``method`` is
         'nearest' or 'linear'. Regular grid interpolation is typically more efficient for large grids, but may be less
-        so for small grids with many trailing dimensions.
+        so for small grids with many trailing dimensions. Without effect when the source is averaged per destination
+        cell (see the notes).
     **kwargs : Any
         Additional arguments passed to the specific interpolation sub-function, named `interp_<method>`.
 
@@ -1629,6 +1636,15 @@ def interp2grid(
     - Recommended methods: 'nearest', 'linear' (if the source grid is regular with 1D coordinates), 'idw' (with k=4),
       'temp_fixgrad', 'nearest_3D', 'nearest_alt'.
     - Environment variables allow flexible support for custom grid data models.
+    - The source grid is first sliced to the destination grid (see :func:`slice_grid`). If it is finer than the
+      destination grid (on average at least 2.25 points per destination cell), it is then averaged per destination
+      cell, ignoring NaN (see :func:`slice_coarsen`): a regular or unstructured source, if the destination grid has
+      regular 1D coordinates in its CRS (otherwise with a warning). For 'nearest' and 'linear', the result is
+      directly the mean of the source points of each destination cell, NaN only if all of them are NaN or if it has
+      none, in float32 for float32 and 8 or 16 bit integer data, float64 otherwise, with the dimensions in the order
+      of the source (the spatial ones replaced at their position), whatever ``try_reg``. The other methods
+      interpolate from the mean position of the points of each cell. The same holds for a source averaged by
+      :func:`slice_coarsen` with the same destination grid and method.
     - Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for 'linear',
       'linear_3D' and 'cubic' are done) with distances in meters, never in latitude/longitude degrees. The source
       grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and
@@ -1683,6 +1699,15 @@ def interp2grid(
     dst_grid = dm.set_grid_mapping(dst_grid)
     dst_grid = dst_grid.drop_dims(set(dst_grid.dims) - set(dst_spatial_dims))
 
+    # slice to the destination grid, and average the source per destination cell if finer (see slice_coarsen)
+    data, cells = _slice_cells(data, dst_grid, method, src_spatial_dims, dst_spatial_dims, **kwargs)
+    if cells is not None and method in ("nearest", "linear"):
+        if cells.density >= COARSEN_MIN_DENSITY or cells.on_nodes:  # the cell means are the destination values
+            return _cells_to_grid(data, src_spatial_dims, cells, dst_grid)
+    if cells is not None and cells.density >= COARSEN_MIN_DENSITY:
+        data = _coarsen_cells(data, src_spatial_dims, cells, dst_grid, nodes=False)
+        src_spatial_dims = dm.get_spatial_dims(data)
+
     cond_reg = (
         method in ("nearest", "linear") and len(src_spatial_dims) > 1 and set(src_spatial_dims).issubset(data.coords)
     )
@@ -1697,7 +1722,6 @@ def interp2grid(
 
     dst_grid = dst_grid.transpose(*dst_spatial_dims)
 
-    data = slice_coarsen(data, dst_grid, method, src_spatial_dims, dst_spatial_dims, **kwargs)
     data, vars_attrs = ds_to_da(data, copy=False)  # type: ignore[assignment]
     data = data.transpose(*src_spatial_dims, ...)
     coords_flat, data_flat, dst_coords_flat = _flatten_concat_grids(
@@ -1769,33 +1793,12 @@ def _interp_grid_regular(
 
         return xr.DataArray(x_coords_val, dims=dst_spatial_dims), xr.DataArray(y_coords_val, dims=dst_spatial_dims)
 
-    def _coarsen_interp() -> xr.Dataset:
+    def _interp() -> xr.Dataset:
         """
-        Coarsen input dataset if needed (downsampling) and perform regular interpolation
+        Regular interpolation
         """
 
-        src_coords_crs = src_spatial_dims + (src_crs,)
-        res_ratio_x, res_ratio_y = _get_coarsen_ratio(
-            data,
-            src_spatial_dims,
-            src_coords_crs,
-            dst_grid,
-            dst_spatial_dims,
-            dst_coords_crs,
-        )
-        interp_data = data
-        if (res_ratio_x > 1) or (res_ratio_y > 1):
-            coarsen_specs = {
-                dim: ratio
-                for dim, ratio in (
-                    (src_spatial_dims[0], res_ratio_y),
-                    (src_spatial_dims[1], res_ratio_x),
-                )
-                if ratio > 1
-            }
-            interp_data = interp_data.coarsen(coarsen_specs, boundary="trim").reduce(_window_nanmean)
-
-        interp_data = _y_increasing(interp_data, src_spatial_dims[0])
+        interp_data = _y_increasing(data, src_spatial_dims[0])
         x_targets = x_coords
         if src_crs.is_geographic:  # longitudes in the convention of the grid, across the 360 degree seam
             x_targets = x_coords.copy(
@@ -1819,12 +1822,11 @@ def _interp_grid_regular(
     if _cond_dst_1d():
         dst_crs = dm.get_grid_crs(dst_grid)
         if src_crs == dst_crs:
-            dst_coords_crs = dst_spatial_dims + (dst_crs,)
             x_coords, y_coords = (
                 dst_grid[dst_spatial_dims[1]].drop_vars(dst_spatial_dims[1]),
                 dst_grid[dst_spatial_dims[0]].drop_vars(dst_spatial_dims[0]),
             )
-            return _coarsen_interp()
+            return _interp()
 
     dst_grid = dst_grid.transpose(*dst_spatial_dims)
     # chose to use lat/lon if present in dst_grid otherwise native coordinates
@@ -1832,7 +1834,7 @@ def _interp_grid_regular(
 
     x_coords, y_coords = _reproject_dst_2d()
 
-    return _coarsen_interp()
+    return _interp()
 
 
 def _flatten_concat_grids(  # pylint: disable=too-many-locals
@@ -1977,7 +1979,7 @@ def slice_boundingbox(
     return data.isel(sub_domain)
 
 
-def slice_coarsen(  # pylint: disable=too-many-locals
+def slice_grid(
     data: xr.Dataset,
     dst_grid: xr.Dataset,
     method: str,
@@ -1986,105 +1988,618 @@ def slice_coarsen(  # pylint: disable=too-many-locals
     **kwargs: Any,
 ) -> xr.Dataset:
     """
-    Slice input dataset to the extend of the destination grid and coarsen it if the
-    destination grid has lower resolution (downsampling).
+    Slice the source grid to the extent of the destination grid plus a buffer depending on the interpolation method
+    and its arguments, keeping its structure (two spatial dimensions or unstructured), its coordinates and its CRS.
+    The grid counterpart of :func:`slice_boundingbox`, as done by :func:`interp2grid` before interpolating.
+
+    Parameters
+    ----------
+    data : xarray.Dataset
+        source grid, see :func:`interp2grid`
+    dst_grid : xarray.Dataset
+        destination grid, see :func:`interp2grid`
+    method : str
+        interpolation method, as in :func:`interp2grid`
+    spatial_dims, dst_spatial_dims : tuple of str, optional
+        spatial dimensions of the source and destination grids: (y, x), or the unstructured dimension of the source.
+        By default found with :func:`~grid_process.data_model.get_spatial_dims`.
+    **kwargs
+        keyword arguments of the interpolation method, see :func:`get_buffer`
+
+    Returns
+    -------
+    xarray.Dataset
+        the sliced source grid. Around the extent of the destination grid, it keeps a buffer of :func:`get_buffer`
+        grid steps of the coarser of the source and destination grids (times 1.5 for an unstructured source, and
+        wider in longitude towards the poles for a latitude/longitude source).
+
+    See also
+    --------
+    :func:`slice_coarsen`
     """
-
-    def extra_buffer(ratio: int) -> int:
-        """
-        Extra buffer to add when input data is coarsened.
-        """
-
-        if buffer == 1:
-            return ceil(ratio / 2)
-
-        return (ratio - 1) * (buffer - 1)
 
     if spatial_dims is None:
         spatial_dims = dm.get_spatial_dims(data)
     if dst_spatial_dims is None:
         dst_spatial_dims = dm.get_spatial_dims(dst_grid)
 
-    coords_crs = dm.get_coords_name_crs(data, spatial_dims)
-    dst_coords_crs = dm.get_coords_name_crs(dst_grid, dst_spatial_dims)
-    grid_crs, dst_grid_crs = coords_crs[2], dst_coords_crs[2]
+    return _slice_grid(data, dm.set_grid_mapping(dst_grid), method, spatial_dims, dst_spatial_dims, **kwargs)[0]
 
-    x_coords, y_coords = (
-        dst_grid[dst_coords_crs[1]].values,
-        dst_grid[dst_coords_crs[0]].values,
+
+def slice_coarsen(
+    data: xr.Dataset,
+    dst_grid: xr.Dataset,
+    method: str,
+    spatial_dims: tuple[str, ...] | None = None,
+    dst_spatial_dims: tuple[str, ...] | None = None,
+    **kwargs: Any,
+) -> xr.Dataset:
+    """
+    Slice the source grid to the destination grid (see :func:`slice_grid`) and average it per destination cell if
+    it is finer than the destination grid, as :func:`interp2grid` does before interpolating. Calling
+    :func:`interp2grid` on the result, with the same destination grid and method, gives the same result as calling
+    it on the source grid: operations in between (e.g. unit conversions or time aggregations) are done on fewer
+    points.
+
+    The source grid is averaged when the destination grid has regular 1D dimension coordinates (constant step) in
+    its CRS, and the source has on average at least 2.25 points (e.g. 2 x 2 points with some margin) per occupied
+    destination cell. Each source point belongs to the cell of its nearest destination node along x and along y,
+    including the cells beyond the destination grid, in the buffer. Otherwise the sliced source grid is returned.
+
+    When averaged, the dataset is unstructured:
+
+    - its spatial dimension is the one of the source if unstructured, otherwise the first unstructured dimension
+      name of the configuration (``cell`` by default). It has one point per cell containing source points, in
+      increasing (y, x) order of the cells. The cells only depend on the positions of the source points: several
+      datasets on the same source grid get the same cells in the same order;
+    - its spatial coordinates are in the CRS of the destination grid, with the names and attributes of the
+      destination dimension coordinates, and the dataset gets the CRS attributes of the destination
+      (``crs``, ``grid_mapping``, ``bounding_box``). For the methods 'nearest' and 'linear', they are the
+      coordinates of the destination nodes: the mean of a cell is the value of its destination grid point, which
+      :func:`interp2grid` takes without interpolating. For the other methods, they are the mean coordinates of the
+      source points of each cell, the actual position of the averaged data (e.g. for 'idw' or 'nearest_alt');
+    - the data variables and the numeric coordinates on the spatial dimensions (e.g. the surface altitude) are
+      averaged ignoring NaN: a cell is NaN only if all its source values are NaN. The result is float32 for float32
+      and 8 or 16 bit integer data, float64 otherwise. The other coordinates on the spatial dimensions (e.g. the
+      latitude and longitude of the source) are dropped. Dask arrays stay lazy (with a single chunk along the
+      spatial dimension).
+
+    Parameters
+    ----------
+    data : xarray.Dataset
+        source grid, see :func:`interp2grid`
+    dst_grid : xarray.Dataset
+        destination grid, see :func:`interp2grid`
+    method : str
+        interpolation method, as in :func:`interp2grid`
+    spatial_dims, dst_spatial_dims : tuple of str, optional
+        spatial dimensions of the source and destination grids: (y, x), or the unstructured dimension of the source.
+        By default found with :func:`~grid_process.data_model.get_spatial_dims`.
+    **kwargs
+        keyword arguments of the interpolation method, see :func:`get_buffer`
+
+    Returns
+    -------
+    xarray.Dataset
+        the sliced source grid, averaged per destination cell if finer than the destination grid
+    """
+
+    if spatial_dims is None:
+        spatial_dims = dm.get_spatial_dims(data)
+    if dst_spatial_dims is None:
+        dst_spatial_dims = dm.get_spatial_dims(dst_grid)
+
+    dst_grid = dm.set_grid_mapping(dst_grid)
+    data, cells = _slice_cells(data, dst_grid, method, spatial_dims, dst_spatial_dims, **kwargs)
+    if cells is None or cells.density < COARSEN_MIN_DENSITY:
+        return data
+    return _coarsen_cells(data, spatial_dims, cells, dst_grid, nodes=method in ("nearest", "linear"))
+
+
+class _DstAxes(NamedTuple):
+    """
+    Regular 1D axes of a destination grid, see :func:`_dst_axes`
+    """
+
+    y_dim: str
+    x_dim: str
+    crs: CRS
+    y0: float
+    dy: float
+    ny: int
+    x0: float
+    dx: float
+    nx: int
+
+
+class _Cells(NamedTuple):
+    """
+    Destination cell of the source points, see :func:`_dst_cells`
+    """
+
+    axes: _DstAxes
+    separable: bool  # source with 1D coordinates in the destination CRS: i per x point, j per y point
+    i: np.ndarray  # x index of the cell of each point (or x point), NO_CELL without cell
+    j: np.ndarray  # y index of the cell of each point (or y point), NO_CELL without cell
+    x: np.ndarray  # x coordinate of each point (or x point) in the destination CRS
+    y: np.ndarray  # y coordinate of each point (or y point) in the destination CRS
+    density: float  # mean number of points per occupied cell of the destination grid (0 if none)
+    on_nodes: bool  # whether all the points of an unstructured source are on destination nodes
+
+
+def _slice_grid(
+    data: xr.Dataset,
+    dst_grid: xr.Dataset,
+    method: str,
+    spatial_dims: tuple[str, ...],
+    dst_spatial_dims: tuple[str, ...],
+    **kwargs: Any,
+) -> tuple[xr.Dataset, float, float]:
+    """
+    :func:`slice_grid`, also returning the grid steps of the source and of the destination (along its first row and
+    column) in the source coordinates (e.g. meters or degrees), as the max of the median steps along x and y
+    (see :func:`_get_sub_domain` for an unstructured source). ``dst_grid`` must have its grid mapping set
+    (:func:`~grid_process.data_model.set_grid_mapping`).
+    """
+
+    grid_y, grid_x, grid_crs = dm.get_coords_name_crs(dm.set_grid_mapping(data), spatial_dims)
+    lon_center = _lon_center(data[grid_x].values) if grid_crs.is_geographic else None
+    yx_bnds, dst_step = _dst_extent(dst_grid, dst_spatial_dims, grid_crs, lon_center)
+    sub_domain, src_step = _get_sub_domain(
+        data, spatial_dims, (grid_y, grid_x), yx_bnds, get_buffer(method, **kwargs), grid_crs.is_geographic, dst_step
     )
+    return data.isel(sub_domain), src_step, dst_step
 
-    if grid_crs != dst_grid_crs:
-        # only keep the outer rectangle
-        x_coords, y_coords = outer_ring(x_coords, y_coords)
 
-        # Reproject destination coordinates in the grid CRS
-        x_coords, y_coords = reproject(x_coords, y_coords, dst_grid_crs, grid_crs)
-    if grid_crs.is_geographic:  # longitudes in the convention of the grid (e.g. 0..360 or -180..180)
-        x_coords = _wrap_lon(x_coords, _lon_center(data[coords_crs[1]].values))
+def _dst_extent(
+    dst_grid: xr.Dataset, dst_spatial_dims: tuple[str, ...], grid_crs: CRS, lon_center: float | None
+) -> tuple[tuple[tuple[float, float], tuple[float, float]], float]:
+    """
+    Bounds ((y_min, y_max), (x_min, x_max)) of the destination grid in ``grid_crs`` (from its outer ring, with the
+    longitudes in the convention of a geographic source centered on ``lon_center``, see :func:`_wrap_lon`), and its
+    grid step along its first row and column in ``grid_crs``, as the max of the median steps along x and y.
+    """
 
-    yx_bnds = ((y_coords.min(), y_coords.max()), (x_coords.min(), x_coords.max()))
+    dst_y, dst_x, dst_crs = dm.get_coords_name_crs(dst_grid, dst_spatial_dims)
+    x_dst, y_dst = dst_grid[dst_x].values, dst_grid[dst_y].values
+    x_ring, y_ring = outer_ring(x_dst, y_dst)
+    if x_dst.ndim == 1:  # first row and column
+        lines = [(x_dst, np.full_like(x_dst, y_dst[0])), (np.full_like(y_dst, x_dst[0]), y_dst)]
+    else:
+        lines = [(x_dst[0, :], y_dst[0, :]), (x_dst[:, 0], y_dst[:, 0])]
+    if grid_crs != dst_crs:
+        x_ring, y_ring = reproject(x_ring, y_ring, dst_crs, grid_crs)
+        lines = [reproject(x_line, y_line, dst_crs, grid_crs) for x_line, y_line in lines]
+    if lon_center is not None:
+        x_ring = _wrap_lon(x_ring, lon_center)
+    dst_step = max(_line_step(x_line, y_line) for x_line, y_line in lines)
+    return ((y_ring.min(), y_ring.max()), (x_ring.min(), x_ring.max())), dst_step
 
-    buffer = get_buffer(method, **kwargs)
-    sub_domain, res = _get_sub_domain(data, spatial_dims, coords_crs[:2], yx_bnds, buffer, grid_crs.is_geographic)
-    data_sub = data.isel(sub_domain)
 
-    # coarsen input dataset if needed (downsampling)
-    res_ratio_x, res_ratio_y = _get_coarsen_ratio(
-        data_sub,
-        spatial_dims,
-        coords_crs,
-        dst_grid,
-        dst_spatial_dims,  # type: ignore[arg-type]
-        dst_coords_crs,
-        res,
+def _line_step(x_coords: np.ndarray, y_coords: np.ndarray) -> float:
+    """
+    Median step between consecutive points of a line, as the max of the x and y steps (0 for a single point).
+    """
+
+    steps = np.maximum(
+        np.abs(np.diff(np.asarray(x_coords, dtype=np.float64))), np.abs(np.diff(np.asarray(y_coords, dtype=np.float64)))
     )
-    if (res_ratio_x > 1) or (res_ratio_y > 1):
-        if len(spatial_dims) == 1:
+    steps = steps[np.isfinite(steps)]
+    return float(np.median(steps)) if steps.size else 0.0
+
+
+def _slice_cells(
+    data: xr.Dataset,
+    dst_grid: xr.Dataset,
+    method: str,
+    spatial_dims: tuple[str, ...],
+    dst_spatial_dims: tuple[str, ...],
+    **kwargs: Any,
+) -> tuple[xr.Dataset, _Cells | None]:
+    """
+    Slice the source grid (:func:`_slice_grid`) and find the destination cell of its points (:func:`_dst_cells`)
+    when it may be needed: for an unstructured source (finer than the destination, or on its nodes, see
+    :func:`slice_coarsen`), or for a regular source whose grid step is clearly smaller than the destination one.
+    The cells are None otherwise, or if the destination grid has no regular 1D coordinates in its CRS (with a
+    warning if the source is finer). ``dst_grid`` must have its grid mapping set.
+    """
+
+    data, src_step, dst_step = _slice_grid(data, dst_grid, method, spatial_dims, dst_spatial_dims, **kwargs)
+    density = (dst_step / src_step) ** 2 if src_step > 0 else np.nan  # rough estimate, see _dst_cells
+    if len(spatial_dims) > 1 and not density >= COARSEN_MIN_DENSITY / 1.5:
+        return data, None
+
+    axes = _dst_axes(dst_grid, dst_spatial_dims)  # type: ignore[arg-type]
+    if axes is None:
+        if density >= COARSEN_MIN_DENSITY:
             logger.warning(
-                "Unstructured grid cannot be coarsened. Interpolation to a lower"
-                " resolution grid may create aliasing artifacts."
+                "The destination grid has no regular 1D coordinates in its CRS: the source grid is not averaged per"
+                " destination cell. Interpolation to a lower resolution grid may create aliasing artifacts."
             )
-            return data_sub
+        return data, None
 
-        coarsen_specs = {
-            dim: ratio
-            for dim, ratio in (
-                (spatial_dims[1], res_ratio_x),
-                (spatial_dims[0], res_ratio_y),
-            )
-            if ratio > 1
-        }
-        sub_domain.update(
-            {
-                dim: slice(  # type: ignore[misc]
-                    max(sub_domain[dim].start - extra_buffer(ratio), 0),  # type: ignore[union-attr]
-                    sub_domain[dim].stop + extra_buffer(ratio),  # type: ignore[union-attr]
-                )
-                for dim, ratio in coarsen_specs.items()
-            }
+    return data, _dst_cells(dm.set_grid_mapping(data), spatial_dims, axes)
+
+
+def _dst_axes(dst_grid: xr.Dataset, dst_spatial_dims: tuple[str, str]) -> _DstAxes | None:
+    """
+    Regular axes of the destination grid: its dimension coordinates if they are 1D with a constant step (within
+    0.1 %, e.g. for float32 coordinates), in its CRS. None otherwise, e.g. with only 2D coordinates.
+    """
+
+    if not set(dst_spatial_dims) <= set(dst_grid.coords):
+        return None
+    try:
+        crs = dm.get_grid_crs(dst_grid)
+    except ValueError:
+        return None
+
+    axes: list[float | int] = []
+    for dim in dst_spatial_dims:
+        values = dst_grid[dim].values.astype(np.float64)
+        if values.ndim != 1 or values.size < 2:
+            return None
+        step = (values[-1] - values[0]) / (values.size - 1)
+        if step == 0 or not np.allclose(np.diff(values), step, rtol=1e-3, atol=0):
+            return None
+        axes += [float(values[0]), float(step), values.size]
+
+    return _DstAxes(dst_spatial_dims[0], dst_spatial_dims[1], crs, *axes)  # type: ignore[arg-type]
+
+
+def _dst_cells(data: xr.Dataset, spatial_dims: tuple[str, ...], axes: _DstAxes) -> _Cells:
+    """
+    Destination cell (j, i) of each point of the source grid: the indices of its nearest destination node along y
+    and x, ``rint((y - y0) / dy)`` and ``rint((x - x0) / dx)``, not bounded to the destination grid so that the
+    points beyond it (in the slicing buffer) get their own cells. The source coordinates are reprojected to the
+    destination CRS (cached), with the longitudes in the convention of the destination (whose seam is on a cell
+    edge). Points with a non-finite reprojection get no cell (``NO_CELL``). For a source with 1D coordinates in the
+    destination CRS, the cells are separable: j only depends on y and i on x, computed per axis.
+
+    Also returns the mean number of points per occupied cell of the destination grid (``density``), and, for an
+    unstructured source, whether all its points are on destination nodes (within ``ON_NODE_TOL`` steps, e.g. a grid
+    averaged by :func:`slice_coarsen` for 'nearest' or 'linear').
+    """
+
+    grid_y, grid_x, grid_crs = dm.get_coords_name_crs(data, spatial_dims, prefer_projected=True)
+    separable = (
+        len(spatial_dims) == 2
+        and grid_crs == axes.crs
+        and data[grid_y].dims == spatial_dims[:1]
+        and data[grid_x].dims == spatial_dims[1:]
+    )
+    if separable:
+        x, y = data[grid_x].values.astype(np.float64), data[grid_y].values.astype(np.float64)
+    else:
+        x, y = _reproject_grid_cached(
+            _flat_coord(data, grid_x, spatial_dims), _flat_coord(data, grid_y, spatial_dims), grid_crs, axes.crs
         )
-        return data.isel(sub_domain).coarsen(coarsen_specs, boundary="trim").reduce(_window_nanmean)
+    if axes.crs.is_geographic:
+        x = _wrap_lon(x, axes.x0 + (axes.nx - 1) * axes.dx / 2)
+    i, j = _axis_index(x, axes.x0, axes.dx), _axis_index(y, axes.y0, axes.dy)
+    on_nodes = (
+        len(spatial_dims) == 1
+        and i.size > 0
+        and bool(
+            (np.abs(x - (axes.x0 + i * axes.dx)) <= ON_NODE_TOL * abs(axes.dx)).all()
+            and (np.abs(y - (axes.y0 + j * axes.dy)) <= ON_NODE_TOL * abs(axes.dy)).all()
+        )
+    )
+    return _Cells(axes, separable, i, j, x, y, _density(i, j, axes, separable), on_nodes)
 
-    return data_sub
 
-
-def _window_nanmean(values: np.ndarray, axis: tuple[int, ...]) -> np.ndarray:
+def _density(i: np.ndarray, j: np.ndarray, axes: _DstAxes, separable: bool) -> float:
     """
-    Mean over the coarsening window ``axis`` (for ``coarsen(...).reduce``) ignoring NaN: a block is NaN only if all
-    its values are NaN. bottleneck, with the window moved last and flattened, is faster than ``np.mean`` over the
-    window axes. It sums float32 in float32: the relative error grows with the window size (about 1e-7 for a 2 x 2
-    window, 2e-6 for 40 x 40).
+    Mean number of source points per occupied cell of the destination grid (0 if none), see :func:`_dst_cells`.
     """
 
-    values = np.moveaxis(values, axis, tuple(range(-len(axis), 0)))
-    return bn.nanmean(values.reshape(values.shape[: -len(axis)] + (-1,)), axis=-1)
+    in_x, in_y = (i >= 0) & (i < axes.nx), (j >= 0) & (j < axes.ny)
+    if separable:
+        n_inside = int(np.count_nonzero(in_x)) * int(np.count_nonzero(in_y))
+        occupied = np.unique(i[in_x]).size * np.unique(j[in_y]).size
+    else:
+        inside = in_x & in_y
+        n_inside = int(np.count_nonzero(inside))
+        occupied = int(np.count_nonzero(np.bincount(j[inside] * axes.nx + i[inside], minlength=axes.ny * axes.nx)))
+    return float(n_inside / occupied) if occupied else 0.0
+
+
+def _axis_index(coords: np.ndarray, start: float, step: float) -> np.ndarray:
+    """
+    Index of the nearest node of the regular axis (``start``, ``step``) of each coordinate, unbounded, ``NO_CELL``
+    for non-finite coordinates.
+    """
+
+    with np.errstate(invalid="ignore"):
+        index = np.rint((coords - start) / step)
+    finite = np.isfinite(index)
+    if finite.all():
+        return index.astype(np.int64)
+    return np.where(finite, index, NO_CELL).astype(np.int64)
+
+
+def _coarsen_cells(
+    data: xr.Dataset, spatial_dims: tuple[str, ...], cells: _Cells, dst_grid: xr.Dataset, nodes: bool
+) -> xr.Dataset:
+    """
+    Unstructured dataset with the mean of the source points of each occupied cell, located on the destination node
+    (``nodes``) or at the mean position of the points, see :func:`slice_coarsen`.
+    """
+
+    axes = cells.axes
+    weights, (cells_j, cells_i), (y_mean, x_mean) = _occupied_cells(cells)
+    flat_dim = spatial_dims[0] if len(spatial_dims) == 1 else dm.FLAT_DIM[0]
+    out = _sparse_mean_ds(dm.set_grid_mapping(data), spatial_dims, weights, (flat_dim,), (cells_i.size,), coords=True)
+    if nodes:
+        x_mean, y_mean = axes.x0 + cells_i * axes.dx, axes.y0 + cells_j * axes.dy
+    out = out.assign_coords(
+        {
+            axes.x_dim: (flat_dim, x_mean, dst_grid[axes.x_dim].attrs),
+            axes.y_dim: (flat_dim, y_mean, dst_grid[axes.y_dim].attrs),
+        }
+    )
+    out.attrs = {key: value for key, value in out.attrs.items() if key not in DST_ATTRS_KEEP}
+    out.attrs.update({key: dst_grid.attrs[key] for key in DST_ATTRS_KEEP if key in dst_grid.attrs})
+    if "crs" not in out.attrs and "grid_mapping" not in out.attrs:
+        out.attrs["crs"] = axes.crs.to_string()
+    return out
+
+
+def _occupied_cells(
+    cells: _Cells,
+) -> tuple[list[sparse.csr_array], tuple[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]]:
+    """
+    Occupied cells in (y, x) order: the 0/1 weights of their points (see :func:`_sparse_nanmean`), their (j, i)
+    indices, and the mean (y, x) coordinates of their points.
+    """
+
+    if cells.separable:  # occupied cells of the y and x axes, and their product
+        (cells_j, rows_j), (cells_i, rows_i) = _ranks(cells.j), _ranks(cells.i)
+        weights = [_index_weights(rows_j, cells_j.size), _index_weights(rows_i, cells_i.size)]
+        y_mean, x_mean = _mean_by(rows_j, cells.y, cells_j.size), _mean_by(rows_i, cells.x, cells_i.size)
+        cells_j, cells_i = (arr.ravel() for arr in np.meshgrid(cells_j, cells_i, indexing="ij"))
+        y_mean, x_mean = (arr.ravel() for arr in np.meshgrid(y_mean, x_mean, indexing="ij"))
+        return weights, (cells_j, cells_i), (y_mean, x_mean)
+
+    valid = (cells.i != NO_CELL) & (cells.j != NO_CELL)
+    keys = np.full(cells.i.shape, NO_CELL)
+    if valid.any():  # flat index of the cells in (y, x) order
+        i_valid, j_valid = cells.i[valid], cells.j[valid]
+        keys[valid] = (j_valid - j_valid.min()) * (np.ptp(i_valid) + 1) + (i_valid - i_valid.min())
+    occupied, rows = _ranks(keys)
+    first = np.full(occupied.size, -1)  # a point of each cell, to get its (j, i)
+    first[rows[valid]] = np.flatnonzero(valid)
+    return (
+        [_index_weights(rows, occupied.size)],
+        (cells.j[first], cells.i[first]),
+        (_mean_by(rows, cells.y, occupied.size), _mean_by(rows, cells.x, occupied.size)),
+    )
+
+
+def _cells_to_grid(data: xr.Dataset, spatial_dims: tuple[str, ...], cells: _Cells, dst_grid: xr.Dataset) -> xr.Dataset:
+    """
+    Mean of the source points of each cell of the destination grid, on the destination grid (NaN for the cells
+    without valid source value), see :func:`interp2grid`.
+    """
+
+    axes = cells.axes
+    if cells.separable:
+        weights = [_index_weights(cells.j, axes.ny), _index_weights(cells.i, axes.nx)]
+    else:
+        inside = (cells.i >= 0) & (cells.i < axes.nx) & (cells.j >= 0) & (cells.j < axes.ny)
+        weights = [_index_weights(np.where(inside, cells.j * axes.nx + cells.i, -1), axes.ny * axes.nx)]
+    out = _sparse_mean_ds(data, spatial_dims, weights, (axes.y_dim, axes.x_dim), (axes.ny, axes.nx), coords=False)
+    out = out.assign_coords(dst_grid.coords)
+    out.attrs = _combine_attrs(data.attrs, dst_grid.attrs)
+    return out
+
+
+def _ranks(index: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Sorted unique values of ``index`` (ignoring ``NO_CELL``), and the rank of each value among them (-1 for
+    ``NO_CELL``).
+    """
+
+    valid = index != NO_CELL
+    unique, ranks = np.unique(index[valid], return_inverse=True)
+    rows = np.full(index.shape, -1, dtype=np.int64)
+    rows[valid] = ranks
+    return unique, rows
+
+
+def _mean_by(rows: np.ndarray, values: np.ndarray, n_rows: int) -> np.ndarray:
+    """
+    Mean of ``values`` per row index ``rows`` (-1 ignored), for ``n_rows`` rows.
+    """
+
+    valid = rows >= 0
+    return np.bincount(rows[valid], values[valid], n_rows) / np.bincount(rows[valid], minlength=n_rows)
+
+
+def _index_weights(rows: np.ndarray, n_rows: int) -> sparse.csr_array:
+    """
+    0/1 matrix of shape (``n_rows``, ``rows.size``) with a 1 at (``rows[p]``, p) for each p with
+    0 <= ``rows[p]`` < ``n_rows``.
+    """
+
+    valid = (rows >= 0) & (rows < n_rows)
+    cols = np.flatnonzero(valid)
+    return sparse.csr_array((np.ones(cols.size, dtype=np.float32), (rows[valid], cols)), shape=(n_rows, rows.size))
+
+
+def _sparse_mean_ds(
+    data: xr.Dataset,
+    spatial_dims: tuple[str, ...],
+    weights: list[sparse.csr_array],
+    out_dims: tuple[str, ...],
+    out_shape: tuple[int, ...],
+    coords: bool,
+) -> xr.Dataset:
+    """
+    :func:`_sparse_nanmean` over the spatial dimensions (flattened with one matrix of ``weights``, along y then x
+    with two) of the data variables, and of the numeric non-spatial coordinates (e.g. the surface altitude) if
+    ``coords``, defined on all of them. The spatial dimensions are replaced by ``out_dims`` of ``out_shape``, at
+    the position of the first one. The variables and coordinates without spatial dimension are kept, the others on
+    the spatial dimensions are dropped. Lazy for dask arrays.
+    """
+
+    def mean(var: xr.Variable) -> xr.Variable:
+        def func(values: np.ndarray) -> np.ndarray:
+            return _points_last(_sparse_nanmean, weights, values, len(spatial_dims), out_shape)
+
+        out = xr.apply_ufunc(
+            func,
+            var,
+            input_core_dims=[list(spatial_dims)],
+            output_core_dims=[list(out_dims)],
+            exclude_dims=set(spatial_dims),
+            dask="parallelized",
+            output_dtypes=[np.result_type(var.dtype, np.float32)],
+            dask_gufunc_kwargs={"output_sizes": dict(zip(out_dims, out_shape)), "allow_rechunk": True},
+            keep_attrs=True,
+        )
+        position = min(var.dims.index(dim) for dim in spatial_dims)
+        kept = [dim for dim in var.dims if dim not in spatial_dims]
+        return out.transpose(*kept[:position], *out_dims, *kept[position:])
+
+    spatial = set(spatial_dims)
+    data_vars = {}
+    for name, var in data.data_vars.items():
+        if spatial <= set(var.dims):
+            data_vars[name] = mean(var.variable)
+        elif spatial.isdisjoint(var.dims):
+            data_vars[name] = var.variable
+
+    skip = _spatial_coord_names(data, spatial_dims)
+    out_coords = {}
+    for name, coord in data.coords.items():
+        if spatial.isdisjoint(coord.dims):
+            out_coords[name] = coord.variable
+        elif coords and spatial <= set(coord.dims) and name not in skip and coord.dtype.kind in "biuf":
+            out_coords[name] = mean(coord.variable)
+
+    return xr.Dataset(data_vars, out_coords, attrs=data.attrs)
+
+
+def _points_last(
+    func: Callable[..., np.ndarray],
+    weights: list[sparse.csr_array],
+    values: np.ndarray,
+    n_spatial: int,
+    out_shape: tuple[int, ...],
+    **kwargs: Any,
+) -> np.ndarray:
+    """
+    Call ``func(weights, points_first, **kwargs)`` (e.g. :func:`_sparse_nanmean`) on ``values`` with its
+    ``n_spatial`` last (spatial) axes moved first: the sparse matrix products need C-contiguous rows of points
+    (see :func:`_sparse_matmul`). The spatial axes are flattened with one matrix, kept with one matrix per axis.
+    Returns the result with the axes ``out_shape`` last, as for :func:`xarray.apply_ufunc`.
+    """
+
+    n_lead = values.ndim - n_spatial
+    points_first = np.moveaxis(values, tuple(range(n_lead, values.ndim)), tuple(range(n_spatial)))
+    if len(weights) == 1:  # may stay a non-contiguous view: func copies into C-contiguous rows if needed
+        points_first = points_first.reshape((-1,) + values.shape[:n_lead])
+    out = func(weights, points_first, **kwargs)
+    out = out.reshape(out_shape + values.shape[:n_lead])
+    return np.moveaxis(out, tuple(range(len(out_shape))), tuple(range(n_lead, out.ndim)))
+
+
+def _sparse_nanmean(weights: list[sparse.csr_array], values: np.ndarray, mean: bool = True) -> np.ndarray:
+    """
+    Mean (or sum if not ``mean``) of ``values`` over the points of the rows of the 0/1 ``weights``, ignoring NaN: a
+    row is NaN only if all its points are NaN, or if it has none. Each matrix of shape (n_rows, n_points) applies to
+    one of the first axes of ``values`` (e.g. the flattened points, or y then x), replaced by its n_rows, the other
+    axes are fields. Computed and returned in ``np.result_type(values.dtype, np.float32)``: float32 for float32 and
+    8 or 16 bit integers, float64 otherwise.
+
+    All the fields are summed at once, without copy when the points of ``values`` are C-contiguous. Only the fields
+    with NaN in the result (NaN in some of the points of a row) are summed again with their NaN masked, so that
+    fields without NaN (or with NaN only out of the rows) cost no mask.
+    """
+
+    dtype = np.result_type(values.dtype, np.float32)
+    values = values.astype(dtype, copy=False)
+    n_axes = len(weights)
+    out = np.ascontiguousarray(_sparse_matmul(weights, values))  # small: (n_rows..., fields)
+    fields = out.reshape(out.shape[:n_axes] + (-1,))
+    with_nan = np.isnan(fields).any(axis=tuple(range(n_axes)))
+    counts = reduce(np.multiply.outer, (weight.sum(axis=1, dtype=dtype) for weight in weights))[..., np.newaxis]
+    with np.errstate(invalid="ignore", divide="ignore"):
+        _divide_or_mask(fields, counts, mean)
+        if with_nan.any():  # sum again the fields with NaN, ignoring them, and count their valid points
+            values = _select_fields(values, n_axes, with_nan)
+            nan = np.isnan(values)
+            total = _sparse_matmul(weights, np.where(nan, 0, values))
+            fields[..., with_nan] = _divide_or_mask(total, _sparse_matmul(weights, (~nan).astype(dtype)), mean)
+    return out
+
+
+def _divide_or_mask(total: np.ndarray, counts: np.ndarray, mean: bool) -> np.ndarray:
+    """
+    In place: ``total / counts`` if ``mean``, otherwise NaN where ``counts`` is 0 (sum of no value).
+    """
+
+    if mean:
+        total /= counts
+    else:
+        np.copyto(total, np.nan, where=np.broadcast_to(counts == 0, total.shape))
+    return total
+
+
+def _select_fields(values: np.ndarray, n_axes: int, selected: np.ndarray) -> np.ndarray:
+    """
+    The ``selected`` fields (boolean over the flattened fields) of ``values`` with ``n_axes`` first axes of points,
+    shape (points..., n_selected), copying only them when the points or the fields are contiguous in memory.
+    """
+
+    if values.flags.c_contiguous:
+        return values.reshape(values.shape[:n_axes] + (-1,))[..., selected]
+    by_field = np.moveaxis(values, tuple(range(n_axes)), tuple(range(-n_axes, 0)))
+    by_field = by_field.reshape((-1,) + values.shape[:n_axes])
+    return np.moveaxis(by_field[selected], 0, -1)
+
+
+def _sparse_matmul(weights: list[sparse.csr_array], values: np.ndarray) -> np.ndarray:
+    """
+    Matrix products of each matrix of ``weights`` along the corresponding first axis of ``values``, copied into
+    C-contiguous rows of points if needed (e.g. data stored with the spatial dimensions last, or sliced): a product
+    per field would avoid the copy but is slower (it reads the matrix once per field) and keeps the copy of a sliced
+    source.
+    """
+
+    for axis, weight in enumerate(weights):
+        moved = np.moveaxis(values, axis, 0)
+        out = weight.astype(values.dtype, copy=False) @ moved.reshape(moved.shape[0], -1)
+        values = np.moveaxis(out.reshape(weight.shape[:1] + moved.shape[1:]), 0, axis)
+    return values
+
+
+def _spatial_coord_names(data: xr.Dataset, spatial_dims: tuple[str, ...]) -> set[str]:
+    """
+    Names of the spatial coordinates of ``data``: dimension, native (e.g. x/y) and latitude/longitude coordinates.
+    """
+
+    names = set(spatial_dims)
+    for prefer_projected in (False, True):
+        try:
+            names.update(dm.get_coords_name_crs(data, spatial_dims, prefer_projected=prefer_projected)[:2])
+        except ValueError:
+            pass
+    if len(spatial_dims) == 1:
+        try:
+            names.update(dm.get_spatial_coords(data))
+        except ValueError:
+            pass
+    names.update(dm.get_latlon_coords(data, nondim=False) or ())
+    return names
 
 
 def get_buffer(method: str, **kwargs: Any) -> int:
     """
     Buffer specific to the interpolation method to add when slicing the input dataset to the target grid or POIs
-    (see :func:`slice_boundingbox`).
+    (see :func:`slice_grid` and :func:`slice_boundingbox`), in grid steps of the coarser of the source and
+    destination grids.
 
     Parameters
     ----------
@@ -2118,11 +2633,14 @@ def _get_sub_domain(  # pylint: disable=too-many-locals
     yx_bnds: tuple[tuple[float, float], tuple[float, float]],
     buffer: int,
     geographic: bool = False,
-) -> tuple[dict[str, slice], None] | tuple[dict[str, NDArray], float]:
+    dst_step: float = 0.0,
+) -> tuple[dict[str, slice] | dict[str, NDArray], float]:
     """
-    Get a dict to index ``data`` in ``spatial_dims`` according to ``yx_bnds``
-    plus a ``buffer``. Also return an estimate of the resolution if input grid is
-    unstructured.
+    Get a dict to index ``data`` in ``spatial_dims`` according to ``yx_bnds`` plus a buffer of ``buffer`` grid steps
+    of the coarser of the source grid and of the destination (grid step ``dst_step`` in the source coordinates, 0 for
+    POIs), times 1.5 for an unstructured grid. Also return the estimated grid step of the source in its coordinates:
+    the max of the median steps along x and y for a regular grid, the square root of the area per point of the
+    points near the bounds for an unstructured grid (NaN if fewer than 2).
 
     For a ``geographic`` grid (latitude/longitude or rotated pole, in degrees), the x bounds must be in the
     longitude convention of the grid (see :func:`_wrap_lon`). The x buffer is widened by 1 / cos(latitude), as
@@ -2191,16 +2709,22 @@ def _get_sub_domain(  # pylint: disable=too-many-locals
             factor = lon_buffer_factor(res_approx)
             x_bnds, x_factor = ((-np.inf, np.inf), 1.0) if factor is None else (x_bnds, factor)
         cond_xy = get_cond_xy(2 * res_approx, x_factor)
-        if np.count_nonzero(cond_xy) < 2:  # (nearly) no grid point near the destination, e.g. all POIs outside the
-            # grid: empty selection, as the resolution of fewer than 2 points is NaN (without "Mean of empty slice")
+        n_near = np.count_nonzero(cond_xy)
+        if n_near < 2:  # (nearly) no grid point near the destination, e.g. all POIs outside the grid: empty selection
             return {spatial_dims[0]: np.zeros_like(cond_xy)}, np.nan
-        res = _get_flat_grid_res(data[grid_x][cond_xy], data[grid_y][cond_xy])
-        cond_xy = get_cond_xy(buffer * res * 1.5, x_factor)
-        return {spatial_dims[0]: cond_xy}, res
+        # area per point, robust to the order of the points (e.g. ICON triangles) and to a source covering only
+        # part of the bounds. Overestimating it only widens the slice.
+        area = float(np.ptp(data[grid_x].values[cond_xy])) * float(np.ptp(data[grid_y].values[cond_xy]))
+        src_step = float(np.sqrt(area / n_near)) if area > 0 else float(res_approx)
+        cond_xy = get_cond_xy(buffer * max(src_step, dst_step) * 1.5, x_factor)
+        return {spatial_dims[0]: cond_xy}, src_step
 
     y_dim, x_dim = spatial_dims
+    res_y = _median_step(data[grid_y], y_dim)
+    src_step = max(_median_step(data[grid_x], x_dim), res_y)
+    if 0 < src_step < dst_step:  # in grid steps of the coarser destination
+        buffer = ceil(buffer * dst_step / src_step)
     if geographic:
-        res_y = float(np.nanmedian(np.abs(np.diff(data[grid_y].values, axis=data[grid_y].get_axis_num(y_dim)))))
         factor = lon_buffer_factor(res_y)
         x_bnds, x_factor = ((-np.inf, np.inf), 1.0) if factor is None else (x_bnds, factor)
     idx_start, idx_end = get_ind_startend(grid_x, x_dim, x_bnds)
@@ -2210,19 +2734,18 @@ def _get_sub_domain(  # pylint: disable=too-many-locals
     idx_end += x_buffer
     idy_start = max(idy_start - buffer, 0)
     idy_end += buffer
-    return {x_dim: slice(idx_start, idx_end), y_dim: slice(idy_start, idy_end)}, None
+    return {x_dim: slice(idx_start, idx_end), y_dim: slice(idy_start, idy_end)}, src_step
 
 
-def _get_flat_grid_res(coords_x: xr.DataArray, coords_y: xr.DataArray) -> float:
+def _median_step(coord: xr.DataArray, dim: str) -> float:
     """
-    Get approximative resolution of a flattened grid. Assumes similar resolution
-    in both horizontal dimensions.
+    Median absolute step of the coordinate ``coord`` along ``dim`` (NaN with fewer than 2 points).
     """
 
-    def dcoords(coords: xr.DataArray) -> float:
-        return np.median(abs(np.diff(coords.values)))
-
-    return max(dcoords(coords_x), dcoords(coords_y))
+    if dim not in coord.dims or coord.sizes[dim] < 2:
+        return np.nan
+    steps = np.abs(np.diff(coord.values.astype(np.float64), axis=coord.get_axis_num(dim)))
+    return float(np.nanmedian(steps)) if np.isfinite(steps).any() else np.nan
 
 
 def _lon_center(lon: np.ndarray) -> float:
@@ -2274,69 +2797,13 @@ def _pad_global_lon(data: xr.Dataset, x_dim: str, x_targets: np.ndarray) -> xr.D
     return xr.concat(parts, dim=x_dim, data_vars="minimal", coords="minimal", compat="override", join="exact")
 
 
-def _get_coarsen_ratio(  # pylint: disable=too-many-locals
-    data: xr.Dataset,
-    spatial_dims: tuple[str, ...],
-    coords_crs: tuple[str, str, CRS],
-    dst_grid: xr.Dataset,
-    dst_spatial_dims: tuple[str, str],
-    dst_coords_crs: tuple[str, str, CRS],
-    res: float | None = None,
-) -> tuple[int, int]:
-    """
-    Get the resolution ratios in `x` and `y` between input data and destination grid
-    to eventually coarsen the input data before interpolation.
-    """
-
-    if res is not None:
-        res_src_x = res_src_y = res
-    else:
-        center_src_x, center_src_y = _center_coords(data, spatial_dims, coords_crs[:2])  # type: ignore[arg-type]
-        res_src_x = center_src_x.diff(spatial_dims[1]).values.mean()
-        res_src_y = center_src_y.diff(spatial_dims[0]).values.mean()
-
-    center_dst_x, center_dst_y = _center_coords(dst_grid, dst_spatial_dims, dst_coords_crs[:2])
-    src_crs, dst_crs = coords_crs[2], dst_coords_crs[2]
-    if src_crs != dst_crs:
-        center_dst_x.values, center_dst_y.values = reproject(center_dst_x.values, center_dst_y.values, dst_crs, src_crs)
-
-    res_dst_x = center_dst_x.diff(dst_spatial_dims[1]).values.mean()
-    res_dst_y = center_dst_y.diff(dst_spatial_dims[0]).values.mean()
-    return abs(round(res_dst_x / res_src_x)), abs(round(res_dst_y / res_src_y))
-
-
-def _center_coords(
-    grid: xr.Dataset, dims: tuple[str, str], coords: tuple[str, str]
-) -> tuple[xr.DataArray, xr.DataArray]:
-    """
-    Returns the "x" and "y" coordinates for the 4 center points of input grid domain.
-    Used to compute the resolution of the grid.
-    """
-
-    y_dim, x_dim = dims
-    grid_y, grid_x = coords
-    mid_x = int(grid.sizes[x_dim] / 2)
-    mid_y = int(grid.sizes[y_dim] / 2)
-    sub_x = grid[grid_x].isel({x_dim: slice(mid_x - 1, mid_x + 1)})
-    sub_y = grid[grid_y].isel({y_dim: slice(mid_y - 1, mid_y + 1)})
-    if y_dim in sub_x.dims:
-        sub_x = sub_x.isel({y_dim: slice(mid_y - 1, mid_y + 1)})
-        sub_y = sub_y.isel({x_dim: slice(mid_x - 1, mid_x + 1)})
-    else:
-        sub_y, sub_x = xr.broadcast(sub_y, sub_x)
-
-    return sub_x, sub_y
-
-
 def _combine_attrs(src_attrs: dict, dst_attrs: dict) -> dict:
     """
     Combine attrs from source and destination grids
     """
 
-    from_dst = ("grid_mapping", "crs", "bounding_box")
-
     combined_attrs = {key: src_attrs[key] for key in SRC_ATTRS_KEEP if key in src_attrs}
-    combined_attrs.update({key: dst_attrs[key] for key in from_dst if key in dst_attrs})
+    combined_attrs.update({key: dst_attrs[key] for key in DST_ATTRS_KEEP if key in dst_attrs})
     return combined_attrs
 
 
