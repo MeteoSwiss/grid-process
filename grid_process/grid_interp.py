@@ -2483,14 +2483,15 @@ def _sparse_mean_ds(
 
 def _points_last(
     func: Callable[..., np.ndarray],
-    weights: list[sparse.csr_array],
+    weights: list[sparse.csr_array] | list[np.ndarray],
     values: np.ndarray,
     n_spatial: int,
     out_shape: tuple[int, ...],
     **kwargs: Any,
 ) -> np.ndarray:
     """
-    Call ``func(weights, points_first, **kwargs)`` (e.g. :func:`_sparse_nanmean`) on ``values`` with its
+    Call ``func(weights, points_first, **kwargs)`` (e.g. :func:`_sparse_nanmean`, or with the neighbor indices
+    ``ens_stats._neighbor_extreme``) on ``values`` with its
     ``n_spatial`` last (spatial) axes moved first: the sparse matrix products need C-contiguous rows of points
     (see :func:`_sparse_matmul`). The spatial axes are flattened with one matrix, kept with one matrix per axis.
     Returns the result with the axes ``out_shape`` last, as for :func:`xarray.apply_ufunc`.
@@ -2573,6 +2574,19 @@ def _sparse_matmul(weights: list[sparse.csr_array], values: np.ndarray) -> np.nd
         out = weight.astype(values.dtype, copy=False) @ moved.reshape(moved.shape[0], -1)
         values = np.moveaxis(out.reshape(weight.shape[:1] + moved.shape[1:]), 0, axis)
     return values
+
+
+def _flat_neighbors(data: xr.Dataset, flat_dim: str, k: int) -> np.ndarray:
+    """
+    Indices of the ``k`` nearest points of each point of an unstructured grid (itself included), shape (n, k),
+    searched in meters (see :func:`_choose_kdtree_crs`) and cached (see :func:`nn_lookup_cached`).
+    """
+
+    grid_y, grid_x, crs = dm.get_coords_name_crs(dm.set_grid_mapping(data), (flat_dim,), prefer_projected=True)
+    x, y = data[grid_x].values, data[grid_y].values
+    target_crs = _choose_kdtree_crs(crs, crs, True, lambda: _reproject_grid_cached(x, y, crs, LV95))
+    coords = _kdtree_coords(x, y, crs, target_crs)
+    return nn_lookup_cached(coords, coords, k)[1].reshape(x.size, k)
 
 
 def _spatial_coord_names(data: xr.Dataset, spatial_dims: tuple[str, ...]) -> set[str]:

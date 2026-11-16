@@ -51,6 +51,11 @@ Unreleased
   result as on the source grid
 * added ``slice_grid``: slices a source grid to a destination grid, keeping its structure and CRS (the grid
   counterpart of ``slice_boundingbox``)
+* added the support of unstructured grids to ``ens_stats.neighbor_stat`` and ``upscaled_prob``: the neighborhood
+  of each point is its ``w_size_xy**2`` nearest points (the window of a square grid for 3 and 5), with the nearest
+  neighbors searched in meters and cached, ignoring NaN. Native ICON-CH1 (34 fields, 1.15 M points, window 5):
+  ``mean``/``sum`` 0.5 s, ``min``/``max`` 0.8 s, plus 1.8 s for the first neighbor search (``rolling`` on a
+  regular grid of the same size: 2.4 to 4.3 s)
 * added ``values`` to the default names of the unstructured grid dimension
   (``GRID_PROCESS__data_model__grid__unstructured_dim``): the dimension of non-regular GRIB grids read with cfgrib or
   earthkit-data, e.g. ICON open data, no longer needs to be renamed

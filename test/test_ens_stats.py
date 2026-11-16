@@ -6,6 +6,8 @@
 
 """Tests for the ens_stats module"""
 
+import warnings
+
 import pytest
 import numpy as np
 import xarray as xr
@@ -277,3 +279,88 @@ def test_extended_datamodel(model_data, model_data_validtime):
         assert ensdim not in ds_out.coords
         assert "quantile" in ds_out.dims
         assert "quantile" in ds_out.coords
+
+
+def _grid_lv95(nan: bool = True) -> xr.Dataset:
+    """Regular LV95 grid (1 km) with 2 lead times of random values, some NaN and an all-NaN 5 x 5 block"""
+
+    rng = np.random.default_rng(0)
+    values = rng.standard_normal((2, 12, 15)).astype(np.float32)
+    if nan:
+        values[rng.random(values.shape) < 0.2] = np.nan
+        values[0, 3:8, 4:9] = np.nan
+    return xr.Dataset(
+        {"var": (("lead_time", "y", "x"), values)},
+        coords={"x": 2_600_000.0 + 1000 * np.arange(15), "y": 1_200_000.0 + 1000 * np.arange(12)},
+        attrs={"crs": "EPSG:2056"},
+    )
+
+
+def _flat_shuffled(grid: xr.Dataset) -> xr.Dataset:
+    flat = grid.stack(cell=("y", "x")).reset_index("cell")
+    return flat.isel(cell=np.random.default_rng(1).permutation(flat.sizes["cell"]))
+
+
+@pytest.mark.parametrize("method", ["mean", "sum", "min", "max"])
+@pytest.mark.parametrize("w_size", [3, 5])
+def test_neighbor_stat_unstructured(method, w_size):
+    """
+    On an unstructured grid, the w_size**2 nearest points: the same as the rolling window of a square grid (inside,
+    where the window is not truncated), including the NaN rule (NaN only if all the neighborhood is NaN)
+    """
+
+    half = w_size // 2
+    inside = {"x": slice(half, -half), "y": slice(half, -half)}
+    for nan in (False, True):
+        grid = _grid_lv95(nan)
+        expected = ens.neighbor_stat(grid, method, w_size_xy=w_size)
+        if method == "mean" and nan:  # exact mean over the window (rolling along x then y: mean of the row means)
+            windows = np.lib.stride_tricks.sliding_window_view(grid["var"].values, (w_size, w_size), axis=(1, 2))
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)  # all-NaN windows
+                expected = expected.copy(deep=True)
+                expected["var"][:, half:-half, half:-half] = np.nanmean(windows, axis=(-2, -1))
+        flat = ens.neighbor_stat(_flat_shuffled(grid), method, w_size_xy=w_size)
+        assert flat["var"].dtype == np.float32
+        result = flat.set_index(cell=("y", "x")).unstack("cell").transpose(*expected["var"].dims)
+        result = result.reindex_like(expected)
+        np.testing.assert_allclose(result["var"].isel(inside), expected["var"].isel(inside), rtol=1e-5, atol=1e-5)
+        if nan and w_size == 3:  # the all-NaN 5 x 5 block gives NaN at its 3 x 3 center only
+            assert result["var"].isel(lead_time=0, y=slice(4, 7), x=slice(5, 8)).isnull().all()
+            assert result["var"].isel(lead_time=0).isnull().sum() == 9
+
+
+@pytest.mark.parametrize("method", ["min", "max"])
+def test_neighbor_stat_unstructured_blocks(method, monkeypatch):
+    """min/max by blocks of points (180 points: blocks of 64, 64 and 52) equal one block"""
+
+    flat = _flat_shuffled(_grid_lv95(nan=True))
+    expected = ens.neighbor_stat(flat, method, w_size_xy=3)
+    monkeypatch.setattr(ens, "BLOCK_BYTES", 1)
+    xr.testing.assert_identical(ens.neighbor_stat(flat, method, w_size_xy=3), expected)
+
+
+def test_neighbor_stat_unstructured_time_and_dask():
+    """Unstructured grid with a time window, and dask arrays stay lazy"""
+
+    flat = _flat_shuffled(_grid_lv95(nan=False))
+    expected = ens.neighbor_stat(flat, "max", w_size_xy=3, w_size_t=2)
+    lazy = ens.neighbor_stat(flat.chunk(lead_time=1), "max", w_size_xy=3, w_size_t=2)
+    assert lazy["var"].chunks is not None
+    xr.testing.assert_identical(lazy.compute(), expected)
+    xr.testing.assert_identical(expected.coords.to_dataset(), flat.coords.to_dataset())
+
+
+def test_upscaled_prob_unstructured_latlon():
+    """upscaled_prob on an unstructured latitude/longitude grid (e.g. ICON), neighbors searched in meters"""
+
+    grid = _grid_lv95(nan=False).expand_dims(realization=3)
+    flat = _flat_shuffled(grid)
+    from pyproj import Transformer
+
+    lon, lat = Transformer.from_crs("EPSG:2056", "EPSG:4326", always_xy=True).transform(flat.x.values, flat.y.values)
+    flat_latlon = flat.drop_vars(("x", "y")).assign_coords(longitude=("cell", lon), latitude=("cell", lat))
+    flat_latlon.attrs = {}
+    result = ens.upscaled_prob(flat_latlon, 0.5, "prob", w_size_xy=3)
+    expected = ens.upscaled_prob(flat, 0.5, "prob", w_size_xy=3)
+    np.testing.assert_array_equal(result["prob"].values, expected["prob"].values)
