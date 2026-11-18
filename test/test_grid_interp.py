@@ -2071,6 +2071,40 @@ def test_slice_grid():
         assert y.min() <= DST_Y0 - 2000 and y.max() >= DST_Y0 + 21000 + 2000
 
 
+def test_slice_lazy_unstructured(tmp_path, monkeypatch):
+    """
+    An unstructured source opened lazily from netCDF is sliced by chunks (several here) and loaded: same result as
+    the loaded source, variables in memory (not dask)
+    """
+
+    import grid_process.grid_interp as gri
+
+    monkeypatch.setattr(gri, "LAZY_CHUNK_BYTES", 1)
+    monkeypatch.setattr(gri, "LAZY_CHUNK_MIN_POINTS", 50)
+    flat = _flat_shuffled(_fine_grid_lv95())
+    flat.to_netcdf(tmp_path / "flat.nc")
+    dst = _dst_grid_lv95()
+    pois = gpd.GeoDataFrame(
+        {"name": ["a", "b"], "height_masl": [500.0, 600.0]},
+        geometry=gpd.points_from_xy([DST_X0 + 5000, DST_X0 + 12000], [DST_Y0 + 4000, DST_Y0 + 9000]),
+        crs="EPSG:2056",
+    )
+    with xr.open_dataset(tmp_path / "flat.nc") as lazy:
+        loaded = lazy.load().copy()
+    for slicer in (
+        lambda ds: gri.slice_grid(ds, dst, "idw"),
+        lambda ds: gri.slice_boundingbox(ds, pois, "idw"),
+    ):
+        with xr.open_dataset(tmp_path / "flat.nc") as lazy:
+            sliced = slicer(lazy)
+            assert 0 < sliced.sizes["cell"] < flat.sizes["cell"]
+            for name, var in sliced.variables.items():
+                assert var.chunks is None and var._in_memory, name  # pylint: disable=protected-access
+            xr.testing.assert_identical(sliced, slicer(loaded))
+    with xr.open_dataset(tmp_path / "flat.nc") as lazy:
+        xr.testing.assert_identical(gri.interp2grid(lazy, dst, "idw"), gri.interp2grid(loaded, dst, "idw"))
+
+
 def test_interp2grid_unstructured_sliced_unchanged():
     """
     Slicing an unstructured source does not change the interpolation: same result as an idw on all its points

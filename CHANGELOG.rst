@@ -56,6 +56,12 @@ Unreleased
   neighbors searched in meters and cached, ignoring NaN. Native ICON-CH1 (34 fields, 1.15 M points, window 5):
   ``mean``/``sum`` 0.5 s, ``min``/``max`` 0.8 s, plus 1.8 s for the first neighbor search (``rolling`` on a
   regular grid of the same size: 2.4 to 4.3 s)
+* changed the slicing of unstructured grids opened lazily from a file (e.g. ``xarray.open_dataset`` of a netCDF
+  file, without dask) by ``interp2poi``, ``interp2grid``, ``slice_boundingbox``, ``slice_grid`` and
+  ``slice_coarsen``: the variables on the unstructured dimension are read by chunks of 16 MB, each with one slice
+  (only the chunks with selected points), and loaded, instead of reading the selected points one by one. Native
+  ICON-CH1 netCDF to the seamless 2 km grid: ``slice_grid`` and loading 50 s → 1.4 s. Sources in memory, dask
+  arrays and regular grids are unchanged
 * added ``values`` to the default names of the unstructured grid dimension
   (``GRID_PROCESS__data_model__grid__unstructured_dim``): the dimension of non-regular GRIB grids read with cfgrib or
   earthkit-data, e.g. ICON open data, no longer needs to be renamed

@@ -60,6 +60,10 @@ DST_ATTRS_KEEP = ("grid_mapping", "crs", "bounding_box")  # CRS attributes of th
 COARSEN_MIN_DENSITY = 2.25
 ON_NODE_TOL = 1e-3  # [destination grid step] max distance of a source point to a destination node to be on it
 NO_CELL = -(2**40)  # cell index of the source points without destination cell (non-finite reprojection)
+# [bytes] chunk of the lazily opened variables read by _isel_sub_domain: time nearly flat from 0.5 to 140 MB, memory
+# and over-read growing with the chunk
+LAZY_CHUNK_BYTES = 2**24
+LAZY_CHUNK_MIN_POINTS = 1024
 # CRS of the nearest neighbor searches and triangulations when both grids are geographic (lat/lon, rotated pole):
 # Swiss LV95 if the destination is close enough to Switzerland, otherwise earth-centered earth-fixed (ECEF)
 LV95 = CRS.from_epsg(2056)
@@ -1963,6 +1967,8 @@ def slice_boundingbox(
     """
     Slice input dataset spatial dimensions to the bounding box of the target POIs
     plus a buffer depending on the interpolation method and corresponding kwargs.
+    The variables of an unstructured grid opened lazily from a file (e.g. netCDF, not dask) are read by chunks of
+    points and loaded.
     """
 
     if spatial_dims is None:
@@ -1976,7 +1982,7 @@ def slice_boundingbox(
 
     buffer = get_buffer(method, **kwargs)
     sub_domain, _ = _get_sub_domain(data, spatial_dims, (grid_y, grid_x), yx_bnds, buffer, grid_crs.is_geographic)
-    return data.isel(sub_domain)
+    return _isel_sub_domain(data, sub_domain)
 
 
 def slice_grid(
@@ -2011,7 +2017,8 @@ def slice_grid(
     xarray.Dataset
         the sliced source grid. Around the extent of the destination grid, it keeps a buffer of :func:`get_buffer`
         grid steps of the coarser of the source and destination grids (times 1.5 for an unstructured source, and
-        wider in longitude towards the poles for a latitude/longitude source).
+        wider in longitude towards the poles for a latitude/longitude source). The variables of an unstructured
+        source opened lazily from a file (e.g. netCDF, not dask) are read by chunks of points and loaded.
 
     See also
     --------
@@ -2148,7 +2155,32 @@ def _slice_grid(
     sub_domain, src_step = _get_sub_domain(
         data, spatial_dims, (grid_y, grid_x), yx_bnds, get_buffer(method, **kwargs), grid_crs.is_geographic, dst_step
     )
-    return data.isel(sub_domain), src_step, dst_step
+    return _isel_sub_domain(data, sub_domain), src_step, dst_step
+
+
+def _isel_sub_domain(data: xr.Dataset, sub_domain: dict[str, slice] | dict[str, NDArray]) -> xr.Dataset:
+    """
+    ``data.isel(sub_domain)`` (see :func:`_get_sub_domain`). The variables opened lazily from a file (neither in memory
+    nor dask, e.g. netCDF) and selected with a boolean mask (unstructured grid) are read by chunks of points, each with
+    one slice, only the chunks with selected points, and loaded: indexing the file with the mask would read the selected
+    points one by one (e.g. 50 s instead of 1.4 s for native ICON-CH1 sliced to the seamless 2 km grid).
+    """
+
+    selected = data.isel(sub_domain)
+    for dim, index in sub_domain.items():
+        if not isinstance(index, np.ndarray):
+            continue
+        loaded = {}
+        for name, var in data.variables.items():
+            # pylint: disable-next=protected-access
+            if dim not in var.dims or var.chunks is not None or var._in_memory:
+                continue
+            point_bytes = var.dtype.itemsize * prod(size for d, size in var.sizes.items() if d != dim)
+            points = max(LAZY_CHUNK_MIN_POINTS, LAZY_CHUNK_BYTES // max(point_bytes, 1))
+            loaded[name] = var.chunk({dim: points}).isel({dim: index}).load()
+        selected = selected.assign_coords({k: v for k, v in loaded.items() if k in selected.coords})
+        selected = selected.assign({k: v for k, v in loaded.items() if k in selected.data_vars})
+    return selected
 
 
 def _dst_extent(
