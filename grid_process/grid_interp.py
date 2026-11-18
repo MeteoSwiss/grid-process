@@ -2515,15 +2515,14 @@ def _sparse_mean_ds(
 
 def _points_last(
     func: Callable[..., np.ndarray],
-    weights: list[sparse.csr_array] | list[np.ndarray],
+    weights: list[sparse.csr_array],
     values: np.ndarray,
     n_spatial: int,
     out_shape: tuple[int, ...],
     **kwargs: Any,
 ) -> np.ndarray:
     """
-    Call ``func(weights, points_first, **kwargs)`` (e.g. :func:`_sparse_nanmean`, or with the neighbor indices
-    ``ens_stats._neighbor_extreme``) on ``values`` with its
+    Call ``func(weights, points_first, **kwargs)`` (e.g. :func:`_sparse_nanmean`) on ``values`` with its
     ``n_spatial`` last (spatial) axes moved first: the sparse matrix products need C-contiguous rows of points
     (see :func:`_sparse_matmul`). The spatial axes are flattened with one matrix, kept with one matrix per axis.
     Returns the result with the axes ``out_shape`` last, as for :func:`xarray.apply_ufunc`.

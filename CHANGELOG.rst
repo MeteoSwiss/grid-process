@@ -29,6 +29,10 @@ Unreleased
 * the slicing buffer of ``interp2grid``, ``slice_coarsen`` and ``slice_boundingbox`` counts grid steps of the
   coarser of the source and destination grids, and the grid step of unstructured sources is estimated from the
   area per point (more robust, e.g. for ICON triangles)
+* ``ens_stats.neighbor_stat`` with ``mean`` and NaN: the mean of the valid values over the whole space x time
+  window, instead of the mean of the means along each dimension. Without NaN, and for ``sum``, ``min`` and ``max``,
+  the results are unchanged (``min``/``max`` identical, ``sum``/``mean`` within float32 rounding). The result is
+  float32 for 8 or 16 bit integer and boolean data (``mean``/``sum`` were float64, ``max`` of booleans too)
 
 **Changes**
 
@@ -56,6 +60,11 @@ Unreleased
   neighbors searched in meters and cached, ignoring NaN. Native ICON-CH1 (34 fields, 1.15 M points, window 5):
   ``mean``/``sum`` 0.5 s, ``min``/``max`` 0.8 s, plus 1.8 s for the first neighbor search (``rolling`` on a
   regular grid of the same size: 2.4 to 4.3 s)
+* changed ``ens_stats.neighbor_stat`` (and ``upscaled_prob``) on regular grids and along time to
+  ``scipy.ndimage`` filters, applied to all the dimensions of the window at once (dask: one chunk along them).
+  ICON-CH1-EPS gridefix (34 x 11 x 252 x 376) ``max`` with windows 17 and 3 (data4web-pipelines): 3.8 s → 1.1 s,
+  peak memory 1.07 GB → 0.32 GB; a regular grid of 34 x 1072 x 1072 with window 5: ``mean`` 4.3 s → 0.6 s, ``sum``
+  2.4 s → 0.5 s, ``max`` 3.6 s → 1.0 s; native ICON-CH1 with windows 5 and 3: ``mean``/``max`` 3.4 s → 1.1 s
 * changed the slicing of unstructured grids opened lazily from a file (e.g. ``xarray.open_dataset`` of a netCDF
   file, without dask) by ``interp2poi``, ``interp2grid``, ``slice_boundingbox``, ``slice_grid`` and
   ``slice_coarsen``: the variables on the unstructured dimension are read by chunks of 16 MB, each with one slice
