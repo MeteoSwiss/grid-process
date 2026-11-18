@@ -29,6 +29,7 @@ from pyproj import CRS, Transformer
 from grid_process import CONFIG
 from grid_process.helpers import make_accessor, outer_ring, reproject, sphere_as_wgs84
 from grid_process import data_model as dm
+from grid_process._sparse import rows_matrix, sparse_matmul
 from grid_process.optimization import memoize
 from grid_process.ds_utils import ds_to_da, cast_dtype
 from grid_process.da_utils import da_to_ds
@@ -671,7 +672,7 @@ def interp_idw(
 
     # weighted average: product with the sparse matrix of the weights, without gathering the k neighbors of each POI
     dist_weight = _compute_dist_weight(dist_nn, weight_power, data_flat.dtype)
-    return _sparse_matmul([_rows_matrix(dist_weight, ind_nn, len(data_flat))], data_flat)
+    return sparse_matmul([rows_matrix(dist_weight, ind_nn, len(data_flat))], data_flat)
 
 
 def interp_upscaled(
@@ -2544,8 +2545,8 @@ def _points_last(
     """
     Call ``func(weights, points_first, **kwargs)`` (e.g. :func:`_sparse_nanmean`) on ``values`` with its
     ``n_spatial`` last (spatial) axes moved first: the sparse matrix products need C-contiguous rows of points
-    (see :func:`_sparse_matmul`). The spatial axes are flattened with one matrix, kept with one matrix per axis.
-    Returns the result with the axes ``out_shape`` last, as for :func:`xarray.apply_ufunc`.
+    (see :func:`~grid_process._sparse.sparse_matmul`). The spatial axes are flattened with one matrix, kept with one
+    matrix per axis. Returns the result with the axes ``out_shape`` last, as for :func:`xarray.apply_ufunc`.
     """
 
     n_lead = values.ndim - n_spatial
@@ -2573,7 +2574,7 @@ def _sparse_nanmean(weights: list[sparse.csr_array], values: np.ndarray, mean: b
     dtype = np.result_type(values.dtype, np.float32)
     values = values.astype(dtype, copy=False)
     n_axes = len(weights)
-    out = np.ascontiguousarray(_sparse_matmul(weights, values))  # small: (n_rows..., fields)
+    out = np.ascontiguousarray(sparse_matmul(weights, values))  # small: (n_rows..., fields)
     fields = out.reshape(out.shape[:n_axes] + (-1,))
     with_nan = np.isnan(fields).any(axis=tuple(range(n_axes)))
     counts = reduce(np.multiply.outer, (weight.sum(axis=1, dtype=dtype) for weight in weights))[..., np.newaxis]
@@ -2582,8 +2583,8 @@ def _sparse_nanmean(weights: list[sparse.csr_array], values: np.ndarray, mean: b
         if with_nan.any():  # sum again the fields with NaN, ignoring them, and count their valid points
             values = _select_fields(values, n_axes, with_nan)
             nan = np.isnan(values)
-            total = _sparse_matmul(weights, np.where(nan, 0, values))
-            fields[..., with_nan] = _divide_or_mask(total, _sparse_matmul(weights, (~nan).astype(dtype)), mean)
+            total = sparse_matmul(weights, np.where(nan, 0, values))
+            fields[..., with_nan] = _divide_or_mask(total, sparse_matmul(weights, (~nan).astype(dtype)), mean)
     return out
 
 
@@ -2610,38 +2611,6 @@ def _select_fields(values: np.ndarray, n_axes: int, selected: np.ndarray) -> np.
     by_field = np.moveaxis(values, tuple(range(n_axes)), tuple(range(-n_axes, 0)))
     by_field = by_field.reshape((-1,) + values.shape[:n_axes])
     return np.moveaxis(by_field[selected], 0, -1)
-
-
-def _sparse_matmul(weights: list[sparse.csr_array], values: np.ndarray) -> np.ndarray:
-    """
-    Matrix products of each matrix of ``weights`` along the corresponding first axis of ``values``, copied into
-    C-contiguous rows of points if needed (e.g. data stored with the spatial dimensions last, or sliced): a product
-    per field would avoid the copy but is slower (it reads the matrix once per field) and keeps the copy of a sliced
-    source.
-    """
-
-    for axis, weight in enumerate(weights):
-        moved = np.moveaxis(values, axis, 0)
-        out = weight.astype(values.dtype, copy=False) @ moved.reshape(moved.shape[0], -1)
-        values = np.moveaxis(out.reshape(weight.shape[:1] + moved.shape[1:]), 0, axis)
-    return values
-
-
-def _rows_matrix(weights: np.ndarray, index: np.ndarray, n_columns: int) -> sparse.csr_array:
-    """
-    CSR matrix of shape (n_rows, ``n_columns``) with the ``weights`` (n_rows, k) at the columns ``index`` (n_rows, k)
-    of each row, with int32 indices when possible: int32 ``index`` (e.g. from :func:`nn_lookup_cached`) not copied.
-    """
-
-    dtype = np.int32 if max(index.size, n_columns) < 2**31 else np.int64
-    return sparse.csr_array(
-        (
-            weights.ravel(),
-            index.ravel().astype(dtype, copy=False),
-            np.arange(0, index.size + 1, index.shape[1], dtype=dtype),
-        ),
-        shape=(len(index), n_columns),
-    )
 
 
 def _flat_neighbors(data: xr.Dataset, flat_dim: str, k: int) -> np.ndarray:

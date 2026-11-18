@@ -21,7 +21,8 @@ from grid_process.helpers import make_accessor, keepattrs
 from grid_process.data_model import get_t_dim, get_spatial_dims, get_ensemble_dim
 from grid_process.aggreg import interval_stat
 from grid_process.da_utils import da_to_ds
-from grid_process.grid_interp import _flat_neighbors, _rows_matrix, _sparse_matmul
+from grid_process.grid_interp import _flat_neighbors
+from grid_process._sparse import rows_matrix, sparse_matmul
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +246,7 @@ def neighbor_stat(
             if k > 1:
                 neighbors = _flat_neighbors(ds, spatial_dims[0], k)
                 windows[spatial_dims[0]] = (
-                    _rows_matrix(np.ones(neighbors.shape, np.float32), neighbors, n_points)
+                    rows_matrix(np.ones(neighbors.shape, np.float32), neighbors, n_points)
                     if method in ("mean", "sum")
                     else neighbors
                 )
@@ -322,7 +323,7 @@ def _separable_stat(
 
     for axis, window in zip(range(values.ndim - len(windows), values.ndim), windows):
         if isinstance(window, sparse.csr_array):  # sum over the neighbors of each point
-            values = np.moveaxis(_sparse_matmul([window], np.moveaxis(values, axis, 0)), 0, axis)
+            values = np.moveaxis(sparse_matmul([window], np.moveaxis(values, axis, 0)), 0, axis)
         elif isinstance(window, np.ndarray):  # min or max over the neighbors of each point
             reduce_func = np.fmax if method == "max" else np.fmin
             values = np.moveaxis(_neighbor_extreme([window], np.moveaxis(values, axis, 0), reduce_func), 0, axis)
