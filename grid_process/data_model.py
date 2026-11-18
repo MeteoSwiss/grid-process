@@ -298,6 +298,52 @@ def _get_spatial(grid: xr.Dataset | xr.DataArray, dim_or_coord: tuple[str, ...])
     return (spatial[0], spatial[1])
 
 
+# CF standard names of horizontal position coordinates, see get_spatial_coord_names
+_POSITION_STANDARD_NAMES = frozenset(
+    (
+        "latitude",
+        "longitude",
+        "grid_latitude",
+        "grid_longitude",
+        "projection_x_coordinate",
+        "projection_y_coordinate",
+    )
+)
+
+
+def get_spatial_coord_names(grid: xr.Dataset | xr.DataArray, spatial_dims: tuple[str, ...] | None = None) -> set[str]:
+    """
+    Names of all the coordinates giving horizontal positions: the spatial dimensions, the configured y/x pairs
+    (e.g. x/y, latitude/longitude) and the coordinates with a CF ``axis`` X or Y, or a ``standard_name`` or
+    ``long_name`` of a horizontal position (e.g. rotated rlat/rlon). Other coordinates, such as the surface
+    altitude, are not included. Unlike :func:`get_spatial_coords`, returns all of them, not one pair.
+
+    Parameters
+    ----------
+    grid : xarray Dataset or DataArray
+        contains spatial horizontal coordinates
+    spatial_dims : tuple of string(s), optional
+        name of the ``grid`` spatial dimension(s). If not provided, calls :func:`get_spatial_dims`
+
+    Returns
+    -------
+    set of str :
+        names of the spatial dimensions and position coordinates
+    """
+
+    names = set(get_spatial_dims(grid) if spatial_dims is None else spatial_dims)
+    names.update(name for pair in YX if set(pair) <= set(grid.coords) for name in pair)
+    for name, coord in grid.coords.items():
+        attrs = coord.attrs
+        if (
+            str(attrs.get("axis", "")).upper() in ("X", "Y")
+            or str(attrs.get("standard_name", "")).lower() in _POSITION_STANDARD_NAMES
+            or attrs.get("long_name", "") in ("latitude", "longitude")
+        ):
+            names.add(str(name))
+    return names
+
+
 def get_flat_dim(grid: xr.Dataset | xr.DataArray) -> str | None:
     """
     Returns spatial dimension name for an unstructured grid according to the

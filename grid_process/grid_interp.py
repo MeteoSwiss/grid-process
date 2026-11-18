@@ -2523,7 +2523,7 @@ def _sparse_mean_ds(
         elif spatial.isdisjoint(var.dims):
             data_vars[name] = var.variable
 
-    skip = _spatial_coord_names(data, spatial_dims)
+    skip = dm.get_spatial_coord_names(data, spatial_dims)
     out_coords = {}
     for name, coord in data.coords.items():
         if spatial.isdisjoint(coord.dims):
@@ -2624,26 +2624,6 @@ def _flat_neighbors(data: xr.Dataset, flat_dim: str, k: int) -> np.ndarray:
     target_crs = _choose_kdtree_crs(crs, crs, True, lambda: _reproject_grid_cached(x, y, crs, LV95))
     coords = _kdtree_coords(x, y, crs, target_crs)
     return nn_lookup_cached(coords, coords, k, distances=False)[1].reshape(x.size, k)
-
-
-def _spatial_coord_names(data: xr.Dataset, spatial_dims: tuple[str, ...]) -> set[str]:
-    """
-    Names of the spatial coordinates of ``data``: dimension, native (e.g. x/y) and latitude/longitude coordinates.
-    """
-
-    names = set(spatial_dims)
-    for prefer_projected in (False, True):
-        try:
-            names.update(dm.get_coords_name_crs(data, spatial_dims, prefer_projected=prefer_projected)[:2])
-        except ValueError:
-            pass
-    if len(spatial_dims) == 1:
-        try:
-            names.update(dm.get_spatial_coords(data))
-        except ValueError:
-            pass
-    names.update(dm.get_latlon_coords(data, nondim=False) or ())
-    return names
 
 
 def get_buffer(method: str, **kwargs: Any) -> int:

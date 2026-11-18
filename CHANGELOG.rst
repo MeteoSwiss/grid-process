@@ -81,6 +81,10 @@ Unreleased
   ``False``, and the indices are int32: the cache of the methods without distances (``nearest``, ``upscaled``,
   ``neighbor_stat`` on unstructured grids) takes 4 times less memory (native ICON-CH1 ``neighbor_stat`` with
   ``w_size_xy=17``: 1.3 GB instead of 5.3 GB)
+* added ``data_model.get_spatial_coord_names``: the names of all the coordinates giving horizontal positions
+  (spatial dimensions, configured y/x pairs, CF ``axis`` X/Y, horizontal ``standard_name`` or ``long_name``). Used
+  by the averaging of ``interp2grid`` and ``slice_coarsen`` to not average them, also the CF ones next to other
+  positions (e.g. rotated coordinates of an unstructured grid that also has latitude and longitude)
 * added ``values`` to the default names of the unstructured grid dimension
   (``GRID_PROCESS__data_model__grid__unstructured_dim``): the dimension of non-regular GRIB grids read with cfgrib or
   earthkit-data, e.g. ICON open data, no longer needs to be renamed

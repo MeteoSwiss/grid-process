@@ -13,6 +13,7 @@ import numpy as np
 import xarray as xr
 import geopandas as gpd
 from scipy.interpolate import griddata
+from pyproj import Transformer
 
 
 def test_interp_temp():
@@ -2000,6 +2001,27 @@ def test_slice_coarsen_cells(structure, method):
         np.testing.assert_allclose(coarse.y.values[inner], nodes_y[inner])
 
 
+def test_slice_coarsen_position_coords_not_averaged():
+    """
+    Position coordinates of an unstructured source are not averaged, also when marked by CF attributes only (e.g.
+    rotated coordinates next to x/y and lat/lon); the other coordinates are
+    """
+
+    import grid_process.grid_interp as gri
+
+    src = _flat_shuffled(_fine_grid_lv95())
+    lon, lat = Transformer.from_crs("EPSG:2056", "EPSG:4326", always_xy=True).transform(src.x.values, src.y.values)
+    src = src.assign_coords(
+        rlat=("cell", lat - 1, {"standard_name": "grid_latitude"}),
+        rlon=("cell", lon - 1, {"standard_name": "grid_longitude"}),
+        lat=("cell", lat),
+        lon=("cell", lon),
+    )
+    coarse = gri.slice_coarsen(src, _dst_grid_lv95(), "nearest")
+    assert coarse.sizes["cell"] > DST_NX * DST_NY
+    assert set(coarse.coords) == {"x", "y", "step", "surface_altitude"}
+
+
 def test_slice_coarsen_same_cells_with_nan():
     """The cells only depend on the positions of the source points, not on NaN (e.g. coarsened elevation and data)"""
 
@@ -2186,8 +2208,6 @@ def test_interp2grid_dst_2d_coords_not_coarsened(caplog):
     """A destination with only 2D coordinates: the finer source is not averaged, with a warning"""
 
     import grid_process.grid_interp as gri
-
-    from pyproj import Transformer
 
     dst = _dst_grid_lv95()
     x_dst, y_dst = np.meshgrid(dst.x.values, dst.y.values)
