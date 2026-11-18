@@ -432,6 +432,61 @@ def test_interp_upscaled():
     assert np.allclose(expected_min, results_min)
 
 
+@pytest.mark.parametrize("agg_func", [np.max, np.nanmax, np.mean])
+def test_interp_upscaled_blocks(agg_func, monkeypatch):
+    """By blocks of POIs (several blocks and a partial last one) as in a single block, also for the dtype of agg_func"""
+
+    import grid_process.grid_interp as gri
+
+    rng = np.random.default_rng(4)
+    coords_flat = rng.uniform(0, 100, (500, 2))
+    data_flat = rng.integers(0, 50, (500, 2, 3)).astype(np.int16)
+    poi_coords = rng.uniform(10, 90, (23, 2))
+    expected = gri.interp_upscaled(coords_flat, data_flat, poi_coords, k=9, agg_func=agg_func)
+    monkeypatch.setattr(gri, "UPSCALED_BLOCK_BYTES", 5 * 9 * data_flat[:1].nbytes)  # blocks of 5 POIs
+    result = gri.interp_upscaled(coords_flat, data_flat, poi_coords, k=9, agg_func=agg_func)
+    assert result.dtype == expected.dtype == agg_func(data_flat[:2], axis=0).dtype
+    np.testing.assert_array_equal(result, expected)
+    _, ind = gri.nn_lookup(coords_flat, poi_coords, 9)
+    np.testing.assert_array_equal(result, agg_func(data_flat[ind], axis=1))
+
+
+def test_interp_idw_sparse():
+    """The weighted average of the k nearest points, with trailing dimensions, NaN propagated"""
+
+    import grid_process.grid_interp as gri
+
+    rng = np.random.default_rng(5)
+    coords_flat = rng.uniform(0, 100, (400, 2))
+    data_flat = rng.standard_normal((400, 3, 2)).astype(np.float32)
+    data_flat[7, 1, 0] = np.nan
+    poi_coords = np.vstack([coords_flat[7] + 0.1, rng.uniform(10, 90, (30, 2))])
+    result = gri.interp_idw(coords_flat, data_flat, poi_coords, k=4, weight_power=2)
+    dist, ind = gri.nn_lookup(coords_flat, poi_coords, 4)
+    weights = gri._compute_dist_weight(dist, 2, data_flat.dtype)
+    expected = np.sum(data_flat[ind] * weights[:, :, None, None], axis=1)
+    assert result.shape == expected.shape and result.dtype == np.float32
+    np.testing.assert_allclose(result, expected, rtol=1e-6, atol=1e-6)
+    assert np.isnan(result[0, 1, 0]) and np.isnan(result).sum() == np.isnan(expected).sum()
+
+
+def test_nn_lookup_cached_distances():
+    """Without distances: None, cached apart from the lookup with distances; int32 indices"""
+
+    import grid_process.grid_interp as gri
+
+    rng = np.random.default_rng(6)
+    coords_flat, poi_coords = rng.uniform(0, 100, (300, 2)), rng.uniform(0, 100, (20, 2))
+    dist, ind = gri.nn_lookup(coords_flat, poi_coords, 5)
+    no_dist, ind_cached = gri.nn_lookup_cached(coords_flat, poi_coords, 5, distances=False)
+    assert no_dist is None and ind_cached.dtype == np.int32
+    np.testing.assert_array_equal(ind_cached, ind)
+    dist_cached, ind_cached = gri.nn_lookup_cached(coords_flat, poi_coords, 5)
+    np.testing.assert_array_equal(dist_cached, dist)
+    assert ind_cached.dtype == np.int32
+    assert gri.nn_lookup_cached(coords_flat, poi_coords, 5, distances=False)[0] is None
+
+
 def test_interp_nearest():
     """
     Simple testcase for the interp_nearest function from grid_interp module

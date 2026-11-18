@@ -71,6 +71,16 @@ Unreleased
   (only the chunks with selected points), and loaded, instead of reading the selected points one by one. Native
   ICON-CH1 netCDF to the seamless 2 km grid: ``slice_grid`` and loading 50 s → 1.4 s. Sources in memory, dask
   arrays and regular grids are unchanged
+* changed ``interp2poi`` and ``interp2grid`` with ``upscaled``: the statistic is computed by blocks of POIs, without
+  gathering the ``k`` neighbors of all the POIs at once, and with ``idw``: a product with the sparse matrix of the
+  weights, same results. Native ICON-CH1-EPS (10 members x 34 steps) to the 5,622 production POIs of
+  data4web-pipelines with ``upscaled`` and ``k=289``: 1.19 s → 0.39 s, peak memory +2.5 GB → +0.3 GB (first call
+  1.41 s → 0.55 s); gridefix ICON-CH1-EPS (3 variables) to the seamless 2 km grid with ``idw``: 0.78 s → 0.43 s,
+  peak memory +0.92 GB → +0.31 GB
+* changed ``nn_lookup_cached``: new ``distances`` parameter (in the cache key), the distances are None if
+  ``False``, and the indices are int32: the cache of the methods without distances (``nearest``, ``upscaled``,
+  ``neighbor_stat`` on unstructured grids) takes 4 times less memory (native ICON-CH1 ``neighbor_stat`` with
+  ``w_size_xy=17``: 1.3 GB instead of 5.3 GB)
 * added ``values`` to the default names of the unstructured grid dimension
   (``GRID_PROCESS__data_model__grid__unstructured_dim``): the dimension of non-regular GRIB grids read with cfgrib or
   earthkit-data, e.g. ICON open data, no longer needs to be renamed

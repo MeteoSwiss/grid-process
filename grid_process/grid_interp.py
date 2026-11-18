@@ -12,7 +12,7 @@ Module for spatial interpolation of gridded datasets
 
 import logging
 from functools import partial, reduce
-from typing import Any, Literal, NamedTuple
+from typing import Any, Literal, NamedTuple, overload
 from collections.abc import Callable, Hashable
 from math import isclose, prod, ceil
 
@@ -64,6 +64,9 @@ NO_CELL = -(2**40)  # cell index of the source points without destination cell (
 # and over-read growing with the chunk
 LAZY_CHUNK_BYTES = 2**24
 LAZY_CHUNK_MIN_POINTS = 1024
+# [bytes] neighbor values of the POIs gathered at once by interp_upscaled: as fast from 0.25 to 16 MB, 2 times
+# slower from 64 MB
+UPSCALED_BLOCK_BYTES = 2**22
 # CRS of the nearest neighbor searches and triangulations when both grids are geographic (lat/lon, rotated pole):
 # Swiss LV95 if the destination is close enough to Switzerland, otherwise earth-centered earth-fixed (ECEF)
 LV95 = CRS.from_epsg(2056)
@@ -666,16 +669,9 @@ def interp_idw(
     # find indexes and distances of the k nearest neighbor grids for all POIS
     dist_nn, ind_nn = nn_lookup_cached(coords_flat, pois_coords, k)
 
-    # compute the weights
+    # weighted average: product with the sparse matrix of the weights, without gathering the k neighbors of each POI
     dist_weight = _compute_dist_weight(dist_nn, weight_power, data_flat.dtype)
-
-    # vectorized weigthed average
-    ndim_trail = data_flat.ndim - 1
-    poi_data = np.sum(
-        data_flat[ind_nn,] * dist_weight.reshape(dist_weight.shape + (1,) * ndim_trail),
-        axis=1,
-    )
-    return poi_data
+    return _sparse_matmul([_rows_matrix(dist_weight, ind_nn, len(data_flat))], data_flat)
 
 
 def interp_upscaled(
@@ -717,14 +713,19 @@ def interp_upscaled(
     :func:`interp2poi`
     """
 
-    # find indexes and distances of the k nearest neighbor grids for all POIS
-    _, ind_nn = nn_lookup_cached(coords_flat, pois_coords, k)
+    # find indexes of the k nearest neighbor grids for all POIS
+    _, ind_nn = nn_lookup_cached(coords_flat, pois_coords, k, distances=False)
 
-    # group aggregation
-    return agg_func(
-        data_flat[ind_nn,],
-        axis=1,
-    )
+    # group aggregation, by blocks of POIs: the gathered neighbor values (k per POI and field) stay small
+    block = max(1, UPSCALED_BLOCK_BYTES // max(ind_nn.shape[1] * data_flat[:1].nbytes, 1))
+    first = agg_func(data_flat[ind_nn[:block],], axis=1)
+    if block >= len(ind_nn):
+        return first
+    out = np.empty((len(ind_nn),) + first.shape[1:], first.dtype)
+    out[:block] = first
+    for start in range(block, len(ind_nn), block):
+        out[start : start + block] = agg_func(data_flat[ind_nn[start : start + block],], axis=1)
+    return out
 
 
 def interp_nearest(coords_flat: np.ndarray, data_flat: np.ndarray, pois_coords: np.ndarray) -> np.ndarray:
@@ -755,7 +756,7 @@ def interp_nearest(coords_flat: np.ndarray, data_flat: np.ndarray, pois_coords: 
     """
 
     # find indexes and distances of the k nearest neighbor grids for all POIS
-    _, ind_nn = nn_lookup_cached(coords_flat, pois_coords, 1)
+    _, ind_nn = nn_lookup_cached(coords_flat, pois_coords, 1, distances=False)
 
     return data_flat[ind_nn]
 
@@ -1211,17 +1212,36 @@ def nn_lookup(grid_coords: np.ndarray, points: np.ndarray, k: int) -> tuple[np.n
     return dd.astype(points.dtype, copy=False), ii
 
 
+@overload
+def nn_lookup_cached(
+    grid_coords: np.ndarray, points: np.ndarray, k: int, distances: Literal[True] = True
+) -> tuple[np.ndarray, np.ndarray]: ...
+
+
+@overload
+def nn_lookup_cached(
+    grid_coords: np.ndarray, points: np.ndarray, k: int, distances: Literal[False]
+) -> tuple[None, np.ndarray]: ...
+
+
 @memoize(
     CONFIG.cache_size.nn_lookup,
-    key=lambda grid_coords, points, k: (_array_key(grid_coords), _array_key(points), k),
+    key=lambda grid_coords, points, k, distances=True: (_array_key(grid_coords), _array_key(points), k, distances),
 )
-def nn_lookup_cached(grid_coords: np.ndarray, points: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
+def nn_lookup_cached(
+    grid_coords: np.ndarray, points: np.ndarray, k: int, distances: bool = True
+) -> tuple[np.ndarray | None, np.ndarray]:
     """
-    :func:`nn_lookup` with an in-memory cache of the results, keyed on the coordinates and ``k``. Its size is set by
-    ``cache_size.nn_lookup`` (environment variable ``GRID_PROCESS__cache_size__nn_lookup``, 0 to deactivate).
+    :func:`nn_lookup` with an in-memory cache of the results, keyed on the coordinates, ``k`` and ``distances``. Its
+    size is set by ``cache_size.nn_lookup`` (environment variable ``GRID_PROCESS__cache_size__nn_lookup``, 0 to
+    deactivate). The distances are None if not ``distances`` (4 times less memory), the indices are int32 (int64 for
+    grids of 2**31 points or more).
     """
 
-    return nn_lookup(grid_coords, points, k)
+    dd, ii = nn_lookup(grid_coords, points, k)
+    if len(grid_coords) < 2**31:
+        ii = ii.astype(np.int32)
+    return (dd if distances else None), ii
 
 
 def nn_lookup_regular(
@@ -2607,6 +2627,23 @@ def _sparse_matmul(weights: list[sparse.csr_array], values: np.ndarray) -> np.nd
     return values
 
 
+def _rows_matrix(weights: np.ndarray, index: np.ndarray, n_columns: int) -> sparse.csr_array:
+    """
+    CSR matrix of shape (n_rows, ``n_columns``) with the ``weights`` (n_rows, k) at the columns ``index`` (n_rows, k)
+    of each row, with int32 indices when possible: int32 ``index`` (e.g. from :func:`nn_lookup_cached`) not copied.
+    """
+
+    dtype = np.int32 if max(index.size, n_columns) < 2**31 else np.int64
+    return sparse.csr_array(
+        (
+            weights.ravel(),
+            index.ravel().astype(dtype, copy=False),
+            np.arange(0, index.size + 1, index.shape[1], dtype=dtype),
+        ),
+        shape=(len(index), n_columns),
+    )
+
+
 def _flat_neighbors(data: xr.Dataset, flat_dim: str, k: int) -> np.ndarray:
     """
     Indices of the ``k`` nearest points of each point of an unstructured grid (itself included), shape (n, k),
@@ -2617,7 +2654,7 @@ def _flat_neighbors(data: xr.Dataset, flat_dim: str, k: int) -> np.ndarray:
     x, y = data[grid_x].values, data[grid_y].values
     target_crs = _choose_kdtree_crs(crs, crs, True, lambda: _reproject_grid_cached(x, y, crs, LV95))
     coords = _kdtree_coords(x, y, crs, target_crs)
-    return nn_lookup_cached(coords, coords, k)[1].reshape(x.size, k)
+    return nn_lookup_cached(coords, coords, k, distances=False)[1].reshape(x.size, k)
 
 
 def _spatial_coord_names(data: xr.Dataset, spatial_dims: tuple[str, ...]) -> set[str]:

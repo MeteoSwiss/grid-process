@@ -21,7 +21,7 @@ from grid_process.helpers import make_accessor, keepattrs
 from grid_process.data_model import get_t_dim, get_spatial_dims, get_ensemble_dim
 from grid_process.aggreg import interval_stat
 from grid_process.da_utils import da_to_ds
-from grid_process.grid_interp import _flat_neighbors, _sparse_matmul
+from grid_process.grid_interp import _flat_neighbors, _rows_matrix, _sparse_matmul
 
 logger = logging.getLogger(__name__)
 
@@ -245,10 +245,7 @@ def neighbor_stat(
             if k > 1:
                 neighbors = _flat_neighbors(ds, spatial_dims[0], k)
                 windows[spatial_dims[0]] = (
-                    sparse.csr_array(
-                        (np.ones(neighbors.size, np.float32), neighbors.ravel(), np.arange(0, neighbors.size + 1, k)),
-                        shape=(n_points, n_points),
-                    )
+                    _rows_matrix(np.ones(neighbors.shape, np.float32), neighbors, n_points)
                     if method in ("mean", "sum")
                     else neighbors
                 )
