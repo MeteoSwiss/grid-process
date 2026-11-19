@@ -12,7 +12,7 @@ import logging
 import json
 from functools import lru_cache
 from typing import Any, TypeVar, Literal, overload
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
 import numpy as np
 from numpy.typing import NDArray
@@ -270,6 +270,37 @@ def get_spatial_coords(grid: xr.Dataset | xr.DataArray) -> tuple[str, str]:
     return spatial_coords  # type: ignore[return-value]
 
 
+# CF standard names (lower case) of the horizontal position coordinates
+_Y_STANDARD_NAMES = ("latitude", "grid_latitude", "projection_y_coordinate")
+_X_STANDARD_NAMES = ("longitude", "grid_longitude", "projection_x_coordinate")
+
+
+def _cf_axis(attrs: Mapping[Any, Any]) -> Literal["Y", "X"] | None:
+    """
+    "Y" or "X" if the CF attributes (``axis`` or ``standard_name``) mark a horizontal position coordinate, else None.
+    """
+
+    axis, standard_name = str(attrs.get("axis", "")).upper(), str(attrs.get("standard_name", "")).lower()
+    if axis == "Y" or standard_name in _Y_STANDARD_NAMES:
+        return "Y"
+    if axis == "X" or standard_name in _X_STANDARD_NAMES:
+        return "X"
+    return None
+
+
+def _cf_latlon(attrs: Mapping[Any, Any]) -> Literal["latitude", "longitude"] | None:
+    """
+    "latitude" or "longitude" if the CF ``standard_name`` or the ``long_name`` mark a geographic coordinate, else None.
+    """
+
+    standard_name, long_name = str(attrs.get("standard_name", "")).lower(), attrs.get("long_name")
+    if "latitude" in (standard_name, long_name):
+        return "latitude"
+    if "longitude" in (standard_name, long_name):
+        return "longitude"
+    return None
+
+
 def _get_spatial(grid: xr.Dataset | xr.DataArray, dim_or_coord: tuple[str, ...]) -> tuple[str | None, str | None]:
     """
     Returns names of spatial dimensions or coordinates in ``dim_or_coord``.
@@ -282,33 +313,16 @@ def _get_spatial(grid: xr.Dataset | xr.DataArray, dim_or_coord: tuple[str, ...])
     # look for coordinates with CF attributes in coords
     spatial: list[str | None] = [None, None]
     for name in dim_or_coord:
-        attrs = grid[name].attrs
-        if (attrs.get("axis", "").upper() == "Y") or (
-            attrs.get("standard_name", "").lower() in ("latitude", "grid_latitude", "projection_y_coordinate")
-        ):
+        axis = _cf_axis(grid[name].attrs)
+        if axis == "Y":
             spatial[0] = name
-        elif (attrs.get("axis", "").upper() == "X") or (
-            attrs.get("standard_name", "").lower() in ("longitude", "grid_longitude", "projection_x_coordinate")
-        ):
+        elif axis == "X":
             spatial[1] = name
 
         if None not in spatial:
             break
 
     return (spatial[0], spatial[1])
-
-
-# CF standard names of horizontal position coordinates, see get_spatial_coord_names
-_POSITION_STANDARD_NAMES = frozenset(
-    (
-        "latitude",
-        "longitude",
-        "grid_latitude",
-        "grid_longitude",
-        "projection_x_coordinate",
-        "projection_y_coordinate",
-    )
-)
 
 
 def get_spatial_coord_names(grid: xr.Dataset | xr.DataArray, spatial_dims: tuple[str, ...] | None = None) -> set[str]:
@@ -334,12 +348,7 @@ def get_spatial_coord_names(grid: xr.Dataset | xr.DataArray, spatial_dims: tuple
     names = set(get_spatial_dims(grid) if spatial_dims is None else spatial_dims)
     names.update(name for pair in YX if set(pair) <= set(grid.coords) for name in pair)
     for name, coord in grid.coords.items():
-        attrs = coord.attrs
-        if (
-            str(attrs.get("axis", "")).upper() in ("X", "Y")
-            or str(attrs.get("standard_name", "")).lower() in _POSITION_STANDARD_NAMES
-            or attrs.get("long_name", "") in ("latitude", "longitude")
-        ):
+        if _cf_axis(coord.attrs) is not None or _cf_latlon(coord.attrs) is not None:
             names.add(str(name))
     return names
 
@@ -397,10 +406,10 @@ def _get_latlon(grid: xr.Dataset | xr.DataArray, dim_or_coord: tuple[str, ...]) 
     # look for coordinates with CF attributes in coords
     latlon: list[str | None] = [None, None]
     for name in dim_or_coord:
-        coord_attrs = grid[name].attrs
-        if coord_attrs.get("standard_name", "") == "latitude" or coord_attrs.get("long_name", "") == "latitude":
+        geographic = _cf_latlon(grid[name].attrs)
+        if geographic == "latitude":
             latlon[0] = name
-        elif coord_attrs.get("standard_name", "") == "longitude" or coord_attrs.get("long_name", "") == "longitude":
+        elif geographic == "longitude":
             latlon[1] = name
 
         if None not in latlon:

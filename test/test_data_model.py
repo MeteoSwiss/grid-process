@@ -364,6 +364,10 @@ def test_get_latlon_coords(model_data):
     ds_ext["dummy_y"].attrs.update({"standard_name": "latitude"})
     ds_ext["dummy_x"].attrs.update({"standard_name": "longitude"})
     assert dm.get_latlon_coords(ds_ext) == ("dummy_y", "dummy_x")
+    ds_ext["dummy_y"].attrs.update({"standard_name": "Latitude"})
+    assert dm.get_latlon_coords(ds_ext) == ("dummy_y", "dummy_x")
+    ds_ext["dummy_y"].attrs.update({"standard_name": "grid_latitude"})
+    assert dm.get_latlon_coords(ds_ext) is None
 
 
 def test_get_latlon_dims(data_native_lv95):
