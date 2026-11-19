@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=b63c5e1d"></script>
+    <script src="_static/documentation_options.js?v=862ae404"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'changelog';</script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="12.11.2026"/>
+    <meta name="docbuild:last-update" content="19.11.2026"/>
   </head>
   
   
@@ -403,10 +403,28 @@
 <h2>Unreleased<a class="headerlink" href="#unreleased" title="Link to this heading">#</a></h2>
 <p><strong>Changes of results</strong> (compared to 1.1.0, see the entries below for details)</p>
 <ul class="simple">
-<li><p>the coarsening of the source grid by <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> (to a coarser destination grid) skips NaN: a coarsened
-cell with some NaN values gets the mean of its valid values instead of NaN, only cells with all values NaN stay NaN</p></li>
-<li><p>coarsened float32 values differ from before by float32 rounding, growing with the window size (for 2 m
-temperature, up to 3e-5 K for a 2 x 2 window and 2e-4 K for 10 x 10)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> averages a source grid finer than the destination grid per destination cell, instead of per
+window of source grid points aligned on the source grid. The results change most where the windows were offset
+from the destination cells: the 50 m DEM of the seamless weather provider to the seamless 2 km grid
+(<code class="docutils literal notranslate"><span class="pre">linear</span></code>) by 61.6 m RMSE (380 m max), as the windows were 1 km off the cells in x and <code class="docutils literal notranslate"><span class="pre">linear</span></code> averaged two
+of them (a 4 x 2 km box); gridefix ICON-CH1 to the seamless 2 km grid by 2 W m-2 (<code class="docutils literal notranslate"><span class="pre">idw</span></code>) to 6 W m-2
+(<code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code>) RMSE for the diffuse radiation, INCA by less</p></li>
+<li><p>NaN are ignored in the averaging: a cell is NaN only if all its source values are NaN (e.g. for the snow limit,
+NaN below the orography). Destination cells at the edge of the source are no longer NaN (e.g. 314 cells for the
+DEM above with <code class="docutils literal notranslate"><span class="pre">try_reg=False</span></code>, a row for ERA5 to a global 1 degree grid)</p></li>
+<li><p>unstructured source grids are averaged too: native ICON-CH1 to the seamless 2 km grid changes by 0.25 to 0.5 K
+RMSE for the 2 m temperature, and gets closer to gridefix ICON-CH1 (surface altitude RMSE 108 m → 56 m with
+<code class="docutils literal notranslate"><span class="pre">idw</span></code>, 91 m → 71 m with <code class="docutils literal notranslate"><span class="pre">linear</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nearest</span></code> and <code class="docutils literal notranslate"><span class="pre">linear</span></code> to a coarser destination grid give the mean of the source points of each destination
+cell, whatever <code class="docutils literal notranslate"><span class="pre">try_reg</span></code>, instead of interpolating between the averaged windows; the other methods interpolate
+from the mean position of the points of each cell. The averaged values are float32 for float32 and 8 or 16 bit
+integer data, float64 otherwise (<code class="docutils literal notranslate"><span class="pre">try_reg=True</span></code> returned the source dtype, e.g. truncated int16 means), and the
+dimensions are in the order of the source</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">slice_coarsen</span></code> returns an unstructured dataset (dimension <code class="docutils literal notranslate"><span class="pre">cell</span></code> by default, coordinates in the destination
+CRS) when it averages the source grid</p></li>
+<li><p>the slicing buffer of <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code>, <code class="docutils literal notranslate"><span class="pre">slice_coarsen</span></code> and <code class="docutils literal notranslate"><span class="pre">slice_boundingbox</span></code> counts grid steps of the
+coarser of the source and destination grids, and the grid step of unstructured sources is estimated from the
+area per point (more robust, e.g. for ICON triangles)</p></li>
 </ul>
 <p><strong>Changes</strong></p>
 <ul class="simple">
@@ -417,9 +435,23 @@ interpolation (new <code class="docutils literal notranslate"><span class="pre">
 0.24 s. A sliced source that is not contiguous in memory is now copied into contiguous rows per grid point, which
 is slower for large sources: ICON-CH2 in LV95 to the seamless 2 km grid with <code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code> or <code class="docutils literal notranslate"><span class="pre">temp_fixgrad</span></code>
 0.23 s → 0.29 s and 0.34 s → 0.39 s</p></li>
-<li><p>changed the coarsening of the source grid by <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> to skip NaN (e.g. for the snow limit, NaN below the
-orography), with bottleneck. ICON-CH1 to the seamless 2 km grid (with cached neighbors) is about 1.4 times
-faster (e.g. <code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code> 0.30 s → 0.21 s), with about 0.05 GB more peak memory (copy of the windows)</p></li>
+<li><p>changed the averaging of a source grid finer than the destination grid by <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> (and
+<code class="docutils literal notranslate"><span class="pre">slice_coarsen</span></code>): the mean of the source points of each destination cell (the cell of their nearest destination
+node along x and y), with a sparse matrix product, for regular and unstructured sources (unstructured sources
+were not averaged, with a warning), if the destination grid has regular 1D coordinates in its CRS (otherwise
+with a warning). For the seamless 2 km grid (with cached neighbors): gridefix ICON-CH1 <code class="docutils literal notranslate"><span class="pre">idw</span></code> 0.43 s → 0.27 s,
+<code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code> 0.31 s → 0.16 s, <code class="docutils literal notranslate"><span class="pre">linear</span></code> 0.54 s → 0.13 s, with up to 0.13 GB more peak memory (copy of the
+sliced source into contiguous rows per grid point, e.g. <code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code> 0.07 GB → 0.20 GB); the 50 m DEM
+<code class="docutils literal notranslate"><span class="pre">linear</span></code> 0.13 s → 0.07 s; native ICON-CH1 <code class="docutils literal notranslate"><span class="pre">linear</span></code> 0.03 s instead of 1.05 s without averaging.
+<code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> on the output of <code class="docutils literal notranslate"><span class="pre">slice_coarsen</span></code> (with the same destination grid and method) gives the same
+result as on the source grid</p></li>
+<li><p>added <code class="docutils literal notranslate"><span class="pre">slice_grid</span></code>: slices a source grid to a destination grid, keeping its structure and CRS (the grid
+counterpart of <code class="docutils literal notranslate"><span class="pre">slice_boundingbox</span></code>)</p></li>
+<li><p>added the support of unstructured grids to <code class="docutils literal notranslate"><span class="pre">ens_stats.neighbor_stat</span></code> and <code class="docutils literal notranslate"><span class="pre">upscaled_prob</span></code>: the neighborhood
+of each point is its <code class="docutils literal notranslate"><span class="pre">w_size_xy**2</span></code> nearest points (the window of a square grid for 3 and 5), with the nearest
+neighbors searched in meters and cached, ignoring NaN. Native ICON-CH1 (34 fields, 1.15 M points, window 5):
+<code class="docutils literal notranslate"><span class="pre">mean</span></code>/<code class="docutils literal notranslate"><span class="pre">sum</span></code> 0.5 s, <code class="docutils literal notranslate"><span class="pre">min</span></code>/<code class="docutils literal notranslate"><span class="pre">max</span></code> 0.8 s, plus 1.8 s for the first neighbor search (<code class="docutils literal notranslate"><span class="pre">rolling</span></code> on a
+regular grid of the same size: 2.4 to 4.3 s)</p></li>
 <li><p>added <code class="docutils literal notranslate"><span class="pre">values</span></code> to the default names of the unstructured grid dimension
 (<code class="docutils literal notranslate"><span class="pre">GRID_PROCESS__data_model__grid__unstructured_dim</span></code>): the dimension of non-regular GRIB grids read with cfgrib or
 earthkit-data, e.g. ICON open data, no longer needs to be renamed</p></li>
@@ -594,10 +626,10 @@ interpolation method and its arguments, e.g. to slice the input data with <code 
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-3e9baa8</div>
+grid-process, version: dev-540a216</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 12.11.2026.
+  Last updated on 19.11.2026.
   <br/>
 </p></div>
       

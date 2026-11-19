@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=b63c5e1d"></script>
+    <script src="../../_static/documentation_options.js?v=862ae404"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/grid_process/grid_interp';</script>
@@ -55,7 +55,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="12.11.2026"/>
+    <meta name="docbuild:last-update" content="19.11.2026"/>
   </head>
   
   
@@ -409,17 +409,17 @@
 <span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span><span class="p">,</span> <span class="n">reduce</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">NamedTuple</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Hashable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">math</span><span class="w"> </span><span class="kn">import</span> <span class="n">isclose</span><span class="p">,</span> <span class="n">prod</span><span class="p">,</span> <span class="n">ceil</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">bottleneck</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bn</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArray</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">sparse</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.interpolate</span><span class="w"> </span><span class="kn">import</span> <span class="n">griddata</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.spatial</span><span class="w"> </span><span class="kn">import</span> <span class="n">KDTree</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pyproj</span><span class="w"> </span><span class="kn">import</span> <span class="n">CRS</span><span class="p">,</span> <span class="n">Transformer</span>
@@ -455,6 +455,12 @@
 <span class="n">POI_DIM</span> <span class="o">=</span> <span class="n">POI_MODEL</span><span class="o">.</span><span class="n">dim</span>
 <span class="n">POI_COORD_COL</span> <span class="o">=</span> <span class="n">POI_MODEL</span><span class="o">.</span><span class="n">coord_from</span>
 <span class="n">SRC_ATTRS_KEEP</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"source"</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">,</span> <span class="s2">"institution"</span><span class="p">,</span> <span class="s2">"history"</span><span class="p">,</span> <span class="s2">"references"</span><span class="p">,</span> <span class="s2">"comment"</span><span class="p">)</span>
+<span class="n">DST_ATTRS_KEEP</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"grid_mapping"</span><span class="p">,</span> <span class="s2">"crs"</span><span class="p">,</span> <span class="s2">"bounding_box"</span><span class="p">)</span>  <span class="c1"># CRS attributes of the destination grid</span>
+<span class="c1"># A source grid with at least this mean number of points per destination cell (e.g. 2 x 2 points with some margin)</span>
+<span class="c1"># is averaged per destination cell before interpolating, see slice_coarsen</span>
+<span class="n">COARSEN_MIN_DENSITY</span> <span class="o">=</span> <span class="mf">2.25</span>
+<span class="n">ON_NODE_TOL</span> <span class="o">=</span> <span class="mf">1e-3</span>  <span class="c1"># [destination grid step] max distance of a source point to a destination node to be on it</span>
+<span class="n">NO_CELL</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">40</span><span class="p">)</span>  <span class="c1"># cell index of the source points without destination cell (non-finite reprojection)</span>
 <span class="c1"># CRS of the nearest neighbor searches and triangulations when both grids are geographic (lat/lon, rotated pole):</span>
 <span class="c1"># Swiss LV95 if the destination is close enough to Switzerland, otherwise earth-centered earth-fixed (ECEF)</span>
 <span class="n">LV95</span> <span class="o">=</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_epsg</span><span class="p">(</span><span class="mi">2056</span><span class="p">)</span>
@@ -2038,7 +2044,8 @@
 <span class="sd">    try_reg : bool, default True</span>
 <span class="sd">        If True, attempts regular grid interpolation for structured source grids with 1D coordinates when ``method`` is</span>
 <span class="sd">        'nearest' or 'linear'. Regular grid interpolation is typically more efficient for large grids, but may be less</span>
-<span class="sd">        so for small grids with many trailing dimensions.</span>
+<span class="sd">        so for small grids with many trailing dimensions. Without effect when the source is averaged per destination</span>
+<span class="sd">        cell (see the notes).</span>
 <span class="sd">    **kwargs : Any</span>
 <span class="sd">        Additional arguments passed to the specific interpolation sub-function, named `interp_&lt;method&gt;`.</span>
 
@@ -2065,6 +2072,15 @@
 <span class="sd">    - Recommended methods: 'nearest', 'linear' (if the source grid is regular with 1D coordinates), 'idw' (with k=4),</span>
 <span class="sd">      'temp_fixgrad', 'nearest_3D', 'nearest_alt'.</span>
 <span class="sd">    - Environment variables allow flexible support for custom grid data models.</span>
+<span class="sd">    - The source grid is first sliced to the destination grid (see :func:`slice_grid`). If it is finer than the</span>
+<span class="sd">      destination grid (on average at least 2.25 points per destination cell), it is then averaged per destination</span>
+<span class="sd">      cell, ignoring NaN (see :func:`slice_coarsen`): a regular or unstructured source, if the destination grid has</span>
+<span class="sd">      regular 1D coordinates in its CRS (otherwise with a warning). For 'nearest' and 'linear', the result is</span>
+<span class="sd">      directly the mean of the source points of each destination cell, NaN only if all of them are NaN or if it has</span>
+<span class="sd">      none, in float32 for float32 and 8 or 16 bit integer data, float64 otherwise, with the dimensions in the order</span>
+<span class="sd">      of the source (the spatial ones replaced at their position), whatever ``try_reg``. The other methods</span>
+<span class="sd">      interpolate from the mean position of the points of each cell. The same holds for a source averaged by</span>
+<span class="sd">      :func:`slice_coarsen` with the same destination grid and method.</span>
 <span class="sd">    - Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for 'linear',</span>
 <span class="sd">      'linear_3D' and 'cubic' are done) with distances in meters, never in latitude/longitude degrees. The source</span>
 <span class="sd">      grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and</span>
@@ -2119,6 +2135,15 @@
     <span class="n">dst_grid</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">set_grid_mapping</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">)</span>
     <span class="n">dst_grid</span> <span class="o">=</span> <span class="n">dst_grid</span><span class="o">.</span><span class="n">drop_dims</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">dst_grid</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">dst_spatial_dims</span><span class="p">))</span>
 
+    <span class="c1"># slice to the destination grid, and average the source per destination cell if finer (see slice_coarsen)</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">cells</span> <span class="o">=</span> <span class="n">_slice_cells</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">src_spatial_dims</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cells</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"nearest"</span><span class="p">,</span> <span class="s2">"linear"</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">cells</span><span class="o">.</span><span class="n">density</span> <span class="o">&gt;=</span> <span class="n">COARSEN_MIN_DENSITY</span> <span class="ow">or</span> <span class="n">cells</span><span class="o">.</span><span class="n">on_nodes</span><span class="p">:</span>  <span class="c1"># the cell means are the destination values</span>
+            <span class="k">return</span> <span class="n">_cells_to_grid</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">src_spatial_dims</span><span class="p">,</span> <span class="n">cells</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cells</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">cells</span><span class="o">.</span><span class="n">density</span> <span class="o">&gt;=</span> <span class="n">COARSEN_MIN_DENSITY</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">_coarsen_cells</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">src_spatial_dims</span><span class="p">,</span> <span class="n">cells</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">,</span> <span class="n">nodes</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">src_spatial_dims</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_spatial_dims</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
     <span class="n">cond_reg</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">method</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"nearest"</span><span class="p">,</span> <span class="s2">"linear"</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_spatial_dims</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">src_spatial_dims</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
     <span class="p">)</span>
@@ -2133,7 +2158,6 @@
 
     <span class="n">dst_grid</span> <span class="o">=</span> <span class="n">dst_grid</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">*</span><span class="n">dst_spatial_dims</span><span class="p">)</span>
 
-    <span class="n">data</span> <span class="o">=</span> <span class="n">slice_coarsen</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">src_spatial_dims</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">vars_attrs</span> <span class="o">=</span> <span class="n">ds_to_da</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># type: ignore[assignment]</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">*</span><span class="n">src_spatial_dims</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
     <span class="n">coords_flat</span><span class="p">,</span> <span class="n">data_flat</span><span class="p">,</span> <span class="n">dst_coords_flat</span> <span class="o">=</span> <span class="n">_flatten_concat_grids</span><span class="p">(</span>
@@ -2206,33 +2230,12 @@
 
         <span class="k">return</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">x_coords_val</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="n">dst_spatial_dims</span><span class="p">),</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">y_coords_val</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="n">dst_spatial_dims</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_coarsen_interp</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_interp</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Coarsen input dataset if needed (downsampling) and perform regular interpolation</span>
+<span class="sd">        Regular interpolation</span>
 <span class="sd">        """</span>
 
-        <span class="n">src_coords_crs</span> <span class="o">=</span> <span class="n">src_spatial_dims</span> <span class="o">+</span> <span class="p">(</span><span class="n">src_crs</span><span class="p">,)</span>
-        <span class="n">res_ratio_x</span><span class="p">,</span> <span class="n">res_ratio_y</span> <span class="o">=</span> <span class="n">_get_coarsen_ratio</span><span class="p">(</span>
-            <span class="n">data</span><span class="p">,</span>
-            <span class="n">src_spatial_dims</span><span class="p">,</span>
-            <span class="n">src_coords_crs</span><span class="p">,</span>
-            <span class="n">dst_grid</span><span class="p">,</span>
-            <span class="n">dst_spatial_dims</span><span class="p">,</span>
-            <span class="n">dst_coords_crs</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">interp_data</span> <span class="o">=</span> <span class="n">data</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">res_ratio_x</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">res_ratio_y</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="n">coarsen_specs</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="n">dim</span><span class="p">:</span> <span class="n">ratio</span>
-                <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">ratio</span> <span class="ow">in</span> <span class="p">(</span>
-                    <span class="p">(</span><span class="n">src_spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">res_ratio_y</span><span class="p">),</span>
-                    <span class="p">(</span><span class="n">src_spatial_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">res_ratio_x</span><span class="p">),</span>
-                <span class="p">)</span>
-                <span class="k">if</span> <span class="n">ratio</span> <span class="o">&gt;</span> <span class="mi">1</span>
-            <span class="p">}</span>
-            <span class="n">interp_data</span> <span class="o">=</span> <span class="n">interp_data</span><span class="o">.</span><span class="n">coarsen</span><span class="p">(</span><span class="n">coarsen_specs</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="s2">"trim"</span><span class="p">)</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">_window_nanmean</span><span class="p">)</span>
-
-        <span class="n">interp_data</span> <span class="o">=</span> <span class="n">_y_increasing</span><span class="p">(</span><span class="n">interp_data</span><span class="p">,</span> <span class="n">src_spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">interp_data</span> <span class="o">=</span> <span class="n">_y_increasing</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">src_spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="n">x_targets</span> <span class="o">=</span> <span class="n">x_coords</span>
         <span class="k">if</span> <span class="n">src_crs</span><span class="o">.</span><span class="n">is_geographic</span><span class="p">:</span>  <span class="c1"># longitudes in the convention of the grid, across the 360 degree seam</span>
             <span class="n">x_targets</span> <span class="o">=</span> <span class="n">x_coords</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span>
@@ -2256,12 +2259,11 @@
     <span class="k">if</span> <span class="n">_cond_dst_1d</span><span class="p">():</span>
         <span class="n">dst_crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_grid_crs</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">src_crs</span> <span class="o">==</span> <span class="n">dst_crs</span><span class="p">:</span>
-            <span class="n">dst_coords_crs</span> <span class="o">=</span> <span class="n">dst_spatial_dims</span> <span class="o">+</span> <span class="p">(</span><span class="n">dst_crs</span><span class="p">,)</span>
             <span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_spatial_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span><span class="n">dst_spatial_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
                 <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span><span class="n">dst_spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
             <span class="p">)</span>
-            <span class="k">return</span> <span class="n">_coarsen_interp</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">_interp</span><span class="p">()</span>
 
     <span class="n">dst_grid</span> <span class="o">=</span> <span class="n">dst_grid</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">*</span><span class="n">dst_spatial_dims</span><span class="p">)</span>
     <span class="c1"># chose to use lat/lon if present in dst_grid otherwise native coordinates</span>
@@ -2269,7 +2271,7 @@
 
     <span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span> <span class="o">=</span> <span class="n">_reproject_dst_2d</span><span class="p">()</span>
 
-    <span class="k">return</span> <span class="n">_coarsen_interp</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_interp</span><span class="p">()</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_flatten_concat_grids</span><span class="p">(</span>  <span class="c1"># pylint: disable=too-many-locals</span>
@@ -2417,9 +2419,9 @@
 
 
 
-<div class="viewcode-block" id="slice_coarsen">
-<a class="viewcode-back" href="../../autoapi/grid_process/grid_interp/index.html#grid_process.grid_interp.slice_coarsen">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">slice_coarsen</span><span class="p">(</span>  <span class="c1"># pylint: disable=too-many-locals</span>
+<div class="viewcode-block" id="slice_grid">
+<a class="viewcode-back" href="../../autoapi/grid_process/grid_interp/index.html#grid_process.grid_interp.slice_grid">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">slice_grid</span><span class="p">(</span>
     <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
     <span class="n">dst_grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
     <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -2428,100 +2430,629 @@
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Slice input dataset to the extend of the destination grid and coarsen it if the</span>
-<span class="sd">    destination grid has lower resolution (downsampling).</span>
+<span class="sd">    Slice the source grid to the extent of the destination grid plus a buffer depending on the interpolation method</span>
+<span class="sd">    and its arguments, keeping its structure (two spatial dimensions or unstructured), its coordinates and its CRS.</span>
+<span class="sd">    The grid counterpart of :func:`slice_boundingbox`, as done by :func:`interp2grid` before interpolating.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : xarray.Dataset</span>
+<span class="sd">        source grid, see :func:`interp2grid`</span>
+<span class="sd">    dst_grid : xarray.Dataset</span>
+<span class="sd">        destination grid, see :func:`interp2grid`</span>
+<span class="sd">    method : str</span>
+<span class="sd">        interpolation method, as in :func:`interp2grid`</span>
+<span class="sd">    spatial_dims, dst_spatial_dims : tuple of str, optional</span>
+<span class="sd">        spatial dimensions of the source and destination grids: (y, x), or the unstructured dimension of the source.</span>
+<span class="sd">        By default found with :func:`~grid_process.data_model.get_spatial_dims`.</span>
+<span class="sd">    **kwargs</span>
+<span class="sd">        keyword arguments of the interpolation method, see :func:`get_buffer`</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    xarray.Dataset</span>
+<span class="sd">        the sliced source grid. Around the extent of the destination grid, it keeps a buffer of :func:`get_buffer`</span>
+<span class="sd">        grid steps of the coarser of the source and destination grids (times 1.5 for an unstructured source, and</span>
+<span class="sd">        wider in longitude towards the poles for a latitude/longitude source).</span>
+
+<span class="sd">    See also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`slice_coarsen`</span>
 <span class="sd">    """</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">extra_buffer</span><span class="p">(</span><span class="n">ratio</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Extra buffer to add when input data is coarsened.</span>
-<span class="sd">        """</span>
-
-        <span class="k">if</span> <span class="n">buffer</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">ceil</span><span class="p">(</span><span class="n">ratio</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="p">(</span><span class="n">ratio</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">buffer</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_spatial_dims</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">dst_spatial_dims</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">dst_spatial_dims</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_spatial_dims</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">)</span>
 
-    <span class="n">coords_crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">)</span>
-    <span class="n">dst_coords_crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">)</span>
-    <span class="n">grid_crs</span><span class="p">,</span> <span class="n">dst_grid_crs</span> <span class="o">=</span> <span class="n">coords_crs</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">dst_coords_crs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-
-    <span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_coords_crs</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-        <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_coords_crs</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">grid_crs</span> <span class="o">!=</span> <span class="n">dst_grid_crs</span><span class="p">:</span>
-        <span class="c1"># only keep the outer rectangle</span>
-        <span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span> <span class="o">=</span> <span class="n">outer_ring</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">)</span>
-
-        <span class="c1"># Reproject destination coordinates in the grid CRS</span>
-        <span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span> <span class="o">=</span> <span class="n">reproject</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">,</span> <span class="n">dst_grid_crs</span><span class="p">,</span> <span class="n">grid_crs</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">grid_crs</span><span class="o">.</span><span class="n">is_geographic</span><span class="p">:</span>  <span class="c1"># longitudes in the convention of the grid (e.g. 0..360 or -180..180)</span>
-        <span class="n">x_coords</span> <span class="o">=</span> <span class="n">_wrap_lon</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">_lon_center</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">coords_crs</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
-
-    <span class="n">yx_bnds</span> <span class="o">=</span> <span class="p">((</span><span class="n">y_coords</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">y_coords</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span> <span class="p">(</span><span class="n">x_coords</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">x_coords</span><span class="o">.</span><span class="n">max</span><span class="p">()))</span>
-
-    <span class="n">buffer</span> <span class="o">=</span> <span class="n">get_buffer</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">sub_domain</span><span class="p">,</span> <span class="n">res</span> <span class="o">=</span> <span class="n">_get_sub_domain</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">coords_crs</span><span class="p">[:</span><span class="mi">2</span><span class="p">],</span> <span class="n">yx_bnds</span><span class="p">,</span> <span class="n">buffer</span><span class="p">,</span> <span class="n">grid_crs</span><span class="o">.</span><span class="n">is_geographic</span><span class="p">)</span>
-    <span class="n">data_sub</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">sub_domain</span><span class="p">)</span>
-
-    <span class="c1"># coarsen input dataset if needed (downsampling)</span>
-    <span class="n">res_ratio_x</span><span class="p">,</span> <span class="n">res_ratio_y</span> <span class="o">=</span> <span class="n">_get_coarsen_ratio</span><span class="p">(</span>
-        <span class="n">data_sub</span><span class="p">,</span>
-        <span class="n">spatial_dims</span><span class="p">,</span>
-        <span class="n">coords_crs</span><span class="p">,</span>
-        <span class="n">dst_grid</span><span class="p">,</span>
-        <span class="n">dst_spatial_dims</span><span class="p">,</span>  <span class="c1"># type: ignore[arg-type]</span>
-        <span class="n">dst_coords_crs</span><span class="p">,</span>
-        <span class="n">res</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">res_ratio_x</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">res_ratio_y</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="s2">"Unstructured grid cannot be coarsened. Interpolation to a lower"</span>
-                <span class="s2">" resolution grid may create aliasing artifacts."</span>
-            <span class="p">)</span>
-            <span class="k">return</span> <span class="n">data_sub</span>
-
-        <span class="n">coarsen_specs</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">dim</span><span class="p">:</span> <span class="n">ratio</span>
-            <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">ratio</span> <span class="ow">in</span> <span class="p">(</span>
-                <span class="p">(</span><span class="n">spatial_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">res_ratio_x</span><span class="p">),</span>
-                <span class="p">(</span><span class="n">spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">res_ratio_y</span><span class="p">),</span>
-            <span class="p">)</span>
-            <span class="k">if</span> <span class="n">ratio</span> <span class="o">&gt;</span> <span class="mi">1</span>
-        <span class="p">}</span>
-        <span class="n">sub_domain</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-            <span class="p">{</span>
-                <span class="n">dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span>  <span class="c1"># type: ignore[misc]</span>
-                    <span class="nb">max</span><span class="p">(</span><span class="n">sub_domain</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">.</span><span class="n">start</span> <span class="o">-</span> <span class="n">extra_buffer</span><span class="p">(</span><span class="n">ratio</span><span class="p">),</span> <span class="mi">0</span><span class="p">),</span>  <span class="c1"># type: ignore[union-attr]</span>
-                    <span class="n">sub_domain</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">.</span><span class="n">stop</span> <span class="o">+</span> <span class="n">extra_buffer</span><span class="p">(</span><span class="n">ratio</span><span class="p">),</span>  <span class="c1"># type: ignore[union-attr]</span>
-                <span class="p">)</span>
-                <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">ratio</span> <span class="ow">in</span> <span class="n">coarsen_specs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-            <span class="p">}</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">sub_domain</span><span class="p">)</span><span class="o">.</span><span class="n">coarsen</span><span class="p">(</span><span class="n">coarsen_specs</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="s2">"trim"</span><span class="p">)</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">_window_nanmean</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">data_sub</span></div>
+    <span class="k">return</span> <span class="n">_slice_grid</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dm</span><span class="o">.</span><span class="n">set_grid_mapping</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">),</span> <span class="n">method</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_window_nanmean</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<div class="viewcode-block" id="slice_coarsen">
+<a class="viewcode-back" href="../../autoapi/grid_process/grid_interp/index.html#grid_process.grid_interp.slice_coarsen">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">slice_coarsen</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">dst_grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dst_spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Mean over the coarsening window ``axis`` (for ``coarsen(...).reduce``) ignoring NaN: a block is NaN only if all</span>
-<span class="sd">    its values are NaN. bottleneck, with the window moved last and flattened, is faster than ``np.mean`` over the</span>
-<span class="sd">    window axes. It sums float32 in float32: the relative error grows with the window size (about 1e-7 for a 2 x 2</span>
-<span class="sd">    window, 2e-6 for 40 x 40).</span>
+<span class="sd">    Slice the source grid to the destination grid (see :func:`slice_grid`) and average it per destination cell if</span>
+<span class="sd">    it is finer than the destination grid, as :func:`interp2grid` does before interpolating. Calling</span>
+<span class="sd">    :func:`interp2grid` on the result, with the same destination grid and method, gives the same result as calling</span>
+<span class="sd">    it on the source grid: operations in between (e.g. unit conversions or time aggregations) are done on fewer</span>
+<span class="sd">    points.</span>
+
+<span class="sd">    The source grid is averaged when the destination grid has regular 1D dimension coordinates (constant step) in</span>
+<span class="sd">    its CRS, and the source has on average at least 2.25 points (e.g. 2 x 2 points with some margin) per occupied</span>
+<span class="sd">    destination cell. Each source point belongs to the cell of its nearest destination node along x and along y,</span>
+<span class="sd">    including the cells beyond the destination grid, in the buffer. Otherwise the sliced source grid is returned.</span>
+
+<span class="sd">    When averaged, the dataset is unstructured:</span>
+
+<span class="sd">    - its spatial dimension is the one of the source if unstructured, otherwise the first unstructured dimension</span>
+<span class="sd">      name of the configuration (``cell`` by default). It has one point per cell containing source points, in</span>
+<span class="sd">      increasing (y, x) order of the cells. The cells only depend on the positions of the source points: several</span>
+<span class="sd">      datasets on the same source grid get the same cells in the same order;</span>
+<span class="sd">    - its spatial coordinates are in the CRS of the destination grid, with the names and attributes of the</span>
+<span class="sd">      destination dimension coordinates, and the dataset gets the CRS attributes of the destination</span>
+<span class="sd">      (``crs``, ``grid_mapping``, ``bounding_box``). For the methods 'nearest' and 'linear', they are the</span>
+<span class="sd">      coordinates of the destination nodes: the mean of a cell is the value of its destination grid point, which</span>
+<span class="sd">      :func:`interp2grid` takes without interpolating. For the other methods, they are the mean coordinates of the</span>
+<span class="sd">      source points of each cell, the actual position of the averaged data (e.g. for 'idw' or 'nearest_alt');</span>
+<span class="sd">    - the data variables and the numeric coordinates on the spatial dimensions (e.g. the surface altitude) are</span>
+<span class="sd">      averaged ignoring NaN: a cell is NaN only if all its source values are NaN. The result is float32 for float32</span>
+<span class="sd">      and 8 or 16 bit integer data, float64 otherwise. The other coordinates on the spatial dimensions (e.g. the</span>
+<span class="sd">      latitude and longitude of the source) are dropped. Dask arrays stay lazy (with a single chunk along the</span>
+<span class="sd">      spatial dimension).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : xarray.Dataset</span>
+<span class="sd">        source grid, see :func:`interp2grid`</span>
+<span class="sd">    dst_grid : xarray.Dataset</span>
+<span class="sd">        destination grid, see :func:`interp2grid`</span>
+<span class="sd">    method : str</span>
+<span class="sd">        interpolation method, as in :func:`interp2grid`</span>
+<span class="sd">    spatial_dims, dst_spatial_dims : tuple of str, optional</span>
+<span class="sd">        spatial dimensions of the source and destination grids: (y, x), or the unstructured dimension of the source.</span>
+<span class="sd">        By default found with :func:`~grid_process.data_model.get_spatial_dims`.</span>
+<span class="sd">    **kwargs</span>
+<span class="sd">        keyword arguments of the interpolation method, see :func:`get_buffer`</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    xarray.Dataset</span>
+<span class="sd">        the sliced source grid, averaged per destination cell if finer than the destination grid</span>
 <span class="sd">    """</span>
 
-    <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">axis</span><span class="p">),</span> <span class="mi">0</span><span class="p">)))</span>
-    <span class="k">return</span> <span class="n">bn</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">axis</span><span class="p">)]</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,)),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_spatial_dims</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dst_spatial_dims</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dst_spatial_dims</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_spatial_dims</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">)</span>
+
+    <span class="n">dst_grid</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">set_grid_mapping</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">cells</span> <span class="o">=</span> <span class="n">_slice_cells</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cells</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">cells</span><span class="o">.</span><span class="n">density</span> <span class="o">&lt;</span> <span class="n">COARSEN_MIN_DENSITY</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">data</span>
+    <span class="k">return</span> <span class="n">_coarsen_cells</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">cells</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">,</span> <span class="n">nodes</span><span class="o">=</span><span class="n">method</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"nearest"</span><span class="p">,</span> <span class="s2">"linear"</span><span class="p">))</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_DstAxes</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Regular 1D axes of a destination grid, see :func:`_dst_axes`</span>
+<span class="sd">    """</span>
+
+    <span class="n">y_dim</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">x_dim</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">crs</span><span class="p">:</span> <span class="n">CRS</span>
+    <span class="n">y0</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">dy</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">ny</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">x0</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">dx</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">nx</span><span class="p">:</span> <span class="nb">int</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_Cells</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Destination cell of the source points, see :func:`_dst_cells`</span>
+<span class="sd">    """</span>
+
+    <span class="n">axes</span><span class="p">:</span> <span class="n">_DstAxes</span>
+    <span class="n">separable</span><span class="p">:</span> <span class="nb">bool</span>  <span class="c1"># source with 1D coordinates in the destination CRS: i per x point, j per y point</span>
+    <span class="n">i</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>  <span class="c1"># x index of the cell of each point (or x point), NO_CELL without cell</span>
+    <span class="n">j</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>  <span class="c1"># y index of the cell of each point (or y point), NO_CELL without cell</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>  <span class="c1"># x coordinate of each point (or x point) in the destination CRS</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>  <span class="c1"># y coordinate of each point (or y point) in the destination CRS</span>
+    <span class="n">density</span><span class="p">:</span> <span class="nb">float</span>  <span class="c1"># mean number of points per occupied cell of the destination grid (0 if none)</span>
+    <span class="n">on_nodes</span><span class="p">:</span> <span class="nb">bool</span>  <span class="c1"># whether all the points of an unstructured source are on destination nodes</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_slice_grid</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">dst_grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+    <span class="n">dst_spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    :func:`slice_grid`, also returning the grid steps of the source and of the destination (along its first row and</span>
+<span class="sd">    column) in the source coordinates (e.g. meters or degrees), as the max of the median steps along x and y</span>
+<span class="sd">    (see :func:`_get_sub_domain` for an unstructured source). ``dst_grid`` must have its grid mapping set</span>
+<span class="sd">    (:func:`~grid_process.data_model.set_grid_mapping`).</span>
+<span class="sd">    """</span>
+
+    <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">,</span> <span class="n">grid_crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">set_grid_mapping</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">spatial_dims</span><span class="p">)</span>
+    <span class="n">lon_center</span> <span class="o">=</span> <span class="n">_lon_center</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span> <span class="k">if</span> <span class="n">grid_crs</span><span class="o">.</span><span class="n">is_geographic</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">yx_bnds</span><span class="p">,</span> <span class="n">dst_step</span> <span class="o">=</span> <span class="n">_dst_extent</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">,</span> <span class="n">grid_crs</span><span class="p">,</span> <span class="n">lon_center</span><span class="p">)</span>
+    <span class="n">sub_domain</span><span class="p">,</span> <span class="n">src_step</span> <span class="o">=</span> <span class="n">_get_sub_domain</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="p">(</span><span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">),</span> <span class="n">yx_bnds</span><span class="p">,</span> <span class="n">get_buffer</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">grid_crs</span><span class="o">.</span><span class="n">is_geographic</span><span class="p">,</span> <span class="n">dst_step</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">sub_domain</span><span class="p">),</span> <span class="n">src_step</span><span class="p">,</span> <span class="n">dst_step</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_dst_extent</span><span class="p">(</span>
+    <span class="n">dst_grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">grid_crs</span><span class="p">:</span> <span class="n">CRS</span><span class="p">,</span> <span class="n">lon_center</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Bounds ((y_min, y_max), (x_min, x_max)) of the destination grid in ``grid_crs`` (from its outer ring, with the</span>
+<span class="sd">    longitudes in the convention of a geographic source centered on ``lon_center``, see :func:`_wrap_lon`), and its</span>
+<span class="sd">    grid step along its first row and column in ``grid_crs``, as the max of the median steps along x and y.</span>
+<span class="sd">    """</span>
+
+    <span class="n">dst_y</span><span class="p">,</span> <span class="n">dst_x</span><span class="p">,</span> <span class="n">dst_crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">)</span>
+    <span class="n">x_dst</span><span class="p">,</span> <span class="n">y_dst</span> <span class="o">=</span> <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">[</span><span class="n">dst_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">x_ring</span><span class="p">,</span> <span class="n">y_ring</span> <span class="o">=</span> <span class="n">outer_ring</span><span class="p">(</span><span class="n">x_dst</span><span class="p">,</span> <span class="n">y_dst</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">x_dst</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># first row and column</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[(</span><span class="n">x_dst</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">x_dst</span><span class="p">,</span> <span class="n">y_dst</span><span class="p">[</span><span class="mi">0</span><span class="p">])),</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">y_dst</span><span class="p">,</span> <span class="n">x_dst</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">y_dst</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[(</span><span class="n">x_dst</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">y_dst</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]),</span> <span class="p">(</span><span class="n">x_dst</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y_dst</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])]</span>
+    <span class="k">if</span> <span class="n">grid_crs</span> <span class="o">!=</span> <span class="n">dst_crs</span><span class="p">:</span>
+        <span class="n">x_ring</span><span class="p">,</span> <span class="n">y_ring</span> <span class="o">=</span> <span class="n">reproject</span><span class="p">(</span><span class="n">x_ring</span><span class="p">,</span> <span class="n">y_ring</span><span class="p">,</span> <span class="n">dst_crs</span><span class="p">,</span> <span class="n">grid_crs</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">reproject</span><span class="p">(</span><span class="n">x_line</span><span class="p">,</span> <span class="n">y_line</span><span class="p">,</span> <span class="n">dst_crs</span><span class="p">,</span> <span class="n">grid_crs</span><span class="p">)</span> <span class="k">for</span> <span class="n">x_line</span><span class="p">,</span> <span class="n">y_line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">lon_center</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">x_ring</span> <span class="o">=</span> <span class="n">_wrap_lon</span><span class="p">(</span><span class="n">x_ring</span><span class="p">,</span> <span class="n">lon_center</span><span class="p">)</span>
+    <span class="n">dst_step</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">_line_step</span><span class="p">(</span><span class="n">x_line</span><span class="p">,</span> <span class="n">y_line</span><span class="p">)</span> <span class="k">for</span> <span class="n">x_line</span><span class="p">,</span> <span class="n">y_line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">((</span><span class="n">y_ring</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">y_ring</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span> <span class="p">(</span><span class="n">x_ring</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">x_ring</span><span class="o">.</span><span class="n">max</span><span class="p">())),</span> <span class="n">dst_step</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_line_step</span><span class="p">(</span><span class="n">x_coords</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Median step between consecutive points of a line, as the max of the x and y steps (0 for a single point).</span>
+<span class="sd">    """</span>
+
+    <span class="n">steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">))),</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y_coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)))</span>
+    <span class="p">)</span>
+    <span class="n">steps</span> <span class="o">=</span> <span class="n">steps</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">steps</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">steps</span><span class="p">))</span> <span class="k">if</span> <span class="n">steps</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="mf">0.0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_slice_cells</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">dst_grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+    <span class="n">dst_spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">_Cells</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Slice the source grid (:func:`_slice_grid`) and find the destination cell of its points (:func:`_dst_cells`)</span>
+<span class="sd">    when it may be needed: for an unstructured source (finer than the destination, or on its nodes, see</span>
+<span class="sd">    :func:`slice_coarsen`), or for a regular source whose grid step is clearly smaller than the destination one.</span>
+<span class="sd">    The cells are None otherwise, or if the destination grid has no regular 1D coordinates in its CRS (with a</span>
+<span class="sd">    warning if the source is finer). ``dst_grid`` must have its grid mapping set.</span>
+<span class="sd">    """</span>
+
+    <span class="n">data</span><span class="p">,</span> <span class="n">src_step</span><span class="p">,</span> <span class="n">dst_step</span> <span class="o">=</span> <span class="n">_slice_grid</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">density</span> <span class="o">=</span> <span class="p">(</span><span class="n">dst_step</span> <span class="o">/</span> <span class="n">src_step</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="k">if</span> <span class="n">src_step</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>  <span class="c1"># rough estimate, see _dst_cells</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">density</span> <span class="o">&gt;=</span> <span class="n">COARSEN_MIN_DENSITY</span> <span class="o">/</span> <span class="mf">1.5</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">axes</span> <span class="o">=</span> <span class="n">_dst_axes</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+    <span class="k">if</span> <span class="n">axes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">density</span> <span class="o">&gt;=</span> <span class="n">COARSEN_MIN_DENSITY</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">"The destination grid has no regular 1D coordinates in its CRS: the source grid is not averaged per"</span>
+                <span class="s2">" destination cell. Interpolation to a lower resolution grid may create aliasing artifacts."</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="n">_dst_cells</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">set_grid_mapping</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">axes</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_dst_axes</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">_DstAxes</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Regular axes of the destination grid: its dimension coordinates if they are 1D with a constant step (within</span>
+<span class="sd">    0.1 %, e.g. for float32 coordinates), in its CRS. None otherwise, e.g. with only 2D coordinates.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">dst_spatial_dims</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="nb">set</span><span class="p">(</span><span class="n">dst_grid</span><span class="o">.</span><span class="n">coords</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_grid_crs</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">axes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">dst_spatial_dims</span><span class="p">:</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">dst_grid</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">values</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">step</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">values</span><span class="p">),</span> <span class="n">step</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">axes</span> <span class="o">+=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">step</span><span class="p">),</span> <span class="n">values</span><span class="o">.</span><span class="n">size</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">_DstAxes</span><span class="p">(</span><span class="n">dst_spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dst_spatial_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">crs</span><span class="p">,</span> <span class="o">*</span><span class="n">axes</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_dst_cells</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">axes</span><span class="p">:</span> <span class="n">_DstAxes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_Cells</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Destination cell (j, i) of each point of the source grid: the indices of its nearest destination node along y</span>
+<span class="sd">    and x, ``rint((y - y0) / dy)`` and ``rint((x - x0) / dx)``, not bounded to the destination grid so that the</span>
+<span class="sd">    points beyond it (in the slicing buffer) get their own cells. The source coordinates are reprojected to the</span>
+<span class="sd">    destination CRS (cached), with the longitudes in the convention of the destination (whose seam is on a cell</span>
+<span class="sd">    edge). Points with a non-finite reprojection get no cell (``NO_CELL``). For a source with 1D coordinates in the</span>
+<span class="sd">    destination CRS, the cells are separable: j only depends on y and i on x, computed per axis.</span>
+
+<span class="sd">    Also returns the mean number of points per occupied cell of the destination grid (``density``), and, for an</span>
+<span class="sd">    unstructured source, whether all its points are on destination nodes (within ``ON_NODE_TOL`` steps, e.g. a grid</span>
+<span class="sd">    averaged by :func:`slice_coarsen` for 'nearest' or 'linear').</span>
+<span class="sd">    """</span>
+
+    <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">,</span> <span class="n">grid_crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">prefer_projected</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">separable</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+        <span class="ow">and</span> <span class="n">grid_crs</span> <span class="o">==</span> <span class="n">axes</span><span class="o">.</span><span class="n">crs</span>
+        <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">dims</span> <span class="o">==</span> <span class="n">spatial_dims</span><span class="p">[:</span><span class="mi">1</span><span class="p">]</span>
+        <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">dims</span> <span class="o">==</span> <span class="n">spatial_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">separable</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_reproject_grid_cached</span><span class="p">(</span>
+            <span class="n">_flat_coord</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">),</span> <span class="n">_flat_coord</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">grid_y</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">),</span> <span class="n">grid_crs</span><span class="p">,</span> <span class="n">axes</span><span class="o">.</span><span class="n">crs</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">axes</span><span class="o">.</span><span class="n">crs</span><span class="o">.</span><span class="n">is_geographic</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">_wrap_lon</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">axes</span><span class="o">.</span><span class="n">x0</span> <span class="o">+</span> <span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">nx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">axes</span><span class="o">.</span><span class="n">dx</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">_axis_index</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">axes</span><span class="o">.</span><span class="n">x0</span><span class="p">,</span> <span class="n">axes</span><span class="o">.</span><span class="n">dx</span><span class="p">),</span> <span class="n">_axis_index</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">axes</span><span class="o">.</span><span class="n">y0</span><span class="p">,</span> <span class="n">axes</span><span class="o">.</span><span class="n">dy</span><span class="p">)</span>
+    <span class="n">on_nodes</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="ow">and</span> <span class="n">i</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="ow">and</span> <span class="nb">bool</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">x0</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="n">axes</span><span class="o">.</span><span class="n">dx</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">ON_NODE_TOL</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">dx</span><span class="p">))</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">y0</span> <span class="o">+</span> <span class="n">j</span> <span class="o">*</span> <span class="n">axes</span><span class="o">.</span><span class="n">dy</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">ON_NODE_TOL</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">dy</span><span class="p">))</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_Cells</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">separable</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">_density</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">axes</span><span class="p">,</span> <span class="n">separable</span><span class="p">),</span> <span class="n">on_nodes</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_density</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="n">_DstAxes</span><span class="p">,</span> <span class="n">separable</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Mean number of source points per occupied cell of the destination grid (0 if none), see :func:`_dst_cells`.</span>
+<span class="sd">    """</span>
+
+    <span class="n">in_x</span><span class="p">,</span> <span class="n">in_y</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">axes</span><span class="o">.</span><span class="n">nx</span><span class="p">),</span> <span class="p">(</span><span class="n">j</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">j</span> <span class="o">&lt;</span> <span class="n">axes</span><span class="o">.</span><span class="n">ny</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">separable</span><span class="p">:</span>
+        <span class="n">n_inside</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">in_x</span><span class="p">))</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">in_y</span><span class="p">))</span>
+        <span class="n">occupied</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="n">in_x</span><span class="p">])</span><span class="o">.</span><span class="n">size</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">j</span><span class="p">[</span><span class="n">in_y</span><span class="p">])</span><span class="o">.</span><span class="n">size</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">inside</span> <span class="o">=</span> <span class="n">in_x</span> <span class="o">&amp;</span> <span class="n">in_y</span>
+        <span class="n">n_inside</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">inside</span><span class="p">))</span>
+        <span class="n">occupied</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">j</span><span class="p">[</span><span class="n">inside</span><span class="p">]</span> <span class="o">*</span> <span class="n">axes</span><span class="o">.</span><span class="n">nx</span> <span class="o">+</span> <span class="n">i</span><span class="p">[</span><span class="n">inside</span><span class="p">],</span> <span class="n">minlength</span><span class="o">=</span><span class="n">axes</span><span class="o">.</span><span class="n">ny</span> <span class="o">*</span> <span class="n">axes</span><span class="o">.</span><span class="n">nx</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">n_inside</span> <span class="o">/</span> <span class="n">occupied</span><span class="p">)</span> <span class="k">if</span> <span class="n">occupied</span> <span class="k">else</span> <span class="mf">0.0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_axis_index</span><span class="p">(</span><span class="n">coords</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Index of the nearest node of the regular axis (``start``, ``step``) of each coordinate, unbounded, ``NO_CELL``</span>
+<span class="sd">    for non-finite coordinates.</span>
+<span class="sd">    """</span>
+
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">):</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rint</span><span class="p">((</span><span class="n">coords</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span> <span class="n">step</span><span class="p">)</span>
+    <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">finite</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">index</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">finite</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">NO_CELL</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_coarsen_cells</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">cells</span><span class="p">:</span> <span class="n">_Cells</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">nodes</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Unstructured dataset with the mean of the source points of each occupied cell, located on the destination node</span>
+<span class="sd">    (``nodes``) or at the mean position of the points, see :func:`slice_coarsen`.</span>
+<span class="sd">    """</span>
+
+    <span class="n">axes</span> <span class="o">=</span> <span class="n">cells</span><span class="o">.</span><span class="n">axes</span>
+    <span class="n">weights</span><span class="p">,</span> <span class="p">(</span><span class="n">cells_j</span><span class="p">,</span> <span class="n">cells_i</span><span class="p">),</span> <span class="p">(</span><span class="n">y_mean</span><span class="p">,</span> <span class="n">x_mean</span><span class="p">)</span> <span class="o">=</span> <span class="n">_occupied_cells</span><span class="p">(</span><span class="n">cells</span><span class="p">)</span>
+    <span class="n">flat_dim</span> <span class="o">=</span> <span class="n">spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">dm</span><span class="o">.</span><span class="n">FLAT_DIM</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">_sparse_mean_ds</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">set_grid_mapping</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="p">(</span><span class="n">flat_dim</span><span class="p">,),</span> <span class="p">(</span><span class="n">cells_i</span><span class="o">.</span><span class="n">size</span><span class="p">,),</span> <span class="n">coords</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">nodes</span><span class="p">:</span>
+        <span class="n">x_mean</span><span class="p">,</span> <span class="n">y_mean</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">x0</span> <span class="o">+</span> <span class="n">cells_i</span> <span class="o">*</span> <span class="n">axes</span><span class="o">.</span><span class="n">dx</span><span class="p">,</span> <span class="n">axes</span><span class="o">.</span><span class="n">y0</span> <span class="o">+</span> <span class="n">cells_j</span> <span class="o">*</span> <span class="n">axes</span><span class="o">.</span><span class="n">dy</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="n">axes</span><span class="o">.</span><span class="n">x_dim</span><span class="p">:</span> <span class="p">(</span><span class="n">flat_dim</span><span class="p">,</span> <span class="n">x_mean</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">[</span><span class="n">axes</span><span class="o">.</span><span class="n">x_dim</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">),</span>
+            <span class="n">axes</span><span class="o">.</span><span class="n">y_dim</span><span class="p">:</span> <span class="p">(</span><span class="n">flat_dim</span><span class="p">,</span> <span class="n">y_mean</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">[</span><span class="n">axes</span><span class="o">.</span><span class="n">y_dim</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">),</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">out</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">DST_ATTRS_KEEP</span><span class="p">}</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">dst_grid</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">DST_ATTRS_KEEP</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dst_grid</span><span class="o">.</span><span class="n">attrs</span><span class="p">})</span>
+    <span class="k">if</span> <span class="s2">"crs"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">out</span><span class="o">.</span><span class="n">attrs</span> <span class="ow">and</span> <span class="s2">"grid_mapping"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">out</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"crs"</span><span class="p">]</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">crs</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_occupied_cells</span><span class="p">(</span>
+    <span class="n">cells</span><span class="p">:</span> <span class="n">_Cells</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr_array</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Occupied cells in (y, x) order: the 0/1 weights of their points (see :func:`_sparse_nanmean`), their (j, i)</span>
+<span class="sd">    indices, and the mean (y, x) coordinates of their points.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">cells</span><span class="o">.</span><span class="n">separable</span><span class="p">:</span>  <span class="c1"># occupied cells of the y and x axes, and their product</span>
+        <span class="p">(</span><span class="n">cells_j</span><span class="p">,</span> <span class="n">rows_j</span><span class="p">),</span> <span class="p">(</span><span class="n">cells_i</span><span class="p">,</span> <span class="n">rows_i</span><span class="p">)</span> <span class="o">=</span> <span class="n">_ranks</span><span class="p">(</span><span class="n">cells</span><span class="o">.</span><span class="n">j</span><span class="p">),</span> <span class="n">_ranks</span><span class="p">(</span><span class="n">cells</span><span class="o">.</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="n">_index_weights</span><span class="p">(</span><span class="n">rows_j</span><span class="p">,</span> <span class="n">cells_j</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">_index_weights</span><span class="p">(</span><span class="n">rows_i</span><span class="p">,</span> <span class="n">cells_i</span><span class="o">.</span><span class="n">size</span><span class="p">)]</span>
+        <span class="n">y_mean</span><span class="p">,</span> <span class="n">x_mean</span> <span class="o">=</span> <span class="n">_mean_by</span><span class="p">(</span><span class="n">rows_j</span><span class="p">,</span> <span class="n">cells</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">cells_j</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">_mean_by</span><span class="p">(</span><span class="n">rows_i</span><span class="p">,</span> <span class="n">cells</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">cells_i</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">cells_j</span><span class="p">,</span> <span class="n">cells_i</span> <span class="o">=</span> <span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span> <span class="k">for</span> <span class="n">arr</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">cells_j</span><span class="p">,</span> <span class="n">cells_i</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">"ij"</span><span class="p">))</span>
+        <span class="n">y_mean</span><span class="p">,</span> <span class="n">x_mean</span> <span class="o">=</span> <span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span> <span class="k">for</span> <span class="n">arr</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">y_mean</span><span class="p">,</span> <span class="n">x_mean</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">"ij"</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">weights</span><span class="p">,</span> <span class="p">(</span><span class="n">cells_j</span><span class="p">,</span> <span class="n">cells_i</span><span class="p">),</span> <span class="p">(</span><span class="n">y_mean</span><span class="p">,</span> <span class="n">x_mean</span><span class="p">)</span>
+
+    <span class="n">valid</span> <span class="o">=</span> <span class="p">(</span><span class="n">cells</span><span class="o">.</span><span class="n">i</span> <span class="o">!=</span> <span class="n">NO_CELL</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">cells</span><span class="o">.</span><span class="n">j</span> <span class="o">!=</span> <span class="n">NO_CELL</span><span class="p">)</span>
+    <span class="n">keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">cells</span><span class="o">.</span><span class="n">i</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">NO_CELL</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">valid</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>  <span class="c1"># flat index of the cells in (y, x) order</span>
+        <span class="n">i_valid</span><span class="p">,</span> <span class="n">j_valid</span> <span class="o">=</span> <span class="n">cells</span><span class="o">.</span><span class="n">i</span><span class="p">[</span><span class="n">valid</span><span class="p">],</span> <span class="n">cells</span><span class="o">.</span><span class="n">j</span><span class="p">[</span><span class="n">valid</span><span class="p">]</span>
+        <span class="n">keys</span><span class="p">[</span><span class="n">valid</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">j_valid</span> <span class="o">-</span> <span class="n">j_valid</span><span class="o">.</span><span class="n">min</span><span class="p">())</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ptp</span><span class="p">(</span><span class="n">i_valid</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">i_valid</span> <span class="o">-</span> <span class="n">i_valid</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+    <span class="n">occupied</span><span class="p">,</span> <span class="n">rows</span> <span class="o">=</span> <span class="n">_ranks</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+    <span class="n">first</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">occupied</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># a point of each cell, to get its (j, i)</span>
+    <span class="n">first</span><span class="p">[</span><span class="n">rows</span><span class="p">[</span><span class="n">valid</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">valid</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="p">[</span><span class="n">_index_weights</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">occupied</span><span class="o">.</span><span class="n">size</span><span class="p">)],</span>
+        <span class="p">(</span><span class="n">cells</span><span class="o">.</span><span class="n">j</span><span class="p">[</span><span class="n">first</span><span class="p">],</span> <span class="n">cells</span><span class="o">.</span><span class="n">i</span><span class="p">[</span><span class="n">first</span><span class="p">]),</span>
+        <span class="p">(</span><span class="n">_mean_by</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cells</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">occupied</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">_mean_by</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cells</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">occupied</span><span class="o">.</span><span class="n">size</span><span class="p">)),</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_cells_to_grid</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">cells</span><span class="p">:</span> <span class="n">_Cells</span><span class="p">,</span> <span class="n">dst_grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Mean of the source points of each cell of the destination grid, on the destination grid (NaN for the cells</span>
+<span class="sd">    without valid source value), see :func:`interp2grid`.</span>
+<span class="sd">    """</span>
+
+    <span class="n">axes</span> <span class="o">=</span> <span class="n">cells</span><span class="o">.</span><span class="n">axes</span>
+    <span class="k">if</span> <span class="n">cells</span><span class="o">.</span><span class="n">separable</span><span class="p">:</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="n">_index_weights</span><span class="p">(</span><span class="n">cells</span><span class="o">.</span><span class="n">j</span><span class="p">,</span> <span class="n">axes</span><span class="o">.</span><span class="n">ny</span><span class="p">),</span> <span class="n">_index_weights</span><span class="p">(</span><span class="n">cells</span><span class="o">.</span><span class="n">i</span><span class="p">,</span> <span class="n">axes</span><span class="o">.</span><span class="n">nx</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">inside</span> <span class="o">=</span> <span class="p">(</span><span class="n">cells</span><span class="o">.</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">cells</span><span class="o">.</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">axes</span><span class="o">.</span><span class="n">nx</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">cells</span><span class="o">.</span><span class="n">j</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">cells</span><span class="o">.</span><span class="n">j</span> <span class="o">&lt;</span> <span class="n">axes</span><span class="o">.</span><span class="n">ny</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="n">_index_weights</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">inside</span><span class="p">,</span> <span class="n">cells</span><span class="o">.</span><span class="n">j</span> <span class="o">*</span> <span class="n">axes</span><span class="o">.</span><span class="n">nx</span> <span class="o">+</span> <span class="n">cells</span><span class="o">.</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">axes</span><span class="o">.</span><span class="n">ny</span> <span class="o">*</span> <span class="n">axes</span><span class="o">.</span><span class="n">nx</span><span class="p">)]</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">_sparse_mean_ds</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">y_dim</span><span class="p">,</span> <span class="n">axes</span><span class="o">.</span><span class="n">x_dim</span><span class="p">),</span> <span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">ny</span><span class="p">,</span> <span class="n">axes</span><span class="o">.</span><span class="n">nx</span><span class="p">),</span> <span class="n">coords</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span><span class="n">dst_grid</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">_combine_attrs</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">,</span> <span class="n">dst_grid</span><span class="o">.</span><span class="n">attrs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ranks</span><span class="p">(</span><span class="n">index</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Sorted unique values of ``index`` (ignoring ``NO_CELL``), and the rank of each value among them (-1 for</span>
+<span class="sd">    ``NO_CELL``).</span>
+<span class="sd">    """</span>
+
+    <span class="n">valid</span> <span class="o">=</span> <span class="n">index</span> <span class="o">!=</span> <span class="n">NO_CELL</span>
+    <span class="n">unique</span><span class="p">,</span> <span class="n">ranks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">index</span><span class="p">[</span><span class="n">valid</span><span class="p">],</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">index</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+    <span class="n">rows</span><span class="p">[</span><span class="n">valid</span><span class="p">]</span> <span class="o">=</span> <span class="n">ranks</span>
+    <span class="k">return</span> <span class="n">unique</span><span class="p">,</span> <span class="n">rows</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_mean_by</span><span class="p">(</span><span class="n">rows</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n_rows</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Mean of ``values`` per row index ``rows`` (-1 ignored), for ``n_rows`` rows.</span>
+<span class="sd">    """</span>
+
+    <span class="n">valid</span> <span class="o">=</span> <span class="n">rows</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">rows</span><span class="p">[</span><span class="n">valid</span><span class="p">],</span> <span class="n">values</span><span class="p">[</span><span class="n">valid</span><span class="p">],</span> <span class="n">n_rows</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">rows</span><span class="p">[</span><span class="n">valid</span><span class="p">],</span> <span class="n">minlength</span><span class="o">=</span><span class="n">n_rows</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_index_weights</span><span class="p">(</span><span class="n">rows</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n_rows</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_array</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    0/1 matrix of shape (``n_rows``, ``rows.size``) with a 1 at (``rows[p]``, p) for each p with</span>
+<span class="sd">    0 &lt;= ``rows[p]`` &lt; ``n_rows``.</span>
+<span class="sd">    """</span>
+
+    <span class="n">valid</span> <span class="o">=</span> <span class="p">(</span><span class="n">rows</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">rows</span> <span class="o">&lt;</span> <span class="n">n_rows</span><span class="p">)</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">valid</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_array</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">cols</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="p">(</span><span class="n">rows</span><span class="p">[</span><span class="n">valid</span><span class="p">],</span> <span class="n">cols</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_rows</span><span class="p">,</span> <span class="n">rows</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sparse_mean_ds</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+    <span class="n">weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr_array</span><span class="p">],</span>
+    <span class="n">out_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+    <span class="n">out_shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+    <span class="n">coords</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    :func:`_sparse_nanmean` over the spatial dimensions (flattened with one matrix of ``weights``, along y then x</span>
+<span class="sd">    with two) of the data variables, and of the numeric non-spatial coordinates (e.g. the surface altitude) if</span>
+<span class="sd">    ``coords``, defined on all of them. The spatial dimensions are replaced by ``out_dims`` of ``out_shape``, at</span>
+<span class="sd">    the position of the first one. The variables and coordinates without spatial dimension are kept, the others on</span>
+<span class="sd">    the spatial dimensions are dropped. Lazy for dask arrays.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">mean</span><span class="p">(</span><span class="n">var</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Variable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Variable</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_points_last</span><span class="p">(</span><span class="n">_sparse_nanmean</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">),</span> <span class="n">out_shape</span><span class="p">)</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">apply_ufunc</span><span class="p">(</span>
+            <span class="n">func</span><span class="p">,</span>
+            <span class="n">var</span><span class="p">,</span>
+            <span class="n">input_core_dims</span><span class="o">=</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)],</span>
+            <span class="n">output_core_dims</span><span class="o">=</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">out_dims</span><span class="p">)],</span>
+            <span class="n">exclude_dims</span><span class="o">=</span><span class="nb">set</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">),</span>
+            <span class="n">dask</span><span class="o">=</span><span class="s2">"parallelized"</span><span class="p">,</span>
+            <span class="n">output_dtypes</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">result_type</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)],</span>
+            <span class="n">dask_gufunc_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">"output_sizes"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">out_dims</span><span class="p">,</span> <span class="n">out_shape</span><span class="p">)),</span> <span class="s2">"allow_rechunk"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+            <span class="n">keep_attrs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">dims</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">spatial_dims</span><span class="p">)</span>
+        <span class="n">kept</span> <span class="o">=</span> <span class="p">[</span><span class="n">dim</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">var</span><span class="o">.</span><span class="n">dims</span> <span class="k">if</span> <span class="n">dim</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spatial_dims</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">*</span><span class="n">kept</span><span class="p">[:</span><span class="n">position</span><span class="p">],</span> <span class="o">*</span><span class="n">out_dims</span><span class="p">,</span> <span class="o">*</span><span class="n">kept</span><span class="p">[</span><span class="n">position</span><span class="p">:])</span>
+
+    <span class="n">spatial</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span>
+    <span class="n">data_vars</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">spatial</span> <span class="o">&lt;=</span> <span class="nb">set</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">dims</span><span class="p">):</span>
+            <span class="n">data_vars</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">mean</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">variable</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">spatial</span><span class="o">.</span><span class="n">isdisjoint</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">dims</span><span class="p">):</span>
+            <span class="n">data_vars</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">var</span><span class="o">.</span><span class="n">variable</span>
+
+    <span class="n">skip</span> <span class="o">=</span> <span class="n">_spatial_coord_names</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">)</span>
+    <span class="n">out_coords</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">coords</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">spatial</span><span class="o">.</span><span class="n">isdisjoint</span><span class="p">(</span><span class="n">coord</span><span class="o">.</span><span class="n">dims</span><span class="p">):</span>
+            <span class="n">out_coords</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">variable</span>
+        <span class="k">elif</span> <span class="n">coords</span> <span class="ow">and</span> <span class="n">spatial</span> <span class="o">&lt;=</span> <span class="nb">set</span><span class="p">(</span><span class="n">coord</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">skip</span> <span class="ow">and</span> <span class="n">coord</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="s2">"biuf"</span><span class="p">:</span>
+            <span class="n">out_coords</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">mean</span><span class="p">(</span><span class="n">coord</span><span class="o">.</span><span class="n">variable</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">data_vars</span><span class="p">,</span> <span class="n">out_coords</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_points_last</span><span class="p">(</span>
+    <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+    <span class="n">weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr_array</span><span class="p">]</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">n_spatial</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">out_shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Call ``func(weights, points_first, **kwargs)`` (e.g. :func:`_sparse_nanmean`, or with the neighbor indices</span>
+<span class="sd">    ``ens_stats._neighbor_extreme``) on ``values`` with its</span>
+<span class="sd">    ``n_spatial`` last (spatial) axes moved first: the sparse matrix products need C-contiguous rows of points</span>
+<span class="sd">    (see :func:`_sparse_matmul`). The spatial axes are flattened with one matrix, kept with one matrix per axis.</span>
+<span class="sd">    Returns the result with the axes ``out_shape`` last, as for :func:`xarray.apply_ufunc`.</span>
+<span class="sd">    """</span>
+
+    <span class="n">n_lead</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="n">n_spatial</span>
+    <span class="n">points_first</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_lead</span><span class="p">,</span> <span class="n">values</span><span class="o">.</span><span class="n">ndim</span><span class="p">)),</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_spatial</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># may stay a non-contiguous view: func copies into C-contiguous rows if needed</span>
+        <span class="n">points_first</span> <span class="o">=</span> <span class="n">points_first</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,)</span> <span class="o">+</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="n">n_lead</span><span class="p">])</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">points_first</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">out_shape</span> <span class="o">+</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="n">n_lead</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">out_shape</span><span class="p">))),</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_lead</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">ndim</span><span class="p">)))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sparse_nanmean</span><span class="p">(</span><span class="n">weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr_array</span><span class="p">],</span> <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">mean</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Mean (or sum if not ``mean``) of ``values`` over the points of the rows of the 0/1 ``weights``, ignoring NaN: a</span>
+<span class="sd">    row is NaN only if all its points are NaN, or if it has none. Each matrix of shape (n_rows, n_points) applies to</span>
+<span class="sd">    one of the first axes of ``values`` (e.g. the flattened points, or y then x), replaced by its n_rows, the other</span>
+<span class="sd">    axes are fields. Computed and returned in ``np.result_type(values.dtype, np.float32)``: float32 for float32 and</span>
+<span class="sd">    8 or 16 bit integers, float64 otherwise.</span>
+
+<span class="sd">    All the fields are summed at once, without copy when the points of ``values`` are C-contiguous. Only the fields</span>
+<span class="sd">    with NaN in the result (NaN in some of the points of a row) are summed again with their NaN masked, so that</span>
+<span class="sd">    fields without NaN (or with NaN only out of the rows) cost no mask.</span>
+<span class="sd">    """</span>
+
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">result_type</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">n_axes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">_sparse_matmul</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">values</span><span class="p">))</span>  <span class="c1"># small: (n_rows..., fields)</span>
+    <span class="n">fields</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="n">n_axes</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,))</span>
+    <span class="n">with_nan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_axes</span><span class="p">)))</span>
+    <span class="n">counts</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="o">.</span><span class="n">outer</span><span class="p">,</span> <span class="p">(</span><span class="n">weight</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span> <span class="k">for</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">weights</span><span class="p">))[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">):</span>
+        <span class="n">_divide_or_mask</span><span class="p">(</span><span class="n">fields</span><span class="p">,</span> <span class="n">counts</span><span class="p">,</span> <span class="n">mean</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">with_nan</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>  <span class="c1"># sum again the fields with NaN, ignoring them, and count their valid points</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">_select_fields</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">n_axes</span><span class="p">,</span> <span class="n">with_nan</span><span class="p">)</span>
+            <span class="n">nan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="n">_sparse_matmul</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">nan</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">values</span><span class="p">))</span>
+            <span class="n">fields</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">with_nan</span><span class="p">]</span> <span class="o">=</span> <span class="n">_divide_or_mask</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="n">_sparse_matmul</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="p">(</span><span class="o">~</span><span class="n">nan</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)),</span> <span class="n">mean</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_divide_or_mask</span><span class="p">(</span><span class="n">total</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">counts</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">mean</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    In place: ``total / counts`` if ``mean``, otherwise NaN where ``counts`` is 0 (sum of no value).</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">mean</span><span class="p">:</span>
+        <span class="n">total</span> <span class="o">/=</span> <span class="n">counts</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">copyto</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">counts</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">total</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">total</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_select_fields</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n_axes</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">selected</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    The ``selected`` fields (boolean over the flattened fields) of ``values`` with ``n_axes`` first axes of points,</span>
+<span class="sd">    shape (points..., n_selected), copying only them when the points or the fields are contiguous in memory.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">c_contiguous</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="n">n_axes</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,))[</span><span class="o">...</span><span class="p">,</span> <span class="n">selected</span><span class="p">]</span>
+    <span class="n">by_field</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_axes</span><span class="p">)),</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="n">n_axes</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>
+    <span class="n">by_field</span> <span class="o">=</span> <span class="n">by_field</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,)</span> <span class="o">+</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="n">n_axes</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">by_field</span><span class="p">[</span><span class="n">selected</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sparse_matmul</span><span class="p">(</span><span class="n">weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr_array</span><span class="p">],</span> <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Matrix products of each matrix of ``weights`` along the corresponding first axis of ``values``, copied into</span>
+<span class="sd">    C-contiguous rows of points if needed (e.g. data stored with the spatial dimensions last, or sliced): a product</span>
+<span class="sd">    per field would avoid the copy but is slower (it reads the matrix once per field) and keeps the copy of a sliced</span>
+<span class="sd">    source.</span>
+<span class="sd">    """</span>
+
+    <span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">weights</span><span class="p">):</span>
+        <span class="n">moved</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">weight</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">@</span> <span class="n">moved</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">moved</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">moved</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">values</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_flat_neighbors</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">flat_dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Indices of the ``k`` nearest points of each point of an unstructured grid (itself included), shape (n, k),</span>
+<span class="sd">    searched in meters (see :func:`_choose_kdtree_crs`) and cached (see :func:`nn_lookup_cached`).</span>
+<span class="sd">    """</span>
+
+    <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">,</span> <span class="n">crs</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">set_grid_mapping</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="p">(</span><span class="n">flat_dim</span><span class="p">,),</span> <span class="n">prefer_projected</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">target_crs</span> <span class="o">=</span> <span class="n">_choose_kdtree_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">,</span> <span class="n">crs</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">_reproject_grid_cached</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">crs</span><span class="p">,</span> <span class="n">LV95</span><span class="p">))</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">_kdtree_coords</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">crs</span><span class="p">,</span> <span class="n">target_crs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">nn_lookup_cached</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">k</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_spatial_coord_names</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Names of the spatial coordinates of ``data``: dimension, native (e.g. x/y) and latitude/longitude coordinates.</span>
+<span class="sd">    """</span>
+
+    <span class="n">names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prefer_projected</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">prefer_projected</span><span class="o">=</span><span class="n">prefer_projected</span><span class="p">)[:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">get_spatial_coords</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="n">names</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">get_latlon_coords</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">nondim</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="ow">or</span> <span class="p">())</span>
+    <span class="k">return</span> <span class="n">names</span>
 
 
 <div class="viewcode-block" id="get_buffer">
@@ -2529,7 +3060,8 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">get_buffer</span><span class="p">(</span><span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Buffer specific to the interpolation method to add when slicing the input dataset to the target grid or POIs</span>
-<span class="sd">    (see :func:`slice_boundingbox`).</span>
+<span class="sd">    (see :func:`slice_grid` and :func:`slice_boundingbox`), in grid steps of the coarser of the source and</span>
+<span class="sd">    destination grids.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -2564,11 +3096,14 @@
     <span class="n">yx_bnds</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
     <span class="n">buffer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">geographic</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">slice</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="n">dst_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">slice</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Get a dict to index ``data`` in ``spatial_dims`` according to ``yx_bnds``</span>
-<span class="sd">    plus a ``buffer``. Also return an estimate of the resolution if input grid is</span>
-<span class="sd">    unstructured.</span>
+<span class="sd">    Get a dict to index ``data`` in ``spatial_dims`` according to ``yx_bnds`` plus a buffer of ``buffer`` grid steps</span>
+<span class="sd">    of the coarser of the source grid and of the destination (grid step ``dst_step`` in the source coordinates, 0 for</span>
+<span class="sd">    POIs), times 1.5 for an unstructured grid. Also return the estimated grid step of the source in its coordinates:</span>
+<span class="sd">    the max of the median steps along x and y for a regular grid, the square root of the area per point of the</span>
+<span class="sd">    points near the bounds for an unstructured grid (NaN if fewer than 2).</span>
 
 <span class="sd">    For a ``geographic`` grid (latitude/longitude or rotated pole, in degrees), the x bounds must be in the</span>
 <span class="sd">    longitude convention of the grid (see :func:`_wrap_lon`). The x buffer is widened by 1 / cos(latitude), as</span>
@@ -2637,16 +3172,22 @@
             <span class="n">factor</span> <span class="o">=</span> <span class="n">lon_buffer_factor</span><span class="p">(</span><span class="n">res_approx</span><span class="p">)</span>
             <span class="n">x_bnds</span><span class="p">,</span> <span class="n">x_factor</span> <span class="o">=</span> <span class="p">((</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span> <span class="k">if</span> <span class="n">factor</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span><span class="n">x_bnds</span><span class="p">,</span> <span class="n">factor</span><span class="p">)</span>
         <span class="n">cond_xy</span> <span class="o">=</span> <span class="n">get_cond_xy</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">res_approx</span><span class="p">,</span> <span class="n">x_factor</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">cond_xy</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># (nearly) no grid point near the destination, e.g. all POIs outside the</span>
-            <span class="c1"># grid: empty selection, as the resolution of fewer than 2 points is NaN (without "Mean of empty slice")</span>
+        <span class="n">n_near</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">cond_xy</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n_near</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># (nearly) no grid point near the destination, e.g. all POIs outside the grid: empty selection</span>
             <span class="k">return</span> <span class="p">{</span><span class="n">spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">cond_xy</span><span class="p">)},</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">_get_flat_grid_res</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">][</span><span class="n">cond_xy</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">][</span><span class="n">cond_xy</span><span class="p">])</span>
-        <span class="n">cond_xy</span> <span class="o">=</span> <span class="n">get_cond_xy</span><span class="p">(</span><span class="n">buffer</span> <span class="o">*</span> <span class="n">res</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">x_factor</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">{</span><span class="n">spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">cond_xy</span><span class="p">},</span> <span class="n">res</span>
+        <span class="c1"># area per point, robust to the order of the points (e.g. ICON triangles) and to a source covering only</span>
+        <span class="c1"># part of the bounds. Overestimating it only widens the slice.</span>
+        <span class="n">area</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ptp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">cond_xy</span><span class="p">]))</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ptp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">cond_xy</span><span class="p">]))</span>
+        <span class="n">src_step</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">area</span> <span class="o">/</span> <span class="n">n_near</span><span class="p">))</span> <span class="k">if</span> <span class="n">area</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">res_approx</span><span class="p">)</span>
+        <span class="n">cond_xy</span> <span class="o">=</span> <span class="n">get_cond_xy</span><span class="p">(</span><span class="n">buffer</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="n">src_step</span><span class="p">,</span> <span class="n">dst_step</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">x_factor</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">cond_xy</span><span class="p">},</span> <span class="n">src_step</span>
 
     <span class="n">y_dim</span><span class="p">,</span> <span class="n">x_dim</span> <span class="o">=</span> <span class="n">spatial_dims</span>
+    <span class="n">res_y</span> <span class="o">=</span> <span class="n">_median_step</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">],</span> <span class="n">y_dim</span><span class="p">)</span>
+    <span class="n">src_step</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">_median_step</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">],</span> <span class="n">x_dim</span><span class="p">),</span> <span class="n">res_y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">src_step</span> <span class="o">&lt;</span> <span class="n">dst_step</span><span class="p">:</span>  <span class="c1"># in grid steps of the coarser destination</span>
+        <span class="n">buffer</span> <span class="o">=</span> <span class="n">ceil</span><span class="p">(</span><span class="n">buffer</span> <span class="o">*</span> <span class="n">dst_step</span> <span class="o">/</span> <span class="n">src_step</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">geographic</span><span class="p">:</span>
-        <span class="n">res_y</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">get_axis_num</span><span class="p">(</span><span class="n">y_dim</span><span class="p">)))))</span>
         <span class="n">factor</span> <span class="o">=</span> <span class="n">lon_buffer_factor</span><span class="p">(</span><span class="n">res_y</span><span class="p">)</span>
         <span class="n">x_bnds</span><span class="p">,</span> <span class="n">x_factor</span> <span class="o">=</span> <span class="p">((</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span> <span class="k">if</span> <span class="n">factor</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span><span class="n">x_bnds</span><span class="p">,</span> <span class="n">factor</span><span class="p">)</span>
     <span class="n">idx_start</span><span class="p">,</span> <span class="n">idx_end</span> <span class="o">=</span> <span class="n">get_ind_startend</span><span class="p">(</span><span class="n">grid_x</span><span class="p">,</span> <span class="n">x_dim</span><span class="p">,</span> <span class="n">x_bnds</span><span class="p">)</span>
@@ -2656,19 +3197,18 @@
     <span class="n">idx_end</span> <span class="o">+=</span> <span class="n">x_buffer</span>
     <span class="n">idy_start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">idy_start</span> <span class="o">-</span> <span class="n">buffer</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
     <span class="n">idy_end</span> <span class="o">+=</span> <span class="n">buffer</span>
-    <span class="k">return</span> <span class="p">{</span><span class="n">x_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="n">idx_start</span><span class="p">,</span> <span class="n">idx_end</span><span class="p">),</span> <span class="n">y_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="n">idy_start</span><span class="p">,</span> <span class="n">idy_end</span><span class="p">)},</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">x_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="n">idx_start</span><span class="p">,</span> <span class="n">idx_end</span><span class="p">),</span> <span class="n">y_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="n">idy_start</span><span class="p">,</span> <span class="n">idy_end</span><span class="p">)},</span> <span class="n">src_step</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_get_flat_grid_res</span><span class="p">(</span><span class="n">coords_x</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">coords_y</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_median_step</span><span class="p">(</span><span class="n">coord</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Get approximative resolution of a flattened grid. Assumes similar resolution</span>
-<span class="sd">    in both horizontal dimensions.</span>
+<span class="sd">    Median absolute step of the coordinate ``coord`` along ``dim`` (NaN with fewer than 2 points).</span>
 <span class="sd">    """</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">dcoords</span><span class="p">(</span><span class="n">coords</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">values</span><span class="p">)))</span>
-
-    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">dcoords</span><span class="p">(</span><span class="n">coords_x</span><span class="p">),</span> <span class="n">dcoords</span><span class="p">(</span><span class="n">coords_y</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">dim</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">coord</span><span class="o">.</span><span class="n">dims</span> <span class="ow">or</span> <span class="n">coord</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">coord</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="n">coord</span><span class="o">.</span><span class="n">get_axis_num</span><span class="p">(</span><span class="n">dim</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">steps</span><span class="p">))</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">steps</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_lon_center</span><span class="p">(</span><span class="n">lon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
@@ -2720,69 +3260,13 @@
     <span class="k">return</span> <span class="n">xr</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">parts</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">x_dim</span><span class="p">,</span> <span class="n">data_vars</span><span class="o">=</span><span class="s2">"minimal"</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="s2">"minimal"</span><span class="p">,</span> <span class="n">compat</span><span class="o">=</span><span class="s2">"override"</span><span class="p">,</span> <span class="n">join</span><span class="o">=</span><span class="s2">"exact"</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_get_coarsen_ratio</span><span class="p">(</span>  <span class="c1"># pylint: disable=too-many-locals</span>
-    <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
-    <span class="n">spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
-    <span class="n">coords_crs</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">CRS</span><span class="p">],</span>
-    <span class="n">dst_grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
-    <span class="n">dst_spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
-    <span class="n">dst_coords_crs</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">CRS</span><span class="p">],</span>
-    <span class="n">res</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Get the resolution ratios in `x` and `y` between input data and destination grid</span>
-<span class="sd">    to eventually coarsen the input data before interpolation.</span>
-<span class="sd">    """</span>
-
-    <span class="k">if</span> <span class="n">res</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">res_src_x</span> <span class="o">=</span> <span class="n">res_src_y</span> <span class="o">=</span> <span class="n">res</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">center_src_x</span><span class="p">,</span> <span class="n">center_src_y</span> <span class="o">=</span> <span class="n">_center_coords</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">coords_crs</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>  <span class="c1"># type: ignore[arg-type]</span>
-        <span class="n">res_src_x</span> <span class="o">=</span> <span class="n">center_src_x</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-        <span class="n">res_src_y</span> <span class="o">=</span> <span class="n">center_src_y</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-
-    <span class="n">center_dst_x</span><span class="p">,</span> <span class="n">center_dst_y</span> <span class="o">=</span> <span class="n">_center_coords</span><span class="p">(</span><span class="n">dst_grid</span><span class="p">,</span> <span class="n">dst_spatial_dims</span><span class="p">,</span> <span class="n">dst_coords_crs</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
-    <span class="n">src_crs</span><span class="p">,</span> <span class="n">dst_crs</span> <span class="o">=</span> <span class="n">coords_crs</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">dst_coords_crs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">src_crs</span> <span class="o">!=</span> <span class="n">dst_crs</span><span class="p">:</span>
-        <span class="n">center_dst_x</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">center_dst_y</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">reproject</span><span class="p">(</span><span class="n">center_dst_x</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">center_dst_y</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dst_crs</span><span class="p">,</span> <span class="n">src_crs</span><span class="p">)</span>
-
-    <span class="n">res_dst_x</span> <span class="o">=</span> <span class="n">center_dst_x</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">dst_spatial_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-    <span class="n">res_dst_y</span> <span class="o">=</span> <span class="n">center_dst_y</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">dst_spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-    <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">res_dst_x</span> <span class="o">/</span> <span class="n">res_src_x</span><span class="p">)),</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">res_dst_y</span> <span class="o">/</span> <span class="n">res_src_y</span><span class="p">))</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_center_coords</span><span class="p">(</span>
-    <span class="n">grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">coords</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Returns the "x" and "y" coordinates for the 4 center points of input grid domain.</span>
-<span class="sd">    Used to compute the resolution of the grid.</span>
-<span class="sd">    """</span>
-
-    <span class="n">y_dim</span><span class="p">,</span> <span class="n">x_dim</span> <span class="o">=</span> <span class="n">dims</span>
-    <span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span> <span class="o">=</span> <span class="n">coords</span>
-    <span class="n">mid_x</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">x_dim</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
-    <span class="n">mid_y</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">y_dim</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
-    <span class="n">sub_x</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">x_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="n">mid_x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mid_x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)})</span>
-    <span class="n">sub_y</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">y_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="n">mid_y</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mid_y</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)})</span>
-    <span class="k">if</span> <span class="n">y_dim</span> <span class="ow">in</span> <span class="n">sub_x</span><span class="o">.</span><span class="n">dims</span><span class="p">:</span>
-        <span class="n">sub_x</span> <span class="o">=</span> <span class="n">sub_x</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">y_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="n">mid_y</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mid_y</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)})</span>
-        <span class="n">sub_y</span> <span class="o">=</span> <span class="n">sub_y</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">x_dim</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="n">mid_x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mid_x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)})</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">sub_y</span><span class="p">,</span> <span class="n">sub_x</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">broadcast</span><span class="p">(</span><span class="n">sub_y</span><span class="p">,</span> <span class="n">sub_x</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">sub_x</span><span class="p">,</span> <span class="n">sub_y</span>
-
-
 <span class="k">def</span><span class="w"> </span><span class="nf">_combine_attrs</span><span class="p">(</span><span class="n">src_attrs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">dst_attrs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Combine attrs from source and destination grids</span>
 <span class="sd">    """</span>
 
-    <span class="n">from_dst</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"grid_mapping"</span><span class="p">,</span> <span class="s2">"crs"</span><span class="p">,</span> <span class="s2">"bounding_box"</span><span class="p">)</span>
-
     <span class="n">combined_attrs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">src_attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">SRC_ATTRS_KEEP</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">src_attrs</span><span class="p">}</span>
-    <span class="n">combined_attrs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">dst_attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">from_dst</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dst_attrs</span><span class="p">})</span>
+    <span class="n">combined_attrs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">dst_attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">DST_ATTRS_KEEP</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dst_attrs</span><span class="p">})</span>
     <span class="k">return</span> <span class="n">combined_attrs</span>
 
 
@@ -2851,10 +3335,10 @@
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-3e9baa8</div>
+grid-process, version: dev-540a216</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 12.11.2026.
+  Last updated on 19.11.2026.
   <br/>
 </p></div>
       

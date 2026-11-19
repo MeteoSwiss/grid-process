@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=b63c5e1d"></script>
+    <script src="../../../_static/documentation_options.js?v=862ae404"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/ens_stats/index';</script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="12.11.2026"/>
+    <meta name="docbuild:last-update" content="19.11.2026"/>
   </head>
   
   
@@ -445,10 +445,13 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.ens_stats.logger" title="grid_process.ens_stats.logger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">logger</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.ens_stats.dataset_accessor" title="grid_process.ens_stats.dataset_accessor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dataset_accessor</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.ens_stats.BLOCK_BYTES" title="grid_process.ens_stats.BLOCK_BYTES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BLOCK_BYTES</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.ens_stats.NeighborStatMethods" title="grid_process.ens_stats.NeighborStatMethods"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NeighborStatMethods</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.ens_stats.dataset_accessor" title="grid_process.ens_stats.dataset_accessor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dataset_accessor</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.ens_stats.NeighborStatMethods" title="grid_process.ens_stats.NeighborStatMethods"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NeighborStatMethods</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -497,6 +500,11 @@
 <dl class="py data">
 <dt class="sig sig-object py" id="grid_process.ens_stats.logger">
 <span class="sig-name descname"><span class="pre">logger</span></span><a class="headerlink" href="#grid_process.ens_stats.logger" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="grid_process.ens_stats.BLOCK_BYTES">
+<span class="sig-name descname"><span class="pre">BLOCK_BYTES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">262144</span></em><a class="headerlink" href="#grid_process.ens_stats.BLOCK_BYTES" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py class">
@@ -630,13 +638,17 @@ Typical dimensions names are supported, and can be extended via environment vari
 <li><p>Lead time: export GRID_PROCESS__data_model__leadtime (e.g., ‘[“lead_time”, “step”, “dummy_leadtime”]’)</p></li>
 <li><p>Y coordinate: export GRID_PROCESS__data_model__grid__y (e.g., ‘[“y”, “latitude”, “lat”, “dummy_y”]’)</p></li>
 <li><p>X coordinate: export GRID_PROCESS__data_model__grid__x (e.g., ‘[“x”, “longitude”, “lon”, “dummy_x”]’)</p></li>
+<li><p>Unstructured dimension: export GRID_PROCESS__data_model__grid__unstructured_dim (e.g., ‘[“dummy_cell”]’)</p></li>
 <li><p>When the coordinates variables have a CF compliant <cite>standard_name</cite> attribute, arbitrary names can be
 used directly.</p></li>
 </ul>
 </div></blockquote>
+<p>An unstructured grid needs spatial coordinates and a CRS, as for
+<a class="reference internal" href="../grid_interp/index.html#grid_process.grid_interp.interp2grid" title="grid_process.grid_interp.interp2grid"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2grid()</span></code></a>.</p>
 </li>
 <li><p><strong>method</strong> (<em>{‘mean’, ‘sum’, ‘min’, ‘max’}</em>) – statistic applied over the moving window/volume</p></li>
-<li><p><strong>w_size_xy</strong> (<em>int, optional</em>) – window size in the spatial dimensions</p></li>
+<li><p><strong>w_size_xy</strong> (<em>int, optional</em>) – window size in the spatial dimensions. On an unstructured grid, the neighborhood of each point is its
+<code class="docutils literal notranslate"><span class="pre">w_size_xy**2</span></code> nearest points (itself included): on a square grid, the same as the window for 3 and 5.</p></li>
 <li><p><strong>w_size_t</strong> (<em>int, optional</em>) – window size in the temporal dimension</p></li>
 </ul>
 </dd>
@@ -653,6 +665,12 @@ used directly.</p></li>
 operations on each of the spatial and temporal dimensions sequentially. Therefore,
 only methods for which this is equivalent than applying the statistic over the
 rolling volume are accepted. Methods such as ‘median’ or ‘std’ are thus not accepted.</p>
+<p>NaN are ignored: a value is NaN only if all the values of its neighborhood are NaN. With NaN, ‘mean’ is the
+mean of the means along each dimension, not exactly the mean over the volume. The windows are truncated at the
+edges of regular grids (and of the time dimension), whereas the neighborhoods of an unstructured grid always
+have <code class="docutils literal notranslate"><span class="pre">w_size_xy**2</span></code> points, extending further inside at its edges. On an unstructured grid, the nearest
+neighbors are searched in meters and cached (see <a class="reference internal" href="../grid_interp/index.html#grid_process.grid_interp.interp2grid" title="grid_process.grid_interp.interp2grid"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2grid()</span></code></a>), and dask
+arrays stay lazy (with a single chunk along the unstructured dimension).</p>
 </div>
 </dd></dl>
 
@@ -813,6 +831,7 @@ point for their ranking.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.ens_stats.logger"><code class="docutils literal notranslate"><span class="pre">logger</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.ens_stats.BLOCK_BYTES"><code class="docutils literal notranslate"><span class="pre">BLOCK_BYTES</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.ens_stats.EnsStats"><code class="docutils literal notranslate"><span class="pre">EnsStats</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.ens_stats.dataset_accessor"><code class="docutils literal notranslate"><span class="pre">dataset_accessor</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#grid_process.ens_stats.NeighborStatMethods"><code class="docutils literal notranslate"><span class="pre">NeighborStatMethods</span></code></a></li>
@@ -849,10 +868,10 @@ point for their ranking.</p>
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-3e9baa8</div>
+grid-process, version: dev-540a216</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 12.11.2026.
+  Last updated on 19.11.2026.
   <br/>
 </p></div>
       

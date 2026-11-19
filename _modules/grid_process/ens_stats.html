@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=b63c5e1d"></script>
+    <script src="../../_static/documentation_options.js?v=862ae404"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/grid_process/ens_stats';</script>
@@ -55,7 +55,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="dev" />
-    <meta name="docbuild:last-update" content="12.11.2026"/>
+    <meta name="docbuild:last-update" content="19.11.2026"/>
   </head>
   
   
@@ -410,17 +410,21 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">get_args</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">warnings</span><span class="w"> </span><span class="kn">import</span> <span class="n">warn</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">sparse</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_accessor</span><span class="p">,</span> <span class="n">keepattrs</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.data_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_t_dim</span><span class="p">,</span> <span class="n">get_spatial_dims</span><span class="p">,</span> <span class="n">get_ensemble_dim</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.aggreg</span><span class="w"> </span><span class="kn">import</span> <span class="n">interval_stat</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.da_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">da_to_ds</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.grid_interp</span><span class="w"> </span><span class="kn">import</span> <span class="n">_flat_neighbors</span><span class="p">,</span> <span class="n">_points_last</span><span class="p">,</span> <span class="n">_sparse_nanmean</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># bytes of results per block of points of _neighbor_extreme: small enough to stay in the CPU cache</span>
+<span class="n">BLOCK_BYTES</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">18</span>
 
 
 <span class="c1"># Register xarray accessor so module functions can also be called as methods</span>
@@ -603,12 +607,17 @@
 <span class="sd">          - Lead time: export GRID_PROCESS__data_model__leadtime (e.g., '["lead_time", "step", "dummy_leadtime"]')</span>
 <span class="sd">          - Y coordinate: export GRID_PROCESS__data_model__grid__y (e.g., '["y", "latitude", "lat", "dummy_y"]')</span>
 <span class="sd">          - X coordinate: export GRID_PROCESS__data_model__grid__x (e.g., '["x", "longitude", "lon", "dummy_x"]')</span>
+<span class="sd">          - Unstructured dimension: export GRID_PROCESS__data_model__grid__unstructured_dim (e.g., '["dummy_cell"]')</span>
 <span class="sd">          - When the coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can be</span>
 <span class="sd">            used directly.</span>
+
+<span class="sd">        An unstructured grid needs spatial coordinates and a CRS, as for</span>
+<span class="sd">        :func:`~grid_process.grid_interp.interp2grid`.</span>
 <span class="sd">    method : {'mean', 'sum', 'min', 'max'}</span>
 <span class="sd">        statistic applied over the moving window/volume</span>
 <span class="sd">    w_size_xy : int, optional</span>
-<span class="sd">        window size in the spatial dimensions</span>
+<span class="sd">        window size in the spatial dimensions. On an unstructured grid, the neighborhood of each point is its</span>
+<span class="sd">        ``w_size_xy**2`` nearest points (itself included): on a square grid, the same as the window for 3 and 5.</span>
 <span class="sd">    w_size_t : int, optional</span>
 <span class="sd">        window size in the temporal dimension</span>
 
@@ -623,6 +632,13 @@
 <span class="sd">    operations on each of the spatial and temporal dimensions sequentially. Therefore,</span>
 <span class="sd">    only methods for which this is equivalent than applying the statistic over the</span>
 <span class="sd">    rolling volume are accepted. Methods such as 'median' or 'std' are thus not accepted.</span>
+
+<span class="sd">    NaN are ignored: a value is NaN only if all the values of its neighborhood are NaN. With NaN, 'mean' is the</span>
+<span class="sd">    mean of the means along each dimension, not exactly the mean over the volume. The windows are truncated at the</span>
+<span class="sd">    edges of regular grids (and of the time dimension), whereas the neighborhoods of an unstructured grid always</span>
+<span class="sd">    have ``w_size_xy**2`` points, extending further inside at its edges. On an unstructured grid, the nearest</span>
+<span class="sd">    neighbors are searched in meters and cached (see :func:`~grid_process.grid_interp.interp2grid`), and dask</span>
+<span class="sd">    arrays stay lazy (with a single chunk along the unstructured dimension).</span>
 <span class="sd">    """</span>
 
     <span class="n">ok_meth</span> <span class="o">=</span> <span class="n">get_args</span><span class="p">(</span><span class="n">NeighborStatMethods</span><span class="p">)</span>
@@ -632,10 +648,7 @@
     <span class="k">if</span> <span class="n">w_size_xy</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">get_spatial_dims</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">warn</span><span class="p">(</span>
-                <span class="s2">"Rolling window operations on unstructured grids is not supported."</span>
-                <span class="s2">" Resample to a 2D grid with grid_interp.interp2grid() first."</span>
-            <span class="p">)</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">_flat_neighbor_stat</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">w_size_xy</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">ds</span> <span class="o">=</span> <span class="n">_rolling_stat</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">w_size_xy</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>
             <span class="n">ds</span> <span class="o">=</span> <span class="n">_rolling_stat</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">w_size_xy</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>
@@ -652,6 +665,71 @@
 <span class="sd">    """</span>
 
     <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">rolling</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">w_size</span><span class="p">},</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">method</span><span class="p">)(</span><span class="n">skipna</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_flat_neighbor_stat</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">flat_dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">w_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Statistic over the ``w_size**2`` nearest points of each point of an unstructured grid (itself included),</span>
+<span class="sd">    ignoring NaN (NaN only if all of them are NaN), see :func:`neighbor_stat`.</span>
+<span class="sd">    """</span>
+
+    <span class="n">n_points</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">flat_dim</span><span class="p">]</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">w_size</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">n_points</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ds</span>
+    <span class="n">neighbors</span> <span class="o">=</span> <span class="n">_flat_neighbors</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">flat_dim</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"mean"</span><span class="p">,</span> <span class="s2">"sum"</span><span class="p">):</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_array</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">neighbors</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">neighbors</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">neighbors</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">k</span><span class="p">)),</span>
+            <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_points</span><span class="p">,</span> <span class="n">n_points</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_points_last</span><span class="p">(</span><span class="n">_sparse_nanmean</span><span class="p">,</span> <span class="p">[</span><span class="n">weights</span><span class="p">],</span> <span class="n">values</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">n_points</span><span class="p">,),</span> <span class="n">mean</span><span class="o">=</span><span class="n">method</span> <span class="o">==</span> <span class="s2">"mean"</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">reduce_func</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fmin</span> <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"min"</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">fmax</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_points_last</span><span class="p">(</span><span class="n">_neighbor_extreme</span><span class="p">,</span> <span class="p">[</span><span class="n">neighbors</span><span class="p">],</span> <span class="n">values</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">n_points</span><span class="p">,),</span> <span class="n">reduce_func</span><span class="o">=</span><span class="n">reduce_func</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="n">da</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">flat_dim</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">da</span><span class="o">.</span><span class="n">dims</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">da</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">apply_ufunc</span><span class="p">(</span>
+            <span class="n">func</span><span class="p">,</span>
+            <span class="n">da</span><span class="p">,</span>
+            <span class="n">input_core_dims</span><span class="o">=</span><span class="p">[[</span><span class="n">flat_dim</span><span class="p">]],</span>
+            <span class="n">output_core_dims</span><span class="o">=</span><span class="p">[[</span><span class="n">flat_dim</span><span class="p">]],</span>
+            <span class="n">dask</span><span class="o">=</span><span class="s2">"parallelized"</span><span class="p">,</span>
+            <span class="n">output_dtypes</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">result_type</span><span class="p">(</span><span class="n">da</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"mean"</span><span class="p">,</span> <span class="s2">"sum"</span><span class="p">)</span> <span class="k">else</span> <span class="n">da</span><span class="o">.</span><span class="n">dtype</span><span class="p">],</span>
+            <span class="n">dask_gufunc_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">"allow_rechunk"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+            <span class="n">keep_attrs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">*</span><span class="n">da</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">stat</span><span class="p">,</span> <span class="n">keep_attrs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_neighbor_extreme</span><span class="p">(</span><span class="n">neighbors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">reduce_func</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ufunc</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    ``reduce_func`` (:func:`numpy.fmin` or :func:`numpy.fmax`: NaN only if all are NaN) of the ``values`` (points</span>
+<span class="sd">    first) of the neighbors of each point (rows of ``neighbors[0]``). By blocks of points, whose result stays in the</span>
+<span class="sd">    CPU cache along the neighbor columns (3 to 5 times faster than whole columns).</span>
+<span class="sd">    """</span>
+
+    <span class="n">index</span> <span class="o">=</span> <span class="n">neighbors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>  <span class="c1"># each point a contiguous row (one copy unless stored points first)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+    <span class="n">block</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="n">BLOCK_BYTES</span> <span class="o">//</span> <span class="nb">max</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">nbytes</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">),</span> <span class="n">block</span><span class="p">):</span>
+        <span class="n">part</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="n">start</span> <span class="p">:</span> <span class="n">start</span> <span class="o">+</span> <span class="n">block</span><span class="p">]</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">index</span><span class="p">[</span><span class="n">start</span> <span class="p">:</span> <span class="n">start</span> <span class="o">+</span> <span class="n">block</span><span class="p">]</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">rows</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">part</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">rows</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">reduce_func</span><span class="p">(</span><span class="n">part</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="n">column</span><span class="p">],</span> <span class="n">out</span><span class="o">=</span><span class="n">part</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
 
 
 <div class="viewcode-block" id="upscaled_prob">
@@ -851,10 +929,10 @@
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-3e9baa8</div>
+grid-process, version: dev-540a216</div>
       
         <div class="footer-item"><p class="last-updated">
-  Last updated on 12.11.2026.
+  Last updated on 19.11.2026.
   <br/>
 </p></div>
       

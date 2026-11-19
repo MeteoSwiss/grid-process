@@ -15,6 +15,7 @@ Attributes
 .. autoapisummary::
 
    grid_process.ens_stats.logger
+   grid_process.ens_stats.BLOCK_BYTES
    grid_process.ens_stats.dataset_accessor
    grid_process.ens_stats.NeighborStatMethods
 
@@ -44,6 +45,10 @@ Module Contents
 ---------------
 
 .. py:data:: logger
+
+.. py:data:: BLOCK_BYTES
+   :value: 262144
+
 
 .. py:class:: EnsStats(ds: xarray.Dataset)
 
@@ -133,10 +138,15 @@ Module Contents
                     - Lead time: export GRID_PROCESS__data_model__leadtime (e.g., '["lead_time", "step", "dummy_leadtime"]')
                     - Y coordinate: export GRID_PROCESS__data_model__grid__y (e.g., '["y", "latitude", "lat", "dummy_y"]')
                     - X coordinate: export GRID_PROCESS__data_model__grid__x (e.g., '["x", "longitude", "lon", "dummy_x"]')
+                    - Unstructured dimension: export GRID_PROCESS__data_model__grid__unstructured_dim (e.g., '["dummy_cell"]')
                     - When the coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can be
                       used directly.
+
+                  An unstructured grid needs spatial coordinates and a CRS, as for
+                  :func:`~grid_process.grid_interp.interp2grid`.
                 * **method** (*{'mean', 'sum', 'min', 'max'}*) -- statistic applied over the moving window/volume
-                * **w_size_xy** (*int, optional*) -- window size in the spatial dimensions
+                * **w_size_xy** (*int, optional*) -- window size in the spatial dimensions. On an unstructured grid, the neighborhood of each point is its
+                  ``w_size_xy**2`` nearest points (itself included): on a square grid, the same as the window for 3 and 5.
                 * **w_size_t** (*int, optional*) -- window size in the temporal dimension
 
    :returns: **ds_out** -- each value is the result of the neighborhood statistic
@@ -148,6 +158,13 @@ Module Contents
       operations on each of the spatial and temporal dimensions sequentially. Therefore,
       only methods for which this is equivalent than applying the statistic over the
       rolling volume are accepted. Methods such as 'median' or 'std' are thus not accepted.
+
+      NaN are ignored: a value is NaN only if all the values of its neighborhood are NaN. With NaN, 'mean' is the
+      mean of the means along each dimension, not exactly the mean over the volume. The windows are truncated at the
+      edges of regular grids (and of the time dimension), whereas the neighborhoods of an unstructured grid always
+      have ``w_size_xy**2`` points, extending further inside at its edges. On an unstructured grid, the nearest
+      neighbors are searched in meters and cached (see :func:`~grid_process.grid_interp.interp2grid`), and dask
+      arrays stay lazy (with a single chunk along the unstructured dimension).
 
 
 .. py:function:: upscaled_prob(ds: xarray.Dataset, thresholds: float | list[float], prob_names: str | list[str], w_size_xy: int | None = None, w_size_t: int | None = None) -> xarray.Dataset

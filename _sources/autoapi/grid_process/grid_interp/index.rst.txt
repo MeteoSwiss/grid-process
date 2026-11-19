@@ -20,6 +20,10 @@ Attributes
    grid_process.grid_interp.POI_DIM
    grid_process.grid_interp.POI_COORD_COL
    grid_process.grid_interp.SRC_ATTRS_KEEP
+   grid_process.grid_interp.DST_ATTRS_KEEP
+   grid_process.grid_interp.COARSEN_MIN_DENSITY
+   grid_process.grid_interp.ON_NODE_TOL
+   grid_process.grid_interp.NO_CELL
    grid_process.grid_interp.LV95
    grid_process.grid_interp.LV95_NORTHING_CENTER
    grid_process.grid_interp.ECEF
@@ -56,6 +60,7 @@ Functions
    grid_process.grid_interp.nn_lookup_regular
    grid_process.grid_interp.interp2grid
    grid_process.grid_interp.slice_boundingbox
+   grid_process.grid_interp.slice_grid
    grid_process.grid_interp.slice_coarsen
    grid_process.grid_interp.get_buffer
 
@@ -80,6 +85,22 @@ Module Contents
 
 .. py:data:: SRC_ATTRS_KEEP
    :value: ('source', 'title', 'institution', 'history', 'references', 'comment')
+
+
+.. py:data:: DST_ATTRS_KEEP
+   :value: ('grid_mapping', 'crs', 'bounding_box')
+
+
+.. py:data:: COARSEN_MIN_DENSITY
+   :value: 2.25
+
+
+.. py:data:: ON_NODE_TOL
+   :value: 0.001
+
+
+.. py:data:: NO_CELL
+   :value: -1099511627776
 
 
 .. py:data:: LV95
@@ -467,7 +488,8 @@ Module Contents
                   weight_power=2 over 'linear' for performence reasons.
                 * **try_reg** (*bool, default True*) -- If True, attempts regular grid interpolation for structured source grids with 1D coordinates when ``method`` is
                   'nearest' or 'linear'. Regular grid interpolation is typically more efficient for large grids, but may be less
-                  so for small grids with many trailing dimensions.
+                  so for small grids with many trailing dimensions. Without effect when the source is averaged per destination
+                  cell (see the notes).
                 * **\*\*kwargs** (*Any*) -- Additional arguments passed to the specific interpolation sub-function, named `interp_<method>`.
 
    :returns: Dataset with values from `data` interpolated onto the coordinates of `dst_grid`.
@@ -484,6 +506,15 @@ Module Contents
    - Recommended methods: 'nearest', 'linear' (if the source grid is regular with 1D coordinates), 'idw' (with k=4),
      'temp_fixgrad', 'nearest_3D', 'nearest_alt'.
    - Environment variables allow flexible support for custom grid data models.
+   - The source grid is first sliced to the destination grid (see :func:`slice_grid`). If it is finer than the
+     destination grid (on average at least 2.25 points per destination cell), it is then averaged per destination
+     cell, ignoring NaN (see :func:`slice_coarsen`): a regular or unstructured source, if the destination grid has
+     regular 1D coordinates in its CRS (otherwise with a warning). For 'nearest' and 'linear', the result is
+     directly the mean of the source points of each destination cell, NaN only if all of them are NaN or if it has
+     none, in float32 for float32 and 8 or 16 bit integer data, float64 otherwise, with the dimensions in the order
+     of the source (the spatial ones replaced at their position), whatever ``try_reg``. The other methods
+     interpolate from the mean position of the points of each cell. The same holds for a source averaged by
+     :func:`slice_coarsen` with the same destination grid and method.
    - Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for 'linear',
      'linear_3D' and 'cubic' are done) with distances in meters, never in latitude/longitude degrees. The source
      grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and
@@ -510,16 +541,74 @@ Module Contents
    plus a buffer depending on the interpolation method and corresponding kwargs.
 
 
+.. py:function:: slice_grid(data: xarray.Dataset, dst_grid: xarray.Dataset, method: str, spatial_dims: tuple[str, ...] | None = None, dst_spatial_dims: tuple[str, ...] | None = None, **kwargs: Any) -> xarray.Dataset
+
+   Slice the source grid to the extent of the destination grid plus a buffer depending on the interpolation method
+   and its arguments, keeping its structure (two spatial dimensions or unstructured), its coordinates and its CRS.
+   The grid counterpart of :func:`slice_boundingbox`, as done by :func:`interp2grid` before interpolating.
+
+   :Parameters: * **data** (*xarray.Dataset*) -- source grid, see :func:`interp2grid`
+                * **dst_grid** (*xarray.Dataset*) -- destination grid, see :func:`interp2grid`
+                * **method** (*str*) -- interpolation method, as in :func:`interp2grid`
+                * **spatial_dims, dst_spatial_dims** (*tuple of str, optional*) -- spatial dimensions of the source and destination grids: (y, x), or the unstructured dimension of the source.
+                  By default found with :func:`~grid_process.data_model.get_spatial_dims`.
+                * **\*\*kwargs** -- keyword arguments of the interpolation method, see :func:`get_buffer`
+
+   :returns: the sliced source grid. Around the extent of the destination grid, it keeps a buffer of :func:`get_buffer`
+             grid steps of the coarser of the source and destination grids (times 1.5 for an unstructured source, and
+             wider in longitude towards the poles for a latitude/longitude source).
+   :rtype: xarray.Dataset
+
+   .. seealso:: :func:`slice_coarsen`
+
+
 .. py:function:: slice_coarsen(data: xarray.Dataset, dst_grid: xarray.Dataset, method: str, spatial_dims: tuple[str, ...] | None = None, dst_spatial_dims: tuple[str, ...] | None = None, **kwargs: Any) -> xarray.Dataset
 
-   Slice input dataset to the extend of the destination grid and coarsen it if the
-   destination grid has lower resolution (downsampling).
+   Slice the source grid to the destination grid (see :func:`slice_grid`) and average it per destination cell if
+   it is finer than the destination grid, as :func:`interp2grid` does before interpolating. Calling
+   :func:`interp2grid` on the result, with the same destination grid and method, gives the same result as calling
+   it on the source grid: operations in between (e.g. unit conversions or time aggregations) are done on fewer
+   points.
+
+   The source grid is averaged when the destination grid has regular 1D dimension coordinates (constant step) in
+   its CRS, and the source has on average at least 2.25 points (e.g. 2 x 2 points with some margin) per occupied
+   destination cell. Each source point belongs to the cell of its nearest destination node along x and along y,
+   including the cells beyond the destination grid, in the buffer. Otherwise the sliced source grid is returned.
+
+   When averaged, the dataset is unstructured:
+
+   - its spatial dimension is the one of the source if unstructured, otherwise the first unstructured dimension
+     name of the configuration (``cell`` by default). It has one point per cell containing source points, in
+     increasing (y, x) order of the cells. The cells only depend on the positions of the source points: several
+     datasets on the same source grid get the same cells in the same order;
+   - its spatial coordinates are in the CRS of the destination grid, with the names and attributes of the
+     destination dimension coordinates, and the dataset gets the CRS attributes of the destination
+     (``crs``, ``grid_mapping``, ``bounding_box``). For the methods 'nearest' and 'linear', they are the
+     coordinates of the destination nodes: the mean of a cell is the value of its destination grid point, which
+     :func:`interp2grid` takes without interpolating. For the other methods, they are the mean coordinates of the
+     source points of each cell, the actual position of the averaged data (e.g. for 'idw' or 'nearest_alt');
+   - the data variables and the numeric coordinates on the spatial dimensions (e.g. the surface altitude) are
+     averaged ignoring NaN: a cell is NaN only if all its source values are NaN. The result is float32 for float32
+     and 8 or 16 bit integer data, float64 otherwise. The other coordinates on the spatial dimensions (e.g. the
+     latitude and longitude of the source) are dropped. Dask arrays stay lazy (with a single chunk along the
+     spatial dimension).
+
+   :Parameters: * **data** (*xarray.Dataset*) -- source grid, see :func:`interp2grid`
+                * **dst_grid** (*xarray.Dataset*) -- destination grid, see :func:`interp2grid`
+                * **method** (*str*) -- interpolation method, as in :func:`interp2grid`
+                * **spatial_dims, dst_spatial_dims** (*tuple of str, optional*) -- spatial dimensions of the source and destination grids: (y, x), or the unstructured dimension of the source.
+                  By default found with :func:`~grid_process.data_model.get_spatial_dims`.
+                * **\*\*kwargs** -- keyword arguments of the interpolation method, see :func:`get_buffer`
+
+   :returns: the sliced source grid, averaged per destination cell if finer than the destination grid
+   :rtype: xarray.Dataset
 
 
 .. py:function:: get_buffer(method: str, **kwargs: Any) -> int
 
    Buffer specific to the interpolation method to add when slicing the input dataset to the target grid or POIs
-   (see :func:`slice_boundingbox`).
+   (see :func:`slice_grid` and :func:`slice_boundingbox`), in grid steps of the coarser of the source and
+   destination grids.
 
    :Parameters: * **method** (*str*) -- interpolation method, as in :func:`interp2poi` or :func:`interp2grid`
                 * **\*\*kwargs** -- keyword arguments of the interpolation method. ``k`` (number of neighbors) and ``r_search`` (search radius
