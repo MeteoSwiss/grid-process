@@ -154,17 +154,17 @@ Module Contents
 
    .. note::
 
-      For a large gain in performence, the function performs separate rolling window
-      operations on each of the spatial and temporal dimensions sequentially. Therefore,
-      only methods for which this is equivalent than applying the statistic over the
-      rolling volume are accepted. Methods such as 'median' or 'std' are thus not accepted.
+      The statistic is computed along each dimension of the window in turn (``scipy.ndimage`` filters along the
+      dimensions of a regular grid and time, the neighbors along an unstructured dimension), exact for these methods
+      but not for e.g. 'median' or 'std', which are not accepted.
 
-      NaN are ignored: a value is NaN only if all the values of its neighborhood are NaN. With NaN, 'mean' is the
-      mean of the means along each dimension, not exactly the mean over the volume. The windows are truncated at the
-      edges of regular grids (and of the time dimension), whereas the neighborhoods of an unstructured grid always
-      have ``w_size_xy**2`` points, extending further inside at its edges. On an unstructured grid, the nearest
-      neighbors are searched in meters and cached (see :func:`~grid_process.grid_interp.interp2grid`), and dask
-      arrays stay lazy (with a single chunk along the unstructured dimension).
+      The windows are centered (as :meth:`xarray.Dataset.rolling` with ``center=True``) and truncated at the edges of
+      regular grids and of the time dimension, whereas the neighborhoods of an unstructured grid always have
+      ``w_size_xy**2`` points, extending further inside at its edges. NaN are ignored: a value is NaN only if all the
+      values of its window are NaN, and 'mean' is the mean of the valid values over the whole space x time window.
+      The result is float32 for float32, 8 or 16 bit integer and boolean data, float64 otherwise. On an unstructured
+      grid, the nearest neighbors are searched in meters and cached (see :func:`~grid_process.grid_interp.interp2grid`).
+      Dask arrays stay lazy, with a single chunk along the dimensions of the window.
 
 
 .. py:function:: upscaled_prob(ds: xarray.Dataset, thresholds: float | list[float], prob_names: str | list[str], w_size_xy: int | None = None, w_size_t: int | None = None) -> xarray.Dataset

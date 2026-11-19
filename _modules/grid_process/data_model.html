@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=862ae404"></script>
+    <script src="../../_static/documentation_options.js?v=2dc1fb4d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/grid_process/data_model';</script>
@@ -410,7 +410,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">lru_cache</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">overload</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArray</span>
@@ -698,6 +698,37 @@
 
 
 
+<span class="c1"># CF standard names (lower case) of the horizontal position coordinates</span>
+<span class="n">_Y_STANDARD_NAMES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"latitude"</span><span class="p">,</span> <span class="s2">"grid_latitude"</span><span class="p">,</span> <span class="s2">"projection_y_coordinate"</span><span class="p">)</span>
+<span class="n">_X_STANDARD_NAMES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"longitude"</span><span class="p">,</span> <span class="s2">"grid_longitude"</span><span class="p">,</span> <span class="s2">"projection_x_coordinate"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_cf_axis</span><span class="p">(</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"Y"</span><span class="p">,</span> <span class="s2">"X"</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    "Y" or "X" if the CF attributes (``axis`` or ``standard_name``) mark a horizontal position coordinate, else None.</span>
+<span class="sd">    """</span>
+
+    <span class="n">axis</span><span class="p">,</span> <span class="n">standard_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"axis"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="nb">str</span><span class="p">(</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"standard_name"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">"Y"</span> <span class="ow">or</span> <span class="n">standard_name</span> <span class="ow">in</span> <span class="n">_Y_STANDARD_NAMES</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"Y"</span>
+    <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">"X"</span> <span class="ow">or</span> <span class="n">standard_name</span> <span class="ow">in</span> <span class="n">_X_STANDARD_NAMES</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"X"</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_cf_latlon</span><span class="p">(</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"latitude"</span><span class="p">,</span> <span class="s2">"longitude"</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    "latitude" or "longitude" if the CF ``standard_name`` or the ``long_name`` mark a geographic coordinate, else None.</span>
+<span class="sd">    """</span>
+
+    <span class="n">standard_name</span><span class="p">,</span> <span class="n">long_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"standard_name"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"long_name"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">"latitude"</span> <span class="ow">in</span> <span class="p">(</span><span class="n">standard_name</span><span class="p">,</span> <span class="n">long_name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">"latitude"</span>
+    <span class="k">if</span> <span class="s2">"longitude"</span> <span class="ow">in</span> <span class="p">(</span><span class="n">standard_name</span><span class="p">,</span> <span class="n">long_name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">"longitude"</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_spatial</span><span class="p">(</span><span class="n">grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span> <span class="o">|</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">dim_or_coord</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Returns names of spatial dimensions or coordinates in ``dim_or_coord``.</span>
@@ -710,20 +741,47 @@
     <span class="c1"># look for coordinates with CF attributes in coords</span>
     <span class="n">spatial</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">dim_or_coord</span><span class="p">:</span>
-        <span class="n">attrs</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"axis"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"Y"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
-            <span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"standard_name"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"latitude"</span><span class="p">,</span> <span class="s2">"grid_latitude"</span><span class="p">,</span> <span class="s2">"projection_y_coordinate"</span><span class="p">)</span>
-        <span class="p">):</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="n">_cf_axis</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">"Y"</span><span class="p">:</span>
             <span class="n">spatial</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"axis"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"X"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
-            <span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"standard_name"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"longitude"</span><span class="p">,</span> <span class="s2">"grid_longitude"</span><span class="p">,</span> <span class="s2">"projection_x_coordinate"</span><span class="p">)</span>
-        <span class="p">):</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">"X"</span><span class="p">:</span>
             <span class="n">spatial</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
 
         <span class="k">if</span> <span class="kc">None</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spatial</span><span class="p">:</span>
             <span class="k">break</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="n">spatial</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">spatial</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="get_spatial_coord_names">
+<a class="viewcode-back" href="../../autoapi/grid_process/data_model/index.html#grid_process.data_model.get_spatial_coord_names">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_spatial_coord_names</span><span class="p">(</span><span class="n">grid</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span> <span class="o">|</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Names of all the coordinates giving horizontal positions: the spatial dimensions, the configured y/x pairs</span>
+<span class="sd">    (e.g. x/y, latitude/longitude) and the coordinates with a CF ``axis`` X or Y, or a ``standard_name`` or</span>
+<span class="sd">    ``long_name`` of a horizontal position (e.g. rotated rlat/rlon). Other coordinates, such as the surface</span>
+<span class="sd">    altitude, are not included. Unlike :func:`get_spatial_coords`, returns all of them, not one pair.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    grid : xarray Dataset or DataArray</span>
+<span class="sd">        contains spatial horizontal coordinates</span>
+<span class="sd">    spatial_dims : tuple of string(s), optional</span>
+<span class="sd">        name of the ``grid`` spatial dimension(s). If not provided, calls :func:`get_spatial_dims`</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    set of str :</span>
+<span class="sd">        names of the spatial dimensions and position coordinates</span>
+<span class="sd">    """</span>
+
+    <span class="n">names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">get_spatial_dims</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span> <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">spatial_dims</span><span class="p">)</span>
+    <span class="n">names</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">name</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">YX</span> <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="nb">set</span><span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">pair</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">_cf_axis</span><span class="p">(</span><span class="n">coord</span><span class="o">.</span><span class="n">attrs</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">_cf_latlon</span><span class="p">(</span><span class="n">coord</span><span class="o">.</span><span class="n">attrs</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">names</span></div>
+
 
 
 <div class="viewcode-block" id="get_flat_dim">
@@ -788,10 +846,10 @@
     <span class="c1"># look for coordinates with CF attributes in coords</span>
     <span class="n">latlon</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">dim_or_coord</span><span class="p">:</span>
-        <span class="n">coord_attrs</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span>
-        <span class="k">if</span> <span class="n">coord_attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"standard_name"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"latitude"</span> <span class="ow">or</span> <span class="n">coord_attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"long_name"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"latitude"</span><span class="p">:</span>
+        <span class="n">geographic</span> <span class="o">=</span> <span class="n">_cf_latlon</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">geographic</span> <span class="o">==</span> <span class="s2">"latitude"</span><span class="p">:</span>
             <span class="n">latlon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
-        <span class="k">elif</span> <span class="n">coord_attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"standard_name"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"longitude"</span> <span class="ow">or</span> <span class="n">coord_attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"long_name"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"longitude"</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">geographic</span> <span class="o">==</span> <span class="s2">"longitude"</span><span class="p">:</span>
             <span class="n">latlon</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
 
         <span class="k">if</span> <span class="kc">None</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">latlon</span><span class="p">:</span>
@@ -1148,7 +1206,7 @@
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-540a216</div>
+grid-process, version: dev-a81744d</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 19.11.2026.

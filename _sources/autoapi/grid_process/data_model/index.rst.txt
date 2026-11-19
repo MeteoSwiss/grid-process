@@ -43,6 +43,7 @@ Functions
    grid_process.data_model.set_grid_mapping
    grid_process.data_model.get_spatial_dims
    grid_process.data_model.get_spatial_coords
+   grid_process.data_model.get_spatial_coord_names
    grid_process.data_model.get_flat_dim
    grid_process.data_model.get_latlon_coords
    grid_process.data_model.get_latlon_dims
@@ -167,6 +168,20 @@ Module Contents
    possible options defined in the config (could be overwritten by setting
    appropriate env variable) or according to CF conventions. The returned
    tuple contains coordinate names in the order (y, x).
+
+
+.. py:function:: get_spatial_coord_names(grid: xarray.Dataset | xarray.DataArray, spatial_dims: tuple[str, ...] | None = None) -> set[str]
+
+   Names of all the coordinates giving horizontal positions: the spatial dimensions, the configured y/x pairs
+   (e.g. x/y, latitude/longitude) and the coordinates with a CF ``axis`` X or Y, or a ``standard_name`` or
+   ``long_name`` of a horizontal position (e.g. rotated rlat/rlon). Other coordinates, such as the surface
+   altitude, are not included. Unlike :func:`get_spatial_coords`, returns all of them, not one pair.
+
+   :Parameters: * **grid** (*xarray Dataset or DataArray*) -- contains spatial horizontal coordinates
+                * **spatial_dims** (*tuple of string(s), optional*) -- name of the ``grid`` spatial dimension(s). If not provided, calls :func:`get_spatial_dims`
+
+   :returns: names of the spatial dimensions and position coordinates
+   :rtype: set of str
 
 
 .. py:function:: get_flat_dim(grid: xarray.Dataset | xarray.DataArray) -> str | None

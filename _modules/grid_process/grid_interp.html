@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=862ae404"></script>
+    <script src="../../_static/documentation_options.js?v=2dc1fb4d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/grid_process/grid_interp';</script>
@@ -410,7 +410,7 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span><span class="p">,</span> <span class="n">reduce</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">NamedTuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">NamedTuple</span><span class="p">,</span> <span class="n">overload</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Hashable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">math</span><span class="w"> </span><span class="kn">import</span> <span class="n">isclose</span><span class="p">,</span> <span class="n">prod</span><span class="p">,</span> <span class="n">ceil</span>
 
@@ -427,6 +427,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process</span><span class="w"> </span><span class="kn">import</span> <span class="n">CONFIG</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_accessor</span><span class="p">,</span> <span class="n">outer_ring</span><span class="p">,</span> <span class="n">reproject</span><span class="p">,</span> <span class="n">sphere_as_wgs84</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process</span><span class="w"> </span><span class="kn">import</span> <span class="n">data_model</span> <span class="k">as</span> <span class="n">dm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grid_process._sparse</span><span class="w"> </span><span class="kn">import</span> <span class="n">rows_matrix</span><span class="p">,</span> <span class="n">sparse_matmul</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.optimization</span><span class="w"> </span><span class="kn">import</span> <span class="n">memoize</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.ds_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ds_to_da</span><span class="p">,</span> <span class="n">cast_dtype</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">grid_process.da_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">da_to_ds</span>
@@ -461,6 +462,13 @@
 <span class="n">COARSEN_MIN_DENSITY</span> <span class="o">=</span> <span class="mf">2.25</span>
 <span class="n">ON_NODE_TOL</span> <span class="o">=</span> <span class="mf">1e-3</span>  <span class="c1"># [destination grid step] max distance of a source point to a destination node to be on it</span>
 <span class="n">NO_CELL</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">40</span><span class="p">)</span>  <span class="c1"># cell index of the source points without destination cell (non-finite reprojection)</span>
+<span class="c1"># [bytes] chunk of the lazily opened variables read by _isel_sub_domain: time nearly flat from 0.5 to 140 MB, memory</span>
+<span class="c1"># and over-read growing with the chunk</span>
+<span class="n">LAZY_CHUNK_BYTES</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">24</span>
+<span class="n">LAZY_CHUNK_MIN_POINTS</span> <span class="o">=</span> <span class="mi">1024</span>
+<span class="c1"># [bytes] neighbor values of the POIs gathered at once by interp_upscaled: as fast from 0.25 to 16 MB, 2 times</span>
+<span class="c1"># slower from 64 MB</span>
+<span class="n">UPSCALED_BLOCK_BYTES</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">22</span>
 <span class="c1"># CRS of the nearest neighbor searches and triangulations when both grids are geographic (lat/lon, rotated pole):</span>
 <span class="c1"># Swiss LV95 if the destination is close enough to Switzerland, otherwise earth-centered earth-fixed (ECEF)</span>
 <span class="n">LV95</span> <span class="o">=</span> <span class="n">CRS</span><span class="o">.</span><span class="n">from_epsg</span><span class="p">(</span><span class="mi">2056</span><span class="p">)</span>
@@ -1074,16 +1082,9 @@
     <span class="c1"># find indexes and distances of the k nearest neighbor grids for all POIS</span>
     <span class="n">dist_nn</span><span class="p">,</span> <span class="n">ind_nn</span> <span class="o">=</span> <span class="n">nn_lookup_cached</span><span class="p">(</span><span class="n">coords_flat</span><span class="p">,</span> <span class="n">pois_coords</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
 
-    <span class="c1"># compute the weights</span>
+    <span class="c1"># weighted average: product with the sparse matrix of the weights, without gathering the k neighbors of each POI</span>
     <span class="n">dist_weight</span> <span class="o">=</span> <span class="n">_compute_dist_weight</span><span class="p">(</span><span class="n">dist_nn</span><span class="p">,</span> <span class="n">weight_power</span><span class="p">,</span> <span class="n">data_flat</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-
-    <span class="c1"># vectorized weigthed average</span>
-    <span class="n">ndim_trail</span> <span class="o">=</span> <span class="n">data_flat</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span>
-    <span class="n">poi_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
-        <span class="n">data_flat</span><span class="p">[</span><span class="n">ind_nn</span><span class="p">,]</span> <span class="o">*</span> <span class="n">dist_weight</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dist_weight</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span> <span class="o">*</span> <span class="n">ndim_trail</span><span class="p">),</span>
-        <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">return</span> <span class="n">poi_data</span></div>
+    <span class="k">return</span> <span class="n">sparse_matmul</span><span class="p">([</span><span class="n">rows_matrix</span><span class="p">(</span><span class="n">dist_weight</span><span class="p">,</span> <span class="n">ind_nn</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_flat</span><span class="p">))],</span> <span class="n">data_flat</span><span class="p">)</span></div>
 
 
 
@@ -1128,14 +1129,19 @@
 <span class="sd">    :func:`interp2poi`</span>
 <span class="sd">    """</span>
 
-    <span class="c1"># find indexes and distances of the k nearest neighbor grids for all POIS</span>
-    <span class="n">_</span><span class="p">,</span> <span class="n">ind_nn</span> <span class="o">=</span> <span class="n">nn_lookup_cached</span><span class="p">(</span><span class="n">coords_flat</span><span class="p">,</span> <span class="n">pois_coords</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+    <span class="c1"># find indexes of the k nearest neighbor grids for all POIS</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">ind_nn</span> <span class="o">=</span> <span class="n">nn_lookup_cached</span><span class="p">(</span><span class="n">coords_flat</span><span class="p">,</span> <span class="n">pois_coords</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">distances</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="c1"># group aggregation</span>
-    <span class="k">return</span> <span class="n">agg_func</span><span class="p">(</span>
-        <span class="n">data_flat</span><span class="p">[</span><span class="n">ind_nn</span><span class="p">,],</span>
-        <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="p">)</span></div>
+    <span class="c1"># group aggregation, by blocks of POIs: the gathered neighbor values (k per POI and field) stay small</span>
+    <span class="n">block</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">UPSCALED_BLOCK_BYTES</span> <span class="o">//</span> <span class="nb">max</span><span class="p">(</span><span class="n">ind_nn</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">data_flat</span><span class="p">[:</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">nbytes</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">first</span> <span class="o">=</span> <span class="n">agg_func</span><span class="p">(</span><span class="n">data_flat</span><span class="p">[</span><span class="n">ind_nn</span><span class="p">[:</span><span class="n">block</span><span class="p">],],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">block</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ind_nn</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">first</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">ind_nn</span><span class="p">),)</span> <span class="o">+</span> <span class="n">first</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">first</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">out</span><span class="p">[:</span><span class="n">block</span><span class="p">]</span> <span class="o">=</span> <span class="n">first</span>
+    <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ind_nn</span><span class="p">),</span> <span class="n">block</span><span class="p">):</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">start</span> <span class="p">:</span> <span class="n">start</span> <span class="o">+</span> <span class="n">block</span><span class="p">]</span> <span class="o">=</span> <span class="n">agg_func</span><span class="p">(</span><span class="n">data_flat</span><span class="p">[</span><span class="n">ind_nn</span><span class="p">[</span><span class="n">start</span> <span class="p">:</span> <span class="n">start</span> <span class="o">+</span> <span class="n">block</span><span class="p">],],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
 
 
 
@@ -1169,7 +1175,7 @@
 <span class="sd">    """</span>
 
     <span class="c1"># find indexes and distances of the k nearest neighbor grids for all POIS</span>
-    <span class="n">_</span><span class="p">,</span> <span class="n">ind_nn</span> <span class="o">=</span> <span class="n">nn_lookup_cached</span><span class="p">(</span><span class="n">coords_flat</span><span class="p">,</span> <span class="n">pois_coords</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">ind_nn</span> <span class="o">=</span> <span class="n">nn_lookup_cached</span><span class="p">(</span><span class="n">coords_flat</span><span class="p">,</span> <span class="n">pois_coords</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">distances</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">data_flat</span><span class="p">[</span><span class="n">ind_nn</span><span class="p">]</span></div>
 
@@ -1635,19 +1641,38 @@
 
 
 
+<span class="nd">@overload</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">nn_lookup_cached</span><span class="p">(</span>
+    <span class="n">grid_coords</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">distances</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span> <span class="o">...</span>
+
+
+<span class="nd">@overload</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">nn_lookup_cached</span><span class="p">(</span>
+    <span class="n">grid_coords</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">distances</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span> <span class="o">...</span>
+
+
 <div class="viewcode-block" id="nn_lookup_cached">
 <a class="viewcode-back" href="../../autoapi/grid_process/grid_interp/index.html#grid_process.grid_interp.nn_lookup_cached">[docs]</a>
 <span class="nd">@memoize</span><span class="p">(</span>
     <span class="n">CONFIG</span><span class="o">.</span><span class="n">cache_size</span><span class="o">.</span><span class="n">nn_lookup</span><span class="p">,</span>
-    <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">grid_coords</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="n">_array_key</span><span class="p">(</span><span class="n">grid_coords</span><span class="p">),</span> <span class="n">_array_key</span><span class="p">(</span><span class="n">points</span><span class="p">),</span> <span class="n">k</span><span class="p">),</span>
+    <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">grid_coords</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">distances</span><span class="o">=</span><span class="kc">True</span><span class="p">:</span> <span class="p">(</span><span class="n">_array_key</span><span class="p">(</span><span class="n">grid_coords</span><span class="p">),</span> <span class="n">_array_key</span><span class="p">(</span><span class="n">points</span><span class="p">),</span> <span class="n">k</span><span class="p">,</span> <span class="n">distances</span><span class="p">),</span>
 <span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">nn_lookup_cached</span><span class="p">(</span><span class="n">grid_coords</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">nn_lookup_cached</span><span class="p">(</span>
+    <span class="n">grid_coords</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">distances</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    :func:`nn_lookup` with an in-memory cache of the results, keyed on the coordinates and ``k``. Its size is set by</span>
-<span class="sd">    ``cache_size.nn_lookup`` (environment variable ``GRID_PROCESS__cache_size__nn_lookup``, 0 to deactivate).</span>
+<span class="sd">    :func:`nn_lookup` with an in-memory cache of the results, keyed on the coordinates, ``k`` and ``distances``. Its</span>
+<span class="sd">    size is set by ``cache_size.nn_lookup`` (environment variable ``GRID_PROCESS__cache_size__nn_lookup``, 0 to</span>
+<span class="sd">    deactivate). The distances are None if not ``distances`` (4 times less memory), the indices are int32 (int64 for</span>
+<span class="sd">    grids of 2**31 points or more).</span>
 <span class="sd">    """</span>
 
-    <span class="k">return</span> <span class="n">nn_lookup</span><span class="p">(</span><span class="n">grid_coords</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span></div>
+    <span class="n">dd</span><span class="p">,</span> <span class="n">ii</span> <span class="o">=</span> <span class="n">nn_lookup</span><span class="p">(</span><span class="n">grid_coords</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">grid_coords</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="o">**</span><span class="mi">31</span><span class="p">:</span>
+        <span class="n">ii</span> <span class="o">=</span> <span class="n">ii</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">dd</span> <span class="k">if</span> <span class="n">distances</span> <span class="k">else</span> <span class="kc">None</span><span class="p">),</span> <span class="n">ii</span></div>
 
 
 
@@ -2076,11 +2101,9 @@
 <span class="sd">      destination grid (on average at least 2.25 points per destination cell), it is then averaged per destination</span>
 <span class="sd">      cell, ignoring NaN (see :func:`slice_coarsen`): a regular or unstructured source, if the destination grid has</span>
 <span class="sd">      regular 1D coordinates in its CRS (otherwise with a warning). For 'nearest' and 'linear', the result is</span>
-<span class="sd">      directly the mean of the source points of each destination cell, NaN only if all of them are NaN or if it has</span>
-<span class="sd">      none, in float32 for float32 and 8 or 16 bit integer data, float64 otherwise, with the dimensions in the order</span>
-<span class="sd">      of the source (the spatial ones replaced at their position), whatever ``try_reg``. The other methods</span>
-<span class="sd">      interpolate from the mean position of the points of each cell. The same holds for a source averaged by</span>
-<span class="sd">      :func:`slice_coarsen` with the same destination grid and method.</span>
+<span class="sd">      directly the mean of the source points of each destination cell. The other methods interpolate from the mean</span>
+<span class="sd">      position of the points of each cell. The same holds for a source averaged by :func:`slice_coarsen` with the</span>
+<span class="sd">      same destination grid and method.</span>
 <span class="sd">    - Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for 'linear',</span>
 <span class="sd">      'linear_3D' and 'cubic' are done) with distances in meters, never in latitude/longitude degrees. The source</span>
 <span class="sd">      grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and</span>
@@ -2402,6 +2425,8 @@
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Slice input dataset spatial dimensions to the bounding box of the target POIs</span>
 <span class="sd">    plus a buffer depending on the interpolation method and corresponding kwargs.</span>
+<span class="sd">    The variables of an unstructured grid opened lazily from a file (e.g. netCDF, not dask) are read by chunks of</span>
+<span class="sd">    points and loaded.</span>
 <span class="sd">    """</span>
 
     <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -2415,7 +2440,7 @@
 
     <span class="n">buffer</span> <span class="o">=</span> <span class="n">get_buffer</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="n">sub_domain</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_get_sub_domain</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="p">(</span><span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">),</span> <span class="n">yx_bnds</span><span class="p">,</span> <span class="n">buffer</span><span class="p">,</span> <span class="n">grid_crs</span><span class="o">.</span><span class="n">is_geographic</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">sub_domain</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">_isel_sub_domain</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sub_domain</span><span class="p">)</span></div>
 
 
 
@@ -2453,7 +2478,8 @@
 <span class="sd">    xarray.Dataset</span>
 <span class="sd">        the sliced source grid. Around the extent of the destination grid, it keeps a buffer of :func:`get_buffer`</span>
 <span class="sd">        grid steps of the coarser of the source and destination grids (times 1.5 for an unstructured source, and</span>
-<span class="sd">        wider in longitude towards the poles for a latitude/longitude source).</span>
+<span class="sd">        wider in longitude towards the poles for a latitude/longitude source). The variables of an unstructured</span>
+<span class="sd">        source opened lazily from a file (e.g. netCDF, not dask) are read by chunks of points and loaded.</span>
 
 <span class="sd">    See also</span>
 <span class="sd">    --------</span>
@@ -2594,7 +2620,32 @@
     <span class="n">sub_domain</span><span class="p">,</span> <span class="n">src_step</span> <span class="o">=</span> <span class="n">_get_sub_domain</span><span class="p">(</span>
         <span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="p">(</span><span class="n">grid_y</span><span class="p">,</span> <span class="n">grid_x</span><span class="p">),</span> <span class="n">yx_bnds</span><span class="p">,</span> <span class="n">get_buffer</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">grid_crs</span><span class="o">.</span><span class="n">is_geographic</span><span class="p">,</span> <span class="n">dst_step</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">sub_domain</span><span class="p">),</span> <span class="n">src_step</span><span class="p">,</span> <span class="n">dst_step</span>
+    <span class="k">return</span> <span class="n">_isel_sub_domain</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sub_domain</span><span class="p">),</span> <span class="n">src_step</span><span class="p">,</span> <span class="n">dst_step</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_isel_sub_domain</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">sub_domain</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">slice</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    ``data.isel(sub_domain)`` (see :func:`_get_sub_domain`). The variables opened lazily from a file (neither in memory</span>
+<span class="sd">    nor dask, e.g. netCDF) and selected with a boolean mask (unstructured grid) are read by chunks of points, each with</span>
+<span class="sd">    one slice, only the chunks with selected points, and loaded: indexing the file with the mask would read the selected</span>
+<span class="sd">    points one by one (e.g. 50 s instead of 1.4 s for native ICON-CH1 sliced to the seamless 2 km grid).</span>
+<span class="sd">    """</span>
+
+    <span class="n">selected</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">sub_domain</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">sub_domain</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">loaded</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># pylint: disable-next=protected-access</span>
+            <span class="k">if</span> <span class="n">dim</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">var</span><span class="o">.</span><span class="n">dims</span> <span class="ow">or</span> <span class="n">var</span><span class="o">.</span><span class="n">chunks</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">var</span><span class="o">.</span><span class="n">_in_memory</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">point_bytes</span> <span class="o">=</span> <span class="n">var</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">itemsize</span> <span class="o">*</span> <span class="n">prod</span><span class="p">(</span><span class="n">size</span> <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">var</span><span class="o">.</span><span class="n">sizes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">d</span> <span class="o">!=</span> <span class="n">dim</span><span class="p">)</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">LAZY_CHUNK_MIN_POINTS</span><span class="p">,</span> <span class="n">LAZY_CHUNK_BYTES</span> <span class="o">//</span> <span class="nb">max</span><span class="p">(</span><span class="n">point_bytes</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">loaded</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">var</span><span class="o">.</span><span class="n">chunk</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">points</span><span class="p">})</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">dim</span><span class="p">:</span> <span class="n">index</span><span class="p">})</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+        <span class="n">selected</span> <span class="o">=</span> <span class="n">selected</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">loaded</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">selected</span><span class="o">.</span><span class="n">coords</span><span class="p">})</span>
+        <span class="n">selected</span> <span class="o">=</span> <span class="n">selected</span><span class="o">.</span><span class="n">assign</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">loaded</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">selected</span><span class="o">.</span><span class="n">data_vars</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">selected</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_dst_extent</span><span class="p">(</span>
@@ -2916,7 +2967,7 @@
         <span class="k">elif</span> <span class="n">spatial</span><span class="o">.</span><span class="n">isdisjoint</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">dims</span><span class="p">):</span>
             <span class="n">data_vars</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">var</span><span class="o">.</span><span class="n">variable</span>
 
-    <span class="n">skip</span> <span class="o">=</span> <span class="n">_spatial_coord_names</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">)</span>
+    <span class="n">skip</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_spatial_coord_names</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">)</span>
     <span class="n">out_coords</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">coords</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">spatial</span><span class="o">.</span><span class="n">isdisjoint</span><span class="p">(</span><span class="n">coord</span><span class="o">.</span><span class="n">dims</span><span class="p">):</span>
@@ -2929,18 +2980,17 @@
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_points_last</span><span class="p">(</span>
     <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
-    <span class="n">weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr_array</span><span class="p">]</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+    <span class="n">weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr_array</span><span class="p">],</span>
     <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">n_spatial</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">out_shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Call ``func(weights, points_first, **kwargs)`` (e.g. :func:`_sparse_nanmean`, or with the neighbor indices</span>
-<span class="sd">    ``ens_stats._neighbor_extreme``) on ``values`` with its</span>
+<span class="sd">    Call ``func(weights, points_first, **kwargs)`` (e.g. :func:`_sparse_nanmean`) on ``values`` with its</span>
 <span class="sd">    ``n_spatial`` last (spatial) axes moved first: the sparse matrix products need C-contiguous rows of points</span>
-<span class="sd">    (see :func:`_sparse_matmul`). The spatial axes are flattened with one matrix, kept with one matrix per axis.</span>
-<span class="sd">    Returns the result with the axes ``out_shape`` last, as for :func:`xarray.apply_ufunc`.</span>
+<span class="sd">    (see :func:`~grid_process._sparse.sparse_matmul`). The spatial axes are flattened with one matrix, kept with one</span>
+<span class="sd">    matrix per axis. Returns the result with the axes ``out_shape`` last, as for :func:`xarray.apply_ufunc`.</span>
 <span class="sd">    """</span>
 
     <span class="n">n_lead</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="n">n_spatial</span>
@@ -2968,7 +3018,7 @@
     <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">result_type</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
     <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">n_axes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">_sparse_matmul</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">values</span><span class="p">))</span>  <span class="c1"># small: (n_rows..., fields)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">sparse_matmul</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">values</span><span class="p">))</span>  <span class="c1"># small: (n_rows..., fields)</span>
     <span class="n">fields</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="n">n_axes</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,))</span>
     <span class="n">with_nan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_axes</span><span class="p">)))</span>
     <span class="n">counts</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="o">.</span><span class="n">outer</span><span class="p">,</span> <span class="p">(</span><span class="n">weight</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span> <span class="k">for</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">weights</span><span class="p">))[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
@@ -2977,8 +3027,8 @@
         <span class="k">if</span> <span class="n">with_nan</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>  <span class="c1"># sum again the fields with NaN, ignoring them, and count their valid points</span>
             <span class="n">values</span> <span class="o">=</span> <span class="n">_select_fields</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">n_axes</span><span class="p">,</span> <span class="n">with_nan</span><span class="p">)</span>
             <span class="n">nan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
-            <span class="n">total</span> <span class="o">=</span> <span class="n">_sparse_matmul</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">nan</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">values</span><span class="p">))</span>
-            <span class="n">fields</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">with_nan</span><span class="p">]</span> <span class="o">=</span> <span class="n">_divide_or_mask</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="n">_sparse_matmul</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="p">(</span><span class="o">~</span><span class="n">nan</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)),</span> <span class="n">mean</span><span class="p">)</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="n">sparse_matmul</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">nan</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">values</span><span class="p">))</span>
+            <span class="n">fields</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">with_nan</span><span class="p">]</span> <span class="o">=</span> <span class="n">_divide_or_mask</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="n">sparse_matmul</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="p">(</span><span class="o">~</span><span class="n">nan</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)),</span> <span class="n">mean</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">out</span>
 
 
@@ -3007,21 +3057,6 @@
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">by_field</span><span class="p">[</span><span class="n">selected</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_sparse_matmul</span><span class="p">(</span><span class="n">weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr_array</span><span class="p">],</span> <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Matrix products of each matrix of ``weights`` along the corresponding first axis of ``values``, copied into</span>
-<span class="sd">    C-contiguous rows of points if needed (e.g. data stored with the spatial dimensions last, or sliced): a product</span>
-<span class="sd">    per field would avoid the copy but is slower (it reads the matrix once per field) and keeps the copy of a sliced</span>
-<span class="sd">    source.</span>
-<span class="sd">    """</span>
-
-    <span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">weights</span><span class="p">):</span>
-        <span class="n">moved</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="n">weight</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">@</span> <span class="n">moved</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">moved</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">weight</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">moved</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">values</span>
-
-
 <span class="k">def</span><span class="w"> </span><span class="nf">_flat_neighbors</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">flat_dim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Indices of the ``k`` nearest points of each point of an unstructured grid (itself included), shape (n, k),</span>
@@ -3032,27 +3067,7 @@
     <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_x</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">grid_y</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
     <span class="n">target_crs</span> <span class="o">=</span> <span class="n">_choose_kdtree_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">,</span> <span class="n">crs</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">_reproject_grid_cached</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">crs</span><span class="p">,</span> <span class="n">LV95</span><span class="p">))</span>
     <span class="n">coords</span> <span class="o">=</span> <span class="n">_kdtree_coords</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">crs</span><span class="p">,</span> <span class="n">target_crs</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">nn_lookup_cached</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">k</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_spatial_coord_names</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Names of the spatial coordinates of ``data``: dimension, native (e.g. x/y) and latitude/longitude coordinates.</span>
-<span class="sd">    """</span>
-
-    <span class="n">names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">prefer_projected</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">names</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">get_coords_name_crs</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">,</span> <span class="n">prefer_projected</span><span class="o">=</span><span class="n">prefer_projected</span><span class="p">)[:</span><span class="mi">2</span><span class="p">])</span>
-        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-            <span class="k">pass</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">names</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">get_spatial_coords</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
-        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-            <span class="k">pass</span>
-    <span class="n">names</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">get_latlon_coords</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">nondim</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="ow">or</span> <span class="p">())</span>
-    <span class="k">return</span> <span class="n">names</span>
+    <span class="k">return</span> <span class="n">nn_lookup_cached</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">distances</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="get_buffer">
@@ -3335,7 +3350,7 @@
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-540a216</div>
+grid-process, version: dev-a81744d</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 19.11.2026.

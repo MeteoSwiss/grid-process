@@ -24,6 +24,9 @@ Attributes
    grid_process.grid_interp.COARSEN_MIN_DENSITY
    grid_process.grid_interp.ON_NODE_TOL
    grid_process.grid_interp.NO_CELL
+   grid_process.grid_interp.LAZY_CHUNK_BYTES
+   grid_process.grid_interp.LAZY_CHUNK_MIN_POINTS
+   grid_process.grid_interp.UPSCALED_BLOCK_BYTES
    grid_process.grid_interp.LV95
    grid_process.grid_interp.LV95_NORTHING_CENTER
    grid_process.grid_interp.ECEF
@@ -101,6 +104,18 @@ Module Contents
 
 .. py:data:: NO_CELL
    :value: -1099511627776
+
+
+.. py:data:: LAZY_CHUNK_BYTES
+   :value: 16777216
+
+
+.. py:data:: LAZY_CHUNK_MIN_POINTS
+   :value: 1024
+
+
+.. py:data:: UPSCALED_BLOCK_BYTES
+   :value: 4194304
 
 
 .. py:data:: LV95
@@ -418,10 +433,13 @@ Module Contents
    .. seealso:: :func:`nn_lookup_cached`
 
 
-.. py:function:: nn_lookup_cached(grid_coords: numpy.ndarray, points: numpy.ndarray, k: int) -> tuple[numpy.ndarray, numpy.ndarray]
+.. py:function:: nn_lookup_cached(grid_coords: numpy.ndarray, points: numpy.ndarray, k: int, distances: Literal[True] = True) -> tuple[numpy.ndarray, numpy.ndarray]
+                 nn_lookup_cached(grid_coords: numpy.ndarray, points: numpy.ndarray, k: int, distances: Literal[False]) -> tuple[None, numpy.ndarray]
 
-   :func:`nn_lookup` with an in-memory cache of the results, keyed on the coordinates and ``k``. Its size is set by
-   ``cache_size.nn_lookup`` (environment variable ``GRID_PROCESS__cache_size__nn_lookup``, 0 to deactivate).
+   :func:`nn_lookup` with an in-memory cache of the results, keyed on the coordinates, ``k`` and ``distances``. Its
+   size is set by ``cache_size.nn_lookup`` (environment variable ``GRID_PROCESS__cache_size__nn_lookup``, 0 to
+   deactivate). The distances are None if not ``distances`` (4 times less memory), the indices are int32 (int64 for
+   grids of 2**31 points or more).
 
 
 .. py:function:: nn_lookup_regular(grid_coords: tuple[numpy.ndarray, numpy.ndarray], grid_spacing: tuple[float, float], points: tuple[numpy.ndarray | xarray.DataArray, numpy.ndarray | xarray.DataArray]) -> list[numpy.ndarray | xarray.DataArray]
@@ -510,11 +528,9 @@ Module Contents
      destination grid (on average at least 2.25 points per destination cell), it is then averaged per destination
      cell, ignoring NaN (see :func:`slice_coarsen`): a regular or unstructured source, if the destination grid has
      regular 1D coordinates in its CRS (otherwise with a warning). For 'nearest' and 'linear', the result is
-     directly the mean of the source points of each destination cell, NaN only if all of them are NaN or if it has
-     none, in float32 for float32 and 8 or 16 bit integer data, float64 otherwise, with the dimensions in the order
-     of the source (the spatial ones replaced at their position), whatever ``try_reg``. The other methods
-     interpolate from the mean position of the points of each cell. The same holds for a source averaged by
-     :func:`slice_coarsen` with the same destination grid and method.
+     directly the mean of the source points of each destination cell. The other methods interpolate from the mean
+     position of the points of each cell. The same holds for a source averaged by :func:`slice_coarsen` with the
+     same destination grid and method.
    - Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for 'linear',
      'linear_3D' and 'cubic' are done) with distances in meters, never in latitude/longitude degrees. The source
      grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and
@@ -539,6 +555,8 @@ Module Contents
 
    Slice input dataset spatial dimensions to the bounding box of the target POIs
    plus a buffer depending on the interpolation method and corresponding kwargs.
+   The variables of an unstructured grid opened lazily from a file (e.g. netCDF, not dask) are read by chunks of
+   points and loaded.
 
 
 .. py:function:: slice_grid(data: xarray.Dataset, dst_grid: xarray.Dataset, method: str, spatial_dims: tuple[str, ...] | None = None, dst_spatial_dims: tuple[str, ...] | None = None, **kwargs: Any) -> xarray.Dataset
@@ -556,7 +574,8 @@ Module Contents
 
    :returns: the sliced source grid. Around the extent of the destination grid, it keeps a buffer of :func:`get_buffer`
              grid steps of the coarser of the source and destination grids (times 1.5 for an unstructured source, and
-             wider in longitude towards the poles for a latitude/longitude source).
+             wider in longitude towards the poles for a latitude/longitude source). The variables of an unstructured
+             source opened lazily from a file (e.g. netCDF, not dask) are read by chunks of points and loaded.
    :rtype: xarray.Dataset
 
    .. seealso:: :func:`slice_coarsen`

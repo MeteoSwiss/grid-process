@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=862ae404"></script>
+    <script src="../../../_static/documentation_options.js?v=2dc1fb4d"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/ens_stats/index';</script>
@@ -661,16 +661,16 @@ used directly.</p></li>
 </dl>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>For a large gain in performence, the function performs separate rolling window
-operations on each of the spatial and temporal dimensions sequentially. Therefore,
-only methods for which this is equivalent than applying the statistic over the
-rolling volume are accepted. Methods such as ‘median’ or ‘std’ are thus not accepted.</p>
-<p>NaN are ignored: a value is NaN only if all the values of its neighborhood are NaN. With NaN, ‘mean’ is the
-mean of the means along each dimension, not exactly the mean over the volume. The windows are truncated at the
-edges of regular grids (and of the time dimension), whereas the neighborhoods of an unstructured grid always
-have <code class="docutils literal notranslate"><span class="pre">w_size_xy**2</span></code> points, extending further inside at its edges. On an unstructured grid, the nearest
-neighbors are searched in meters and cached (see <a class="reference internal" href="../grid_interp/index.html#grid_process.grid_interp.interp2grid" title="grid_process.grid_interp.interp2grid"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2grid()</span></code></a>), and dask
-arrays stay lazy (with a single chunk along the unstructured dimension).</p>
+<p>The statistic is computed along each dimension of the window in turn (<code class="docutils literal notranslate"><span class="pre">scipy.ndimage</span></code> filters along the
+dimensions of a regular grid and time, the neighbors along an unstructured dimension), exact for these methods
+but not for e.g. ‘median’ or ‘std’, which are not accepted.</p>
+<p>The windows are centered (as <code class="xref py py-meth docutils literal notranslate"><span class="pre">xarray.Dataset.rolling()</span></code> with <code class="docutils literal notranslate"><span class="pre">center=True</span></code>) and truncated at the edges of
+regular grids and of the time dimension, whereas the neighborhoods of an unstructured grid always have
+<code class="docutils literal notranslate"><span class="pre">w_size_xy**2</span></code> points, extending further inside at its edges. NaN are ignored: a value is NaN only if all the
+values of its window are NaN, and ‘mean’ is the mean of the valid values over the whole space x time window.
+The result is float32 for float32, 8 or 16 bit integer and boolean data, float64 otherwise. On an unstructured
+grid, the nearest neighbors are searched in meters and cached (see <a class="reference internal" href="../grid_interp/index.html#grid_process.grid_interp.interp2grid" title="grid_process.grid_interp.interp2grid"><code class="xref py py-func docutils literal notranslate"><span class="pre">interp2grid()</span></code></a>).
+Dask arrays stay lazy, with a single chunk along the dimensions of the window.</p>
 </div>
 </dd></dl>
 
@@ -868,7 +868,7 @@ point for their ranking.</p>
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-540a216</div>
+grid-process, version: dev-a81744d</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 19.11.2026.
