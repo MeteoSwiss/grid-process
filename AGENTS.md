@@ -61,6 +61,8 @@ poetry run sphinx-build doc doc/_build
 - `test/`: one test module per module; `test/conftest.py` builds small synthetic grids (regular lat/lon, rotated,
   LV95, unstructured) and POIs.
 - `doc/examples/*.ipynb`: interpolation examples on open data, with runtime comparisons of the methods.
+- `benchmarks/operational_cases.py`: benchmark of the operational cases (see below), smoke-tested by
+  `test/test_benchmarks.py`.
 
 ## How the interpolation works
 
@@ -101,9 +103,9 @@ Things to keep in mind:
 
 ## Operational cases (benchmark on data of these shapes)
 
-The operational data (internal grid database, native ICON files) is not public. To benchmark, build synthetic data
-with the same structure, CRS, sizes and dtypes (random float32 fields with some NaN, surface altitude of realistic
-range for altitude methods). Shapes are y × x unless stated.
+The operational data (internal grid database, native ICON files) is not public. `benchmarks/operational_cases.py`
+builds synthetic data with the same structure, CRS, sizes, dtypes and NaN patterns, and runs the operational calls
+on it (see below). Shapes are y × x unless stated.
 
 | Case | Grid | Points | Fields |
 |---|---|---|---|
@@ -144,14 +146,23 @@ NaN cases to keep correct:
   `ds.where(ds.land_area_fraction >= 0.5).drop_vars("land_area_fraction")`: outside of the regular grid path, a POI
   or cell near a lake takes its value from land points only.
 
-Benchmark protocol for a change that can affect runtime, memory or results:
+Benchmark a change that can affect runtime, memory or results against `main`, on the same machine (otherwise idle),
+with `benchmarks/operational_cases.py`. It runs the operational calls (data4web to the POIs, seamless weather
+provider to the 2 km grid, static fields) with their operational settings, each case in fresh processes: runtime of
+the first call (cold caches) and of the repeated calls (warm caches), peak memory, and checksums of the outputs.
 
-- compare against `main` (e.g. a `git worktree`) in the same environment, same process setup;
-- time the first call and the repeated call (warm caches), several repetitions, and measure the peak memory;
-- cover the generic path (`try_reg=False`), a sliced (non-contiguous) source, and lazy or dask inputs when relevant
-  (e.g. the horizon case above for the regular path);
-- compare the outputs with `main`: identical, or quantify the difference for the CHANGELOG;
-- keep benchmark scripts and outputs outside the repository.
+```console
+git worktree add ../grid-process-main main
+poetry run python benchmarks/operational_cases.py list
+poetry run python benchmarks/operational_cases.py run --grid-process ../grid-process-main --out /tmp/bench/main
+poetry run python benchmarks/operational_cases.py run --out /tmp/bench/branch
+poetry run python benchmarks/operational_cases.py compare /tmp/bench/main /tmp/bench/branch
+```
+
+Select cases with `--case` (shell patterns), keep the outputs to quantify their differences with `--save-outputs`,
+and use the real data with `--data-dir` when available. Report the identical outputs, or quantify the differences in
+the CHANGELOG. A full run takes about 10 minutes. Keep the outputs outside the repository. Add a case when a new
+operational use appears.
 
 ## Conventions
 
