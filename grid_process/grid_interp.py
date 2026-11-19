@@ -12,7 +12,7 @@ Module for spatial interpolation of gridded datasets
 
 import logging
 from functools import partial, reduce
-from typing import Any, Literal, NamedTuple
+from typing import Any, Literal, NamedTuple, overload
 from collections.abc import Callable, Hashable
 from math import isclose, prod, ceil
 
@@ -29,6 +29,7 @@ from pyproj import CRS, Transformer
 from grid_process import CONFIG
 from grid_process.helpers import make_accessor, outer_ring, reproject, sphere_as_wgs84
 from grid_process import data_model as dm
+from grid_process._sparse import rows_matrix, sparse_matmul
 from grid_process.optimization import memoize
 from grid_process.ds_utils import ds_to_da, cast_dtype
 from grid_process.da_utils import da_to_ds
@@ -60,6 +61,13 @@ DST_ATTRS_KEEP = ("grid_mapping", "crs", "bounding_box")  # CRS attributes of th
 COARSEN_MIN_DENSITY = 2.25
 ON_NODE_TOL = 1e-3  # [destination grid step] max distance of a source point to a destination node to be on it
 NO_CELL = -(2**40)  # cell index of the source points without destination cell (non-finite reprojection)
+# [bytes] chunk of the lazily opened variables read by _isel_sub_domain: time nearly flat from 0.5 to 140 MB, memory
+# and over-read growing with the chunk
+LAZY_CHUNK_BYTES = 2**24
+LAZY_CHUNK_MIN_POINTS = 1024
+# [bytes] neighbor values of the POIs gathered at once by interp_upscaled: as fast from 0.25 to 16 MB, 2 times
+# slower from 64 MB
+UPSCALED_BLOCK_BYTES = 2**22
 # CRS of the nearest neighbor searches and triangulations when both grids are geographic (lat/lon, rotated pole):
 # Swiss LV95 if the destination is close enough to Switzerland, otherwise earth-centered earth-fixed (ECEF)
 LV95 = CRS.from_epsg(2056)
@@ -662,16 +670,9 @@ def interp_idw(
     # find indexes and distances of the k nearest neighbor grids for all POIS
     dist_nn, ind_nn = nn_lookup_cached(coords_flat, pois_coords, k)
 
-    # compute the weights
+    # weighted average: product with the sparse matrix of the weights, without gathering the k neighbors of each POI
     dist_weight = _compute_dist_weight(dist_nn, weight_power, data_flat.dtype)
-
-    # vectorized weigthed average
-    ndim_trail = data_flat.ndim - 1
-    poi_data = np.sum(
-        data_flat[ind_nn,] * dist_weight.reshape(dist_weight.shape + (1,) * ndim_trail),
-        axis=1,
-    )
-    return poi_data
+    return sparse_matmul([rows_matrix(dist_weight, ind_nn, len(data_flat))], data_flat)
 
 
 def interp_upscaled(
@@ -713,14 +714,19 @@ def interp_upscaled(
     :func:`interp2poi`
     """
 
-    # find indexes and distances of the k nearest neighbor grids for all POIS
-    _, ind_nn = nn_lookup_cached(coords_flat, pois_coords, k)
+    # find indexes of the k nearest neighbor grids for all POIS
+    _, ind_nn = nn_lookup_cached(coords_flat, pois_coords, k, distances=False)
 
-    # group aggregation
-    return agg_func(
-        data_flat[ind_nn,],
-        axis=1,
-    )
+    # group aggregation, by blocks of POIs: the gathered neighbor values (k per POI and field) stay small
+    block = max(1, UPSCALED_BLOCK_BYTES // max(ind_nn.shape[1] * data_flat[:1].nbytes, 1))
+    first = agg_func(data_flat[ind_nn[:block],], axis=1)
+    if block >= len(ind_nn):
+        return first
+    out = np.empty((len(ind_nn),) + first.shape[1:], first.dtype)
+    out[:block] = first
+    for start in range(block, len(ind_nn), block):
+        out[start : start + block] = agg_func(data_flat[ind_nn[start : start + block],], axis=1)
+    return out
 
 
 def interp_nearest(coords_flat: np.ndarray, data_flat: np.ndarray, pois_coords: np.ndarray) -> np.ndarray:
@@ -751,7 +757,7 @@ def interp_nearest(coords_flat: np.ndarray, data_flat: np.ndarray, pois_coords: 
     """
 
     # find indexes and distances of the k nearest neighbor grids for all POIS
-    _, ind_nn = nn_lookup_cached(coords_flat, pois_coords, 1)
+    _, ind_nn = nn_lookup_cached(coords_flat, pois_coords, 1, distances=False)
 
     return data_flat[ind_nn]
 
@@ -1207,17 +1213,36 @@ def nn_lookup(grid_coords: np.ndarray, points: np.ndarray, k: int) -> tuple[np.n
     return dd.astype(points.dtype, copy=False), ii
 
 
+@overload
+def nn_lookup_cached(
+    grid_coords: np.ndarray, points: np.ndarray, k: int, distances: Literal[True] = True
+) -> tuple[np.ndarray, np.ndarray]: ...
+
+
+@overload
+def nn_lookup_cached(
+    grid_coords: np.ndarray, points: np.ndarray, k: int, distances: Literal[False]
+) -> tuple[None, np.ndarray]: ...
+
+
 @memoize(
     CONFIG.cache_size.nn_lookup,
-    key=lambda grid_coords, points, k: (_array_key(grid_coords), _array_key(points), k),
+    key=lambda grid_coords, points, k, distances=True: (_array_key(grid_coords), _array_key(points), k, distances),
 )
-def nn_lookup_cached(grid_coords: np.ndarray, points: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
+def nn_lookup_cached(
+    grid_coords: np.ndarray, points: np.ndarray, k: int, distances: bool = True
+) -> tuple[np.ndarray | None, np.ndarray]:
     """
-    :func:`nn_lookup` with an in-memory cache of the results, keyed on the coordinates and ``k``. Its size is set by
-    ``cache_size.nn_lookup`` (environment variable ``GRID_PROCESS__cache_size__nn_lookup``, 0 to deactivate).
+    :func:`nn_lookup` with an in-memory cache of the results, keyed on the coordinates, ``k`` and ``distances``. Its
+    size is set by ``cache_size.nn_lookup`` (environment variable ``GRID_PROCESS__cache_size__nn_lookup``, 0 to
+    deactivate). The distances are None if not ``distances`` (4 times less memory), the indices are int32 (int64 for
+    grids of 2**31 points or more).
     """
 
-    return nn_lookup(grid_coords, points, k)
+    dd, ii = nn_lookup(grid_coords, points, k)
+    if len(grid_coords) < 2**31:
+        ii = ii.astype(np.int32)
+    return (dd if distances else None), ii
 
 
 def nn_lookup_regular(
@@ -1640,11 +1665,9 @@ def interp2grid(
       destination grid (on average at least 2.25 points per destination cell), it is then averaged per destination
       cell, ignoring NaN (see :func:`slice_coarsen`): a regular or unstructured source, if the destination grid has
       regular 1D coordinates in its CRS (otherwise with a warning). For 'nearest' and 'linear', the result is
-      directly the mean of the source points of each destination cell, NaN only if all of them are NaN or if it has
-      none, in float32 for float32 and 8 or 16 bit integer data, float64 otherwise, with the dimensions in the order
-      of the source (the spatial ones replaced at their position), whatever ``try_reg``. The other methods
-      interpolate from the mean position of the points of each cell. The same holds for a source averaged by
-      :func:`slice_coarsen` with the same destination grid and method.
+      directly the mean of the source points of each destination cell. The other methods interpolate from the mean
+      position of the points of each cell. The same holds for a source averaged by :func:`slice_coarsen` with the
+      same destination grid and method.
     - Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for 'linear',
       'linear_3D' and 'cubic' are done) with distances in meters, never in latitude/longitude degrees. The source
       grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and
@@ -1963,6 +1986,8 @@ def slice_boundingbox(
     """
     Slice input dataset spatial dimensions to the bounding box of the target POIs
     plus a buffer depending on the interpolation method and corresponding kwargs.
+    The variables of an unstructured grid opened lazily from a file (e.g. netCDF, not dask) are read by chunks of
+    points and loaded.
     """
 
     if spatial_dims is None:
@@ -1976,7 +2001,7 @@ def slice_boundingbox(
 
     buffer = get_buffer(method, **kwargs)
     sub_domain, _ = _get_sub_domain(data, spatial_dims, (grid_y, grid_x), yx_bnds, buffer, grid_crs.is_geographic)
-    return data.isel(sub_domain)
+    return _isel_sub_domain(data, sub_domain)
 
 
 def slice_grid(
@@ -2011,7 +2036,8 @@ def slice_grid(
     xarray.Dataset
         the sliced source grid. Around the extent of the destination grid, it keeps a buffer of :func:`get_buffer`
         grid steps of the coarser of the source and destination grids (times 1.5 for an unstructured source, and
-        wider in longitude towards the poles for a latitude/longitude source).
+        wider in longitude towards the poles for a latitude/longitude source). The variables of an unstructured
+        source opened lazily from a file (e.g. netCDF, not dask) are read by chunks of points and loaded.
 
     See also
     --------
@@ -2148,7 +2174,32 @@ def _slice_grid(
     sub_domain, src_step = _get_sub_domain(
         data, spatial_dims, (grid_y, grid_x), yx_bnds, get_buffer(method, **kwargs), grid_crs.is_geographic, dst_step
     )
-    return data.isel(sub_domain), src_step, dst_step
+    return _isel_sub_domain(data, sub_domain), src_step, dst_step
+
+
+def _isel_sub_domain(data: xr.Dataset, sub_domain: dict[str, slice] | dict[str, NDArray]) -> xr.Dataset:
+    """
+    ``data.isel(sub_domain)`` (see :func:`_get_sub_domain`). The variables opened lazily from a file (neither in memory
+    nor dask, e.g. netCDF) and selected with a boolean mask (unstructured grid) are read by chunks of points, each with
+    one slice, only the chunks with selected points, and loaded: indexing the file with the mask would read the selected
+    points one by one (e.g. 50 s instead of 1.4 s for native ICON-CH1 sliced to the seamless 2 km grid).
+    """
+
+    selected = data.isel(sub_domain)
+    for dim, index in sub_domain.items():
+        if not isinstance(index, np.ndarray):
+            continue
+        loaded = {}
+        for name, var in data.variables.items():
+            # pylint: disable-next=protected-access
+            if dim not in var.dims or var.chunks is not None or var._in_memory:
+                continue
+            point_bytes = var.dtype.itemsize * prod(size for d, size in var.sizes.items() if d != dim)
+            points = max(LAZY_CHUNK_MIN_POINTS, LAZY_CHUNK_BYTES // max(point_bytes, 1))
+            loaded[name] = var.chunk({dim: points}).isel({dim: index}).load()
+        selected = selected.assign_coords({k: v for k, v in loaded.items() if k in selected.coords})
+        selected = selected.assign({k: v for k, v in loaded.items() if k in selected.data_vars})
+    return selected
 
 
 def _dst_extent(
@@ -2470,7 +2521,7 @@ def _sparse_mean_ds(
         elif spatial.isdisjoint(var.dims):
             data_vars[name] = var.variable
 
-    skip = _spatial_coord_names(data, spatial_dims)
+    skip = dm.get_spatial_coord_names(data, spatial_dims)
     out_coords = {}
     for name, coord in data.coords.items():
         if spatial.isdisjoint(coord.dims):
@@ -2483,18 +2534,17 @@ def _sparse_mean_ds(
 
 def _points_last(
     func: Callable[..., np.ndarray],
-    weights: list[sparse.csr_array] | list[np.ndarray],
+    weights: list[sparse.csr_array],
     values: np.ndarray,
     n_spatial: int,
     out_shape: tuple[int, ...],
     **kwargs: Any,
 ) -> np.ndarray:
     """
-    Call ``func(weights, points_first, **kwargs)`` (e.g. :func:`_sparse_nanmean`, or with the neighbor indices
-    ``ens_stats._neighbor_extreme``) on ``values`` with its
+    Call ``func(weights, points_first, **kwargs)`` (e.g. :func:`_sparse_nanmean`) on ``values`` with its
     ``n_spatial`` last (spatial) axes moved first: the sparse matrix products need C-contiguous rows of points
-    (see :func:`_sparse_matmul`). The spatial axes are flattened with one matrix, kept with one matrix per axis.
-    Returns the result with the axes ``out_shape`` last, as for :func:`xarray.apply_ufunc`.
+    (see :func:`~grid_process._sparse.sparse_matmul`). The spatial axes are flattened with one matrix, kept with one
+    matrix per axis. Returns the result with the axes ``out_shape`` last, as for :func:`xarray.apply_ufunc`.
     """
 
     n_lead = values.ndim - n_spatial
@@ -2522,7 +2572,7 @@ def _sparse_nanmean(weights: list[sparse.csr_array], values: np.ndarray, mean: b
     dtype = np.result_type(values.dtype, np.float32)
     values = values.astype(dtype, copy=False)
     n_axes = len(weights)
-    out = np.ascontiguousarray(_sparse_matmul(weights, values))  # small: (n_rows..., fields)
+    out = np.ascontiguousarray(sparse_matmul(weights, values))  # small: (n_rows..., fields)
     fields = out.reshape(out.shape[:n_axes] + (-1,))
     with_nan = np.isnan(fields).any(axis=tuple(range(n_axes)))
     counts = reduce(np.multiply.outer, (weight.sum(axis=1, dtype=dtype) for weight in weights))[..., np.newaxis]
@@ -2531,8 +2581,8 @@ def _sparse_nanmean(weights: list[sparse.csr_array], values: np.ndarray, mean: b
         if with_nan.any():  # sum again the fields with NaN, ignoring them, and count their valid points
             values = _select_fields(values, n_axes, with_nan)
             nan = np.isnan(values)
-            total = _sparse_matmul(weights, np.where(nan, 0, values))
-            fields[..., with_nan] = _divide_or_mask(total, _sparse_matmul(weights, (~nan).astype(dtype)), mean)
+            total = sparse_matmul(weights, np.where(nan, 0, values))
+            fields[..., with_nan] = _divide_or_mask(total, sparse_matmul(weights, (~nan).astype(dtype)), mean)
     return out
 
 
@@ -2561,21 +2611,6 @@ def _select_fields(values: np.ndarray, n_axes: int, selected: np.ndarray) -> np.
     return np.moveaxis(by_field[selected], 0, -1)
 
 
-def _sparse_matmul(weights: list[sparse.csr_array], values: np.ndarray) -> np.ndarray:
-    """
-    Matrix products of each matrix of ``weights`` along the corresponding first axis of ``values``, copied into
-    C-contiguous rows of points if needed (e.g. data stored with the spatial dimensions last, or sliced): a product
-    per field would avoid the copy but is slower (it reads the matrix once per field) and keeps the copy of a sliced
-    source.
-    """
-
-    for axis, weight in enumerate(weights):
-        moved = np.moveaxis(values, axis, 0)
-        out = weight.astype(values.dtype, copy=False) @ moved.reshape(moved.shape[0], -1)
-        values = np.moveaxis(out.reshape(weight.shape[:1] + moved.shape[1:]), 0, axis)
-    return values
-
-
 def _flat_neighbors(data: xr.Dataset, flat_dim: str, k: int) -> np.ndarray:
     """
     Indices of the ``k`` nearest points of each point of an unstructured grid (itself included), shape (n, k),
@@ -2586,27 +2621,7 @@ def _flat_neighbors(data: xr.Dataset, flat_dim: str, k: int) -> np.ndarray:
     x, y = data[grid_x].values, data[grid_y].values
     target_crs = _choose_kdtree_crs(crs, crs, True, lambda: _reproject_grid_cached(x, y, crs, LV95))
     coords = _kdtree_coords(x, y, crs, target_crs)
-    return nn_lookup_cached(coords, coords, k)[1].reshape(x.size, k)
-
-
-def _spatial_coord_names(data: xr.Dataset, spatial_dims: tuple[str, ...]) -> set[str]:
-    """
-    Names of the spatial coordinates of ``data``: dimension, native (e.g. x/y) and latitude/longitude coordinates.
-    """
-
-    names = set(spatial_dims)
-    for prefer_projected in (False, True):
-        try:
-            names.update(dm.get_coords_name_crs(data, spatial_dims, prefer_projected=prefer_projected)[:2])
-        except ValueError:
-            pass
-    if len(spatial_dims) == 1:
-        try:
-            names.update(dm.get_spatial_coords(data))
-        except ValueError:
-            pass
-    names.update(dm.get_latlon_coords(data, nondim=False) or ())
-    return names
+    return nn_lookup_cached(coords, coords, k, distances=False)[1].reshape(x.size, k)
 
 
 def get_buffer(method: str, **kwargs: Any) -> int:

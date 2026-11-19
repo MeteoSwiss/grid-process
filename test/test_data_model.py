@@ -326,6 +326,29 @@ def test_get_flat_dim(data_cf_2dflat):
         assert dm.get_flat_dim(data_cf_2dflat) is None
 
 
+@pytest.mark.parametrize("data_cf_2dflat", ["2d_grid", "flat_grid"], indirect=True)
+def test_get_spatial_coord_names(data_cf_2dflat, model_data, data_native_rotlatlon):
+    """
+    All the position coordinates: spatial dimensions, configured y/x pairs and CF attributes, not one pair (as
+    get_spatial_coords) nor other coordinates (e.g. the surface altitude)
+    """
+
+    if "points" in data_cf_2dflat.dims:
+        assert dm.get_spatial_coord_names(data_cf_2dflat) == {"points", "lat", "lon"}
+    else:  # CF axis and standard_name
+        assert dm.get_spatial_coord_names(data_cf_2dflat) == {"y_1", "x_1", "lat_1", "lon_1"}
+
+    assert dm.get_spatial_coord_names(model_data) == {"y", "x", "latitude", "longitude"}
+    assert dm.get_spatial_coord_names(model_data, ("y", "x")) == {"y", "x", "latitude", "longitude"}
+
+    # unstructured with rotated coordinates (CF standard_name) next to latitude/longitude
+    flat = data_native_rotlatlon.stack(cell=("y", "x")).reset_index("cell").rename_vars(y="rlat", x="rlon")
+    flat["rlat"].attrs = {"standard_name": "grid_latitude"}
+    flat["rlon"].attrs = {"standard_name": "grid_longitude"}
+    assert dm.get_spatial_coord_names(flat) == {"cell", "rlat", "rlon", "latitude", "longitude"}
+    assert "surface_altitude" in flat.coords
+
+
 def test_get_latlon_coords(model_data):
     """
     Simple testcase for the get_latlon_coords function
@@ -341,6 +364,10 @@ def test_get_latlon_coords(model_data):
     ds_ext["dummy_y"].attrs.update({"standard_name": "latitude"})
     ds_ext["dummy_x"].attrs.update({"standard_name": "longitude"})
     assert dm.get_latlon_coords(ds_ext) == ("dummy_y", "dummy_x")
+    ds_ext["dummy_y"].attrs.update({"standard_name": "Latitude"})
+    assert dm.get_latlon_coords(ds_ext) == ("dummy_y", "dummy_x")
+    ds_ext["dummy_y"].attrs.update({"standard_name": "grid_latitude"})
+    assert dm.get_latlon_coords(ds_ext) is None
 
 
 def test_get_latlon_dims(data_native_lv95):

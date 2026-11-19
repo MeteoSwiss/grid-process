@@ -13,6 +13,7 @@ import numpy as np
 import xarray as xr
 import geopandas as gpd
 from scipy.interpolate import griddata
+from pyproj import Transformer
 
 
 def test_interp_temp():
@@ -430,6 +431,61 @@ def test_interp_upscaled():
     # compare
     assert np.allclose(expected_max, results_max)
     assert np.allclose(expected_min, results_min)
+
+
+@pytest.mark.parametrize("agg_func", [np.max, np.nanmax, np.mean])
+def test_interp_upscaled_blocks(agg_func, monkeypatch):
+    """By blocks of POIs (several blocks and a partial last one) as in a single block, also for the dtype of agg_func"""
+
+    import grid_process.grid_interp as gri
+
+    rng = np.random.default_rng(4)
+    coords_flat = rng.uniform(0, 100, (500, 2))
+    data_flat = rng.integers(0, 50, (500, 2, 3)).astype(np.int16)
+    poi_coords = rng.uniform(10, 90, (23, 2))
+    expected = gri.interp_upscaled(coords_flat, data_flat, poi_coords, k=9, agg_func=agg_func)
+    monkeypatch.setattr(gri, "UPSCALED_BLOCK_BYTES", 5 * 9 * data_flat[:1].nbytes)  # blocks of 5 POIs
+    result = gri.interp_upscaled(coords_flat, data_flat, poi_coords, k=9, agg_func=agg_func)
+    assert result.dtype == expected.dtype == agg_func(data_flat[:2], axis=0).dtype
+    np.testing.assert_array_equal(result, expected)
+    _, ind = gri.nn_lookup(coords_flat, poi_coords, 9)
+    np.testing.assert_array_equal(result, agg_func(data_flat[ind], axis=1))
+
+
+def test_interp_idw_sparse():
+    """The weighted average of the k nearest points, with trailing dimensions, NaN propagated"""
+
+    import grid_process.grid_interp as gri
+
+    rng = np.random.default_rng(5)
+    coords_flat = rng.uniform(0, 100, (400, 2))
+    data_flat = rng.standard_normal((400, 3, 2)).astype(np.float32)
+    data_flat[7, 1, 0] = np.nan
+    poi_coords = np.vstack([coords_flat[7] + 0.1, rng.uniform(10, 90, (30, 2))])
+    result = gri.interp_idw(coords_flat, data_flat, poi_coords, k=4, weight_power=2)
+    dist, ind = gri.nn_lookup(coords_flat, poi_coords, 4)
+    weights = gri._compute_dist_weight(dist, 2, data_flat.dtype)
+    expected = np.sum(data_flat[ind] * weights[:, :, None, None], axis=1)
+    assert result.shape == expected.shape and result.dtype == np.float32
+    np.testing.assert_allclose(result, expected, rtol=1e-6, atol=1e-6)
+    assert np.isnan(result[0, 1, 0]) and np.isnan(result).sum() == np.isnan(expected).sum()
+
+
+def test_nn_lookup_cached_distances():
+    """Without distances: None, cached apart from the lookup with distances; int32 indices"""
+
+    import grid_process.grid_interp as gri
+
+    rng = np.random.default_rng(6)
+    coords_flat, poi_coords = rng.uniform(0, 100, (300, 2)), rng.uniform(0, 100, (20, 2))
+    dist, ind = gri.nn_lookup(coords_flat, poi_coords, 5)
+    no_dist, ind_cached = gri.nn_lookup_cached(coords_flat, poi_coords, 5, distances=False)
+    assert no_dist is None and ind_cached.dtype == np.int32
+    np.testing.assert_array_equal(ind_cached, ind)
+    dist_cached, ind_cached = gri.nn_lookup_cached(coords_flat, poi_coords, 5)
+    np.testing.assert_array_equal(dist_cached, dist)
+    assert ind_cached.dtype == np.int32
+    assert gri.nn_lookup_cached(coords_flat, poi_coords, 5, distances=False)[0] is None
 
 
 def test_interp_nearest():
@@ -1945,6 +2001,27 @@ def test_slice_coarsen_cells(structure, method):
         np.testing.assert_allclose(coarse.y.values[inner], nodes_y[inner])
 
 
+def test_slice_coarsen_position_coords_not_averaged():
+    """
+    Position coordinates of an unstructured source are not averaged, also when marked by CF attributes only (e.g.
+    rotated coordinates next to x/y and lat/lon); the other coordinates are
+    """
+
+    import grid_process.grid_interp as gri
+
+    src = _flat_shuffled(_fine_grid_lv95())
+    lon, lat = Transformer.from_crs("EPSG:2056", "EPSG:4326", always_xy=True).transform(src.x.values, src.y.values)
+    src = src.assign_coords(
+        rlat=("cell", lat - 1, {"standard_name": "grid_latitude"}),
+        rlon=("cell", lon - 1, {"standard_name": "grid_longitude"}),
+        lat=("cell", lat),
+        lon=("cell", lon),
+    )
+    coarse = gri.slice_coarsen(src, _dst_grid_lv95(), "nearest")
+    assert coarse.sizes["cell"] > DST_NX * DST_NY
+    assert set(coarse.coords) == {"x", "y", "step", "surface_altitude"}
+
+
 def test_slice_coarsen_same_cells_with_nan():
     """The cells only depend on the positions of the source points, not on NaN (e.g. coarsened elevation and data)"""
 
@@ -2071,6 +2148,40 @@ def test_slice_grid():
         assert y.min() <= DST_Y0 - 2000 and y.max() >= DST_Y0 + 21000 + 2000
 
 
+def test_slice_lazy_unstructured(tmp_path, monkeypatch):
+    """
+    An unstructured source opened lazily from netCDF is sliced by chunks (several here) and loaded: same result as
+    the loaded source, variables in memory (not dask)
+    """
+
+    import grid_process.grid_interp as gri
+
+    monkeypatch.setattr(gri, "LAZY_CHUNK_BYTES", 1)
+    monkeypatch.setattr(gri, "LAZY_CHUNK_MIN_POINTS", 50)
+    flat = _flat_shuffled(_fine_grid_lv95())
+    flat.to_netcdf(tmp_path / "flat.nc")
+    dst = _dst_grid_lv95()
+    pois = gpd.GeoDataFrame(
+        {"name": ["a", "b"], "height_masl": [500.0, 600.0]},
+        geometry=gpd.points_from_xy([DST_X0 + 5000, DST_X0 + 12000], [DST_Y0 + 4000, DST_Y0 + 9000]),
+        crs="EPSG:2056",
+    )
+    with xr.open_dataset(tmp_path / "flat.nc") as lazy:
+        loaded = lazy.load().copy()
+    for slicer in (
+        lambda ds: gri.slice_grid(ds, dst, "idw"),
+        lambda ds: gri.slice_boundingbox(ds, pois, "idw"),
+    ):
+        with xr.open_dataset(tmp_path / "flat.nc") as lazy:
+            sliced = slicer(lazy)
+            assert 0 < sliced.sizes["cell"] < flat.sizes["cell"]
+            for name, var in sliced.variables.items():
+                assert var.chunks is None and var._in_memory, name  # pylint: disable=protected-access
+            xr.testing.assert_identical(sliced, slicer(loaded))
+    with xr.open_dataset(tmp_path / "flat.nc") as lazy:
+        xr.testing.assert_identical(gri.interp2grid(lazy, dst, "idw"), gri.interp2grid(loaded, dst, "idw"))
+
+
 def test_interp2grid_unstructured_sliced_unchanged():
     """
     Slicing an unstructured source does not change the interpolation: same result as an idw on all its points
@@ -2097,8 +2208,6 @@ def test_interp2grid_dst_2d_coords_not_coarsened(caplog):
     """A destination with only 2D coordinates: the finer source is not averaged, with a warning"""
 
     import grid_process.grid_interp as gri
-
-    from pyproj import Transformer
 
     dst = _dst_grid_lv95()
     x_dst, y_dst = np.meshgrid(dst.x.values, dst.y.values)

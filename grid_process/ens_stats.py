@@ -15,13 +15,14 @@ from functools import partial
 
 import numpy as np
 import xarray as xr
-from scipy import sparse
+from scipy import ndimage, sparse
 
 from grid_process.helpers import make_accessor, keepattrs
 from grid_process.data_model import get_t_dim, get_spatial_dims, get_ensemble_dim
 from grid_process.aggreg import interval_stat
 from grid_process.da_utils import da_to_ds
-from grid_process.grid_interp import _flat_neighbors, _points_last, _sparse_nanmean
+from grid_process.grid_interp import _flat_neighbors
+from grid_process._sparse import rows_matrix, sparse_matmul
 
 logger = logging.getLogger(__name__)
 
@@ -219,87 +220,120 @@ def neighbor_stat(
 
     Note
     ----
-    For a large gain in performence, the function performs separate rolling window
-    operations on each of the spatial and temporal dimensions sequentially. Therefore,
-    only methods for which this is equivalent than applying the statistic over the
-    rolling volume are accepted. Methods such as 'median' or 'std' are thus not accepted.
+    The statistic is computed along each dimension of the window in turn (``scipy.ndimage`` filters along the
+    dimensions of a regular grid and time, the neighbors along an unstructured dimension), exact for these methods
+    but not for e.g. 'median' or 'std', which are not accepted.
 
-    NaN are ignored: a value is NaN only if all the values of its neighborhood are NaN. With NaN, 'mean' is the
-    mean of the means along each dimension, not exactly the mean over the volume. The windows are truncated at the
-    edges of regular grids (and of the time dimension), whereas the neighborhoods of an unstructured grid always
-    have ``w_size_xy**2`` points, extending further inside at its edges. On an unstructured grid, the nearest
-    neighbors are searched in meters and cached (see :func:`~grid_process.grid_interp.interp2grid`), and dask
-    arrays stay lazy (with a single chunk along the unstructured dimension).
+    The windows are centered (as :meth:`xarray.Dataset.rolling` with ``center=True``) and truncated at the edges of
+    regular grids and of the time dimension, whereas the neighborhoods of an unstructured grid always have
+    ``w_size_xy**2`` points, extending further inside at its edges. NaN are ignored: a value is NaN only if all the
+    values of its window are NaN, and 'mean' is the mean of the valid values over the whole space x time window.
+    The result is float32 for float32, 8 or 16 bit integer and boolean data, float64 otherwise. On an unstructured
+    grid, the nearest neighbors are searched in meters and cached (see :func:`~grid_process.grid_interp.interp2grid`).
+    Dask arrays stay lazy, with a single chunk along the dimensions of the window.
     """
 
     ok_meth = get_args(NeighborStatMethods)
     if method not in ok_meth:
         raise ValueError(f"method must be one of {ok_meth} but was {method!r}")
 
+    windows: dict[str, int | np.ndarray | sparse.csr_array] = {}  # window of each dimension, see _window_stat
     if w_size_xy is not None:
         spatial_dims = get_spatial_dims(ds)
         if len(spatial_dims) == 1:
-            ds = _flat_neighbor_stat(ds, spatial_dims[0], w_size_xy, method)
+            n_points = ds.sizes[spatial_dims[0]]
+            k = min(w_size_xy**2, n_points)
+            if k > 1:
+                neighbors = _flat_neighbors(ds, spatial_dims[0], k)
+                windows[spatial_dims[0]] = (
+                    rows_matrix(np.ones(neighbors.shape, np.float32), neighbors, n_points)
+                    if method in ("mean", "sum")
+                    else neighbors
+                )
         else:
-            ds = _rolling_stat(ds, spatial_dims[1], w_size_xy, method)
-            ds = _rolling_stat(ds, spatial_dims[0], w_size_xy, method)
+            windows.update(dict.fromkeys(spatial_dims, w_size_xy))
     if w_size_t is not None:
-        ds = _rolling_stat(ds, get_t_dim(ds), w_size_t, method)
-
-    return ds
-
-
-def _rolling_stat(ds: xr.Dataset, dim: str, w_size: int, method: str) -> xr.Dataset:
-    """
-    Perform rolling window operation along the specified dimension.
-    """
-
-    return getattr(ds.rolling({dim: w_size}, min_periods=1, center=True), method)(skipna=False)
-
-
-def _flat_neighbor_stat(ds: xr.Dataset, flat_dim: str, w_size: int, method: str) -> xr.Dataset:
-    """
-    Statistic over the ``w_size**2`` nearest points of each point of an unstructured grid (itself included),
-    ignoring NaN (NaN only if all of them are NaN), see :func:`neighbor_stat`.
-    """
-
-    n_points = ds.sizes[flat_dim]
-    k = min(w_size**2, n_points)
-    if k <= 1:
-        return ds
-    neighbors = _flat_neighbors(ds, flat_dim, k)
-
-    if method in ("mean", "sum"):
-        weights = sparse.csr_array(
-            (np.ones(neighbors.size, dtype=np.float32), neighbors.ravel(), np.arange(0, neighbors.size + 1, k)),
-            shape=(n_points, n_points),
-        )
-
-        def func(values: np.ndarray) -> np.ndarray:
-            return _points_last(_sparse_nanmean, [weights], values, 1, (n_points,), mean=method == "mean")
-
-    else:
-        reduce_func = np.fmin if method == "min" else np.fmax
-
-        def func(values: np.ndarray) -> np.ndarray:
-            return _points_last(_neighbor_extreme, [neighbors], values, 1, (n_points,), reduce_func=reduce_func)
+        windows[get_t_dim(ds)] = w_size_t
 
     def stat(da: xr.DataArray) -> xr.DataArray:
-        if flat_dim not in da.dims:
+        dims = [dim for dim in windows if dim in da.dims]
+        if not dims:
             return da
         out = xr.apply_ufunc(
-            func,
+            _window_stat,
             da,
-            input_core_dims=[[flat_dim]],
-            output_core_dims=[[flat_dim]],
+            input_core_dims=[dims],
+            output_core_dims=[dims],
+            kwargs={"windows": [windows[dim] for dim in dims], "method": method},
             dask="parallelized",
-            output_dtypes=[np.result_type(da.dtype, np.float32) if method in ("mean", "sum") else da.dtype],
+            output_dtypes=[np.result_type(da.dtype, np.float32)],
             dask_gufunc_kwargs={"allow_rechunk": True},
             keep_attrs=True,
         )
         return out.transpose(*da.dims)
 
     return ds.map(stat, keep_attrs=True)
+
+
+def _window_stat(
+    values: np.ndarray, windows: list[int | np.ndarray | sparse.csr_array], method: NeighborStatMethods
+) -> np.ndarray:
+    """
+    ``method`` over the window of each value along the last axes of ``values``, one per item of ``windows``: the
+    window size along a regular axis (centered, truncated at the edges), or along an unstructured axis the 0/1 matrix
+    of the neighbors of each point ('mean', 'sum') or their indices, shape (points, k) ('min', 'max'). NaN are
+    ignored: NaN only if all the values of the window are NaN, 'mean' over the whole window. Computed and returned in
+    ``np.result_type(values.dtype, np.float32)``.
+    """
+
+    dtype = np.result_type(values.dtype, np.float32)
+    values = values.astype(dtype, copy=False)
+    nan = np.isnan(values)
+    has_nan = bool(nan.any())
+    with np.errstate(invalid="ignore", divide="ignore"):
+        if method in ("mean", "sum"):
+            total = _separable_stat(np.where(nan, 0, values) if has_nan else values, windows, "sum")
+            # valid values per window: of the window axes only without NaN
+            valid = (~nan).astype(dtype) if has_nan else np.ones(values.shape[values.ndim - len(windows) :], dtype)
+            counts = _separable_stat(valid, windows, "sum")
+            if method == "mean":
+                total /= counts
+            else:
+                np.copyto(total, np.nan, where=np.broadcast_to(counts == 0, total.shape))
+            return total
+        fill = -np.inf if method == "max" else np.inf
+        out = _separable_stat(np.where(nan, fill, values) if has_nan else values, windows, method, fill)
+        if has_nan:  # NaN where no valid value: where the fill value remains, unless there are genuine infinite values
+            empty = (
+                _separable_stat((~nan).view(np.uint8), windows, "max", 0) == 0
+                if np.isinf(values).any()
+                else out == fill
+            )
+            np.copyto(out, np.nan, where=empty)
+        return out
+
+
+def _separable_stat(
+    values: np.ndarray, windows: list[int | np.ndarray | sparse.csr_array], method: str, fill: float = 0.0
+) -> np.ndarray:
+    """
+    'sum', 'min' or 'max' of ``values`` (without NaN) along each of its last axes in turn, see :func:`_window_stat`.
+    ``fill``: neutral value of 'min' or 'max' beyond the edges of the regular axes (+inf or -inf, 0 for a 0/1 mask).
+    """
+
+    for axis, window in zip(range(values.ndim - len(windows), values.ndim), windows):
+        if isinstance(window, sparse.csr_array):  # sum over the neighbors of each point
+            values = np.moveaxis(sparse_matmul([window], np.moveaxis(values, axis, 0)), 0, axis)
+        elif isinstance(window, np.ndarray):  # min or max over the neighbors of each point
+            reduce_func = np.fmax if method == "max" else np.fmin
+            values = np.moveaxis(_neighbor_extreme([window], np.moveaxis(values, axis, 0), reduce_func), 0, axis)
+        elif method == "sum":
+            values = ndimage.uniform_filter1d(values, window, axis, mode="constant", cval=0.0)
+            values *= window
+        else:
+            filter_func = ndimage.maximum_filter1d if method == "max" else ndimage.minimum_filter1d
+            values = filter_func(values, window, axis, mode="constant", cval=fill)
+    return values
 
 
 def _neighbor_extreme(neighbors: list[np.ndarray], values: np.ndarray, reduce_func: np.ufunc) -> np.ndarray:

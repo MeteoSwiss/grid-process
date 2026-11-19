@@ -29,6 +29,10 @@ Unreleased
 * the slicing buffer of ``interp2grid``, ``slice_coarsen`` and ``slice_boundingbox`` counts grid steps of the
   coarser of the source and destination grids, and the grid step of unstructured sources is estimated from the
   area per point (more robust, e.g. for ICON triangles)
+* ``ens_stats.neighbor_stat`` with ``mean`` and NaN: the mean of the valid values over the whole space x time
+  window, instead of the mean of the means along each dimension. Without NaN, and for ``sum``, ``min`` and ``max``,
+  the results are unchanged (``min``/``max`` identical, ``sum``/``mean`` within float32 rounding). The result is
+  float32 for 8 or 16 bit integer and boolean data (``mean``/``sum`` were float64, ``max`` of booleans too)
 
 **Changes**
 
@@ -56,6 +60,31 @@ Unreleased
   neighbors searched in meters and cached, ignoring NaN. Native ICON-CH1 (34 fields, 1.15 M points, window 5):
   ``mean``/``sum`` 0.5 s, ``min``/``max`` 0.8 s, plus 1.8 s for the first neighbor search (``rolling`` on a
   regular grid of the same size: 2.4 to 4.3 s)
+* changed ``ens_stats.neighbor_stat`` (and ``upscaled_prob``) on regular grids and along time to
+  ``scipy.ndimage`` filters, applied to all the dimensions of the window at once (dask: one chunk along them).
+  ICON-CH1-EPS gridefix (34 x 11 x 252 x 376) ``max`` with windows 17 and 3 (data4web-pipelines): 3.8 s → 1.1 s,
+  peak memory 1.07 GB → 0.32 GB; a regular grid of 34 x 1072 x 1072 with window 5: ``mean`` 4.3 s → 0.6 s, ``sum``
+  2.4 s → 0.5 s, ``max`` 3.6 s → 1.0 s; native ICON-CH1 with windows 5 and 3: ``mean``/``max`` 3.4 s → 1.1 s
+* changed the slicing of unstructured grids opened lazily from a file (e.g. ``xarray.open_dataset`` of a netCDF
+  file, without dask) by ``interp2poi``, ``interp2grid``, ``slice_boundingbox``, ``slice_grid`` and
+  ``slice_coarsen``: the variables on the unstructured dimension are read by chunks of 16 MB, each with one slice
+  (only the chunks with selected points), and loaded, instead of reading the selected points one by one. Native
+  ICON-CH1 netCDF to the seamless 2 km grid: ``slice_grid`` and loading 50 s → 1.4 s. Sources in memory, dask
+  arrays and regular grids are unchanged
+* changed ``interp2poi`` and ``interp2grid`` with ``upscaled``: the statistic is computed by blocks of POIs, without
+  gathering the ``k`` neighbors of all the POIs at once, and with ``idw``: a product with the sparse matrix of the
+  weights, same results. Native ICON-CH1-EPS (10 members x 34 steps) to the 5,622 production POIs of
+  data4web-pipelines with ``upscaled`` and ``k=289``: 1.19 s → 0.39 s, peak memory +2.5 GB → +0.3 GB (first call
+  1.41 s → 0.55 s); gridefix ICON-CH1-EPS (3 variables) to the seamless 2 km grid with ``idw``: 0.78 s → 0.43 s,
+  peak memory +0.92 GB → +0.31 GB
+* changed ``nn_lookup_cached``: new ``distances`` parameter (in the cache key), the distances are None if
+  ``False``, and the indices are int32: the cache of the methods without distances (``nearest``, ``upscaled``,
+  ``neighbor_stat`` on unstructured grids) takes 4 times less memory (native ICON-CH1 ``neighbor_stat`` with
+  ``w_size_xy=17``: 1.3 GB instead of 5.3 GB)
+* added ``data_model.get_spatial_coord_names``: the names of all the coordinates giving horizontal positions
+  (spatial dimensions, configured y/x pairs, CF ``axis`` X/Y, horizontal ``standard_name`` or ``long_name``). Used
+  by the averaging of ``interp2grid`` and ``slice_coarsen`` to not average them, also the CF ones next to other
+  positions (e.g. rotated coordinates of an unstructured grid that also has latitude and longitude)
 * added ``values`` to the default names of the unstructured grid dimension
   (``GRID_PROCESS__data_model__grid__unstructured_dim``): the dimension of non-regular GRIB grids read with cfgrib or
   earthkit-data, e.g. ICON open data, no longer needs to be renamed

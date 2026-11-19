@@ -281,6 +281,131 @@ def test_extended_datamodel(model_data, model_data_validtime):
         assert "quantile" in ds_out.coords
 
 
+def _grid_time(dtype=np.float32, nan: bool = True) -> xr.Dataset:
+    """Regular grid with 6 lead times of random values, 2 data variables (one without the time dimension)"""
+
+    rng = np.random.default_rng(2)
+    values = (rng.standard_normal((6, 9, 11)) * 10).astype(dtype)
+    if nan:
+        values[rng.random(values.shape) < 0.3] = np.nan
+        values[:, 2:6, 3:8] = np.nan  # all-NaN block in space and time
+    return xr.Dataset(
+        {"var": (("lead_time", "y", "x"), values), "static": (("y", "x"), values[0])},
+        coords={"x": np.arange(11.0), "y": np.arange(9.0), "lead_time": np.arange(6)},
+        attrs={"source": "test"},
+    )
+
+
+def _rolling(ds: xr.Dataset, method: str, w_size_xy: int | None, w_size_t: int | None) -> xr.Dataset:
+    """The former implementation: rolling along x, y then time"""
+
+    for dim, w_size in (("x", w_size_xy), ("y", w_size_xy), ("lead_time", w_size_t)):
+        if w_size is not None:
+            ds = getattr(ds.rolling({dim: w_size}, min_periods=1, center=True), method)(skipna=False)
+    return ds
+
+
+@pytest.mark.parametrize("method", ["sum", "min", "max"])
+@pytest.mark.parametrize("w_size_xy,w_size_t", [(2, None), (3, None), (4, 2), (5, 3), (None, 4), (17, 3)])
+def test_neighbor_stat_regular_as_rolling(method, w_size_xy, w_size_t):
+    """sum, min and max equal the former rolling along each dimension (odd and even windows, truncated at the edges)"""
+
+    for nan in (False, True):
+        grid = _grid_time(nan=nan)
+        result = ens.neighbor_stat(grid, method, w_size_xy=w_size_xy, w_size_t=w_size_t)
+        expected = _rolling(grid, method, w_size_xy, w_size_t)
+        assert result["var"].dtype == np.float32
+        assert result.attrs == grid.attrs
+        if method == "sum":
+            xr.testing.assert_allclose(result, expected, rtol=1e-5, atol=1e-4)
+        else:
+            xr.testing.assert_identical(result, expected)
+
+
+@pytest.mark.parametrize("structure", ["regular", "unstructured"])
+@pytest.mark.parametrize("method,fill", [("max", -np.inf), ("min", np.inf)])
+def test_neighbor_stat_extreme_infinite(structure, method, fill):
+    """A window of only NaN is NaN, a window of only infinite values (the fill value of min/max) stays infinite"""
+
+    grid = _grid_lv95(nan=False)
+    values = grid["var"].values
+    values[0, :, :6] = np.nan
+    values[0, :, 9:] = fill
+    if structure == "unstructured":
+        result = ens.neighbor_stat(_flat_shuffled(grid), method, w_size_xy=3)
+        result = result.set_index(cell=("y", "x")).unstack("cell").transpose(*grid["var"].dims).reindex_like(grid)
+    else:
+        result = ens.neighbor_stat(grid, method, w_size_xy=3)
+    first = result["var"].isel(lead_time=0, y=slice(1, -1)).values
+    assert np.isnan(first[:, :5]).all() and not np.isnan(first[:, 5:]).any()
+    assert (first[:, 10:] == fill).all() and np.isfinite(first[:, 5:9]).all()
+    expected = ens.neighbor_stat(grid.isel(lead_time=[1]), method, w_size_xy=3)
+    inside = {"y": slice(1, -1), "x": slice(1, -1)}  # unstructured: other neighbors at the edges
+    np.testing.assert_array_equal(result["var"].isel(lead_time=[1], **inside), expected["var"].isel(inside))
+
+
+@pytest.mark.parametrize("w_size_xy,w_size_t", [(3, None), (4, 3), (None, 2)])
+def test_neighbor_stat_regular_exact_mean(w_size_xy, w_size_t):
+    """With NaN, mean of the valid values over the whole space x time window (truncated at the edges)"""
+
+    grid = _grid_time()
+    result = ens.neighbor_stat(grid, "mean", w_size_xy=w_size_xy, w_size_t=w_size_t)["var"].values
+    values = grid["var"].values
+    sizes = (w_size_t or 1, w_size_xy or 1, w_size_xy or 1)
+    expected = np.full_like(values, np.nan)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)  # all-NaN windows
+        for index in np.ndindex(values.shape):  # centered as rolling: w // 2 before, (w - 1) // 2 after
+            box = tuple(slice(max(i - w // 2, 0), i + (w - 1) // 2 + 1) for i, w in zip(index, sizes))
+            expected[index] = np.nanmean(values[box])
+    np.testing.assert_allclose(result, expected, rtol=1e-5, atol=1e-5)  # values of about 10
+    assert np.isnan(result).any()
+
+
+def test_neighbor_stat_unstructured_exact_mean_time():
+    """Unstructured grid with a time window: the exact mean over space x time, as on the regular grid"""
+
+    grid = _grid_lv95()
+    expected = ens.neighbor_stat(grid, "mean", w_size_xy=3, w_size_t=2)
+    flat = ens.neighbor_stat(_flat_shuffled(grid), "mean", w_size_xy=3, w_size_t=2)
+    result = flat.set_index(cell=("y", "x")).unstack("cell").transpose(*expected["var"].dims).reindex_like(expected)
+    inside = {"x": slice(1, -1), "y": slice(1, -1)}
+    np.testing.assert_allclose(result["var"].isel(inside), expected["var"].isel(inside), rtol=1e-5, atol=1e-6)
+
+
+@pytest.mark.parametrize("method", ["mean", "max"])
+def test_neighbor_stat_regular_dask(method):
+    """Dask arrays stay lazy (chunks along the window dimensions merged), same result"""
+
+    grid = _grid_time()
+    expected = ens.neighbor_stat(grid, method, w_size_xy=3, w_size_t=3)
+    lazy = ens.neighbor_stat(grid.chunk(lead_time=2, y=4, x=5), method, w_size_xy=3, w_size_t=3)
+    assert lazy["var"].chunks is not None
+    xr.testing.assert_identical(lazy.compute(), expected)
+
+
+@pytest.mark.parametrize(
+    "dtype,expected",
+    [
+        (np.int16, np.float32),
+        (np.uint8, np.float32),
+        (bool, np.float32),
+        (np.int32, np.float64),
+        (np.float64, np.float64),
+    ],
+)
+@pytest.mark.parametrize("method", ["mean", "sum", "max"])
+def test_neighbor_stat_dtype(dtype, expected, method):
+    """float32 for float32, 8 or 16 bit integer and boolean data, float64 otherwise; values as the float data"""
+
+    grid = _grid_time(nan=False)
+    data = (grid > 0) if dtype is bool else grid.astype(dtype)
+    result = ens.neighbor_stat(data, method, w_size_xy=3, w_size_t=2)
+    assert result["var"].dtype == expected
+    reference = ens.neighbor_stat(data.astype(np.float64), method, w_size_xy=3, w_size_t=2)
+    xr.testing.assert_allclose(result.astype(np.float64), reference, rtol=1e-6)
+
+
 def _grid_lv95(nan: bool = True) -> xr.Dataset:
     """Regular LV95 grid (1 km) with 2 lead times of random values, some NaN and an all-NaN 5 x 5 block"""
 
