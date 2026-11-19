@@ -12,17 +12,21 @@ import logging
 from typing import Literal, get_args
 from collections.abc import Callable, Sequence
 from functools import partial
-from warnings import warn
 
 import numpy as np
 import xarray as xr
+from scipy import sparse
 
 from grid_process.helpers import make_accessor, keepattrs
 from grid_process.data_model import get_t_dim, get_spatial_dims, get_ensemble_dim
 from grid_process.aggreg import interval_stat
 from grid_process.da_utils import da_to_ds
+from grid_process.grid_interp import _flat_neighbors, _points_last, _sparse_nanmean
 
 logger = logging.getLogger(__name__)
+
+# bytes of results per block of points of _neighbor_extreme: small enough to stay in the CPU cache
+BLOCK_BYTES = 2**18
 
 
 # Register xarray accessor so module functions can also be called as methods
@@ -194,12 +198,17 @@ def neighbor_stat(
           - Lead time: export GRID_PROCESS__data_model__leadtime (e.g., '["lead_time", "step", "dummy_leadtime"]')
           - Y coordinate: export GRID_PROCESS__data_model__grid__y (e.g., '["y", "latitude", "lat", "dummy_y"]')
           - X coordinate: export GRID_PROCESS__data_model__grid__x (e.g., '["x", "longitude", "lon", "dummy_x"]')
+          - Unstructured dimension: export GRID_PROCESS__data_model__grid__unstructured_dim (e.g., '["dummy_cell"]')
           - When the coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can be
             used directly.
+
+        An unstructured grid needs spatial coordinates and a CRS, as for
+        :func:`~grid_process.grid_interp.interp2grid`.
     method : {'mean', 'sum', 'min', 'max'}
         statistic applied over the moving window/volume
     w_size_xy : int, optional
-        window size in the spatial dimensions
+        window size in the spatial dimensions. On an unstructured grid, the neighborhood of each point is its
+        ``w_size_xy**2`` nearest points (itself included): on a square grid, the same as the window for 3 and 5.
     w_size_t : int, optional
         window size in the temporal dimension
 
@@ -214,6 +223,13 @@ def neighbor_stat(
     operations on each of the spatial and temporal dimensions sequentially. Therefore,
     only methods for which this is equivalent than applying the statistic over the
     rolling volume are accepted. Methods such as 'median' or 'std' are thus not accepted.
+
+    NaN are ignored: a value is NaN only if all the values of its neighborhood are NaN. With NaN, 'mean' is the
+    mean of the means along each dimension, not exactly the mean over the volume. The windows are truncated at the
+    edges of regular grids (and of the time dimension), whereas the neighborhoods of an unstructured grid always
+    have ``w_size_xy**2`` points, extending further inside at its edges. On an unstructured grid, the nearest
+    neighbors are searched in meters and cached (see :func:`~grid_process.grid_interp.interp2grid`), and dask
+    arrays stay lazy (with a single chunk along the unstructured dimension).
     """
 
     ok_meth = get_args(NeighborStatMethods)
@@ -223,10 +239,7 @@ def neighbor_stat(
     if w_size_xy is not None:
         spatial_dims = get_spatial_dims(ds)
         if len(spatial_dims) == 1:
-            warn(
-                "Rolling window operations on unstructured grids is not supported."
-                " Resample to a 2D grid with grid_interp.interp2grid() first."
-            )
+            ds = _flat_neighbor_stat(ds, spatial_dims[0], w_size_xy, method)
         else:
             ds = _rolling_stat(ds, spatial_dims[1], w_size_xy, method)
             ds = _rolling_stat(ds, spatial_dims[0], w_size_xy, method)
@@ -242,6 +255,71 @@ def _rolling_stat(ds: xr.Dataset, dim: str, w_size: int, method: str) -> xr.Data
     """
 
     return getattr(ds.rolling({dim: w_size}, min_periods=1, center=True), method)(skipna=False)
+
+
+def _flat_neighbor_stat(ds: xr.Dataset, flat_dim: str, w_size: int, method: str) -> xr.Dataset:
+    """
+    Statistic over the ``w_size**2`` nearest points of each point of an unstructured grid (itself included),
+    ignoring NaN (NaN only if all of them are NaN), see :func:`neighbor_stat`.
+    """
+
+    n_points = ds.sizes[flat_dim]
+    k = min(w_size**2, n_points)
+    if k <= 1:
+        return ds
+    neighbors = _flat_neighbors(ds, flat_dim, k)
+
+    if method in ("mean", "sum"):
+        weights = sparse.csr_array(
+            (np.ones(neighbors.size, dtype=np.float32), neighbors.ravel(), np.arange(0, neighbors.size + 1, k)),
+            shape=(n_points, n_points),
+        )
+
+        def func(values: np.ndarray) -> np.ndarray:
+            return _points_last(_sparse_nanmean, [weights], values, 1, (n_points,), mean=method == "mean")
+
+    else:
+        reduce_func = np.fmin if method == "min" else np.fmax
+
+        def func(values: np.ndarray) -> np.ndarray:
+            return _points_last(_neighbor_extreme, [neighbors], values, 1, (n_points,), reduce_func=reduce_func)
+
+    def stat(da: xr.DataArray) -> xr.DataArray:
+        if flat_dim not in da.dims:
+            return da
+        out = xr.apply_ufunc(
+            func,
+            da,
+            input_core_dims=[[flat_dim]],
+            output_core_dims=[[flat_dim]],
+            dask="parallelized",
+            output_dtypes=[np.result_type(da.dtype, np.float32) if method in ("mean", "sum") else da.dtype],
+            dask_gufunc_kwargs={"allow_rechunk": True},
+            keep_attrs=True,
+        )
+        return out.transpose(*da.dims)
+
+    return ds.map(stat, keep_attrs=True)
+
+
+def _neighbor_extreme(neighbors: list[np.ndarray], values: np.ndarray, reduce_func: np.ufunc) -> np.ndarray:
+    """
+    ``reduce_func`` (:func:`numpy.fmin` or :func:`numpy.fmax`: NaN only if all are NaN) of the ``values`` (points
+    first) of the neighbors of each point (rows of ``neighbors[0]``). By blocks of points, whose result stays in the
+    CPU cache along the neighbor columns (3 to 5 times faster than whole columns).
+    """
+
+    index = neighbors[0]
+    values = np.ascontiguousarray(values)  # each point a contiguous row (one copy unless stored points first)
+    out = np.empty_like(values)
+    block = max(64, BLOCK_BYTES // max(values[0].nbytes, 1))
+    for start in range(0, len(index), block):
+        part = out[start : start + block]
+        rows = index[start : start + block]
+        np.take(values, rows[:, 0], axis=0, out=part)
+        for column in rows.T[1:]:
+            reduce_func(part, values[column], out=part)
+    return out
 
 
 @dataset_accessor

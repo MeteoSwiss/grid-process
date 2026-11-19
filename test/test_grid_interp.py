@@ -1509,7 +1509,9 @@ def test_griddata_ecef_error(method, model_data):
     pois = _latlon_pois(np.array([10.0, 20.0]), np.array([60.0, 65.0]))
     with pytest.raises(ValueError, match="earth-centered earth-fixed"):
         gri.interp2poi(grid, pois, method, try_reg=False)
-    dst_grid = _latlon_grid(np.arange(56.0, 69.1, 1.0), np.arange(6.0, 24.1, 1.0)).drop_vars("var")
+    # destination not coarser than the source (otherwise 'linear' gives cell means, see
+    # test_interp2grid_linear_cell_means_beyond_lv95)
+    dst_grid = _latlon_grid(np.arange(56.25, 69.0, 0.5), np.arange(6.25, 24.0, 0.5)).drop_vars("var")
     with pytest.raises(ValueError, match="earth-centered earth-fixed"):
         gri.interp2grid(grid, dst_grid, method, try_reg=False)
 
@@ -1829,52 +1831,346 @@ def test_get_buffer(method, kwargs, expected):
     assert get_buffer(method, **kwargs) == expected
 
 
-def test_window_nanmean():
-    """
-    Coarsening skips NaN (a block is NaN only if all its values are), keeps float32, and leaves integers to np.mean
-    """
+# Coarsening per destination cell. Destination: LV95 grid with a 3 km step. Source: 1 km grid with 3 x 3 points per
+# destination cell (centred on the destination nodes, none on the cell edges), with 3 cells beyond each side.
+DST_STEP, SRC_STEP, MARGIN = 3000, 1000, 3
+DST_X0, DST_Y0, DST_NX, DST_NY = 2_600_000, 1_200_000, 10, 8
 
-    from grid_process.grid_interp import _window_nanmean  # pylint: disable=import-outside-toplevel
 
-    values = np.arange(32, dtype=np.float32).reshape(2, 4, 4)
-    values[0, 0, 1] = np.nan  # block (0, 0) of the first field: 3 valid values
-    values[1, 2:, 2:] = np.nan  # block (1, 1) of the second field: all NaN
-    da = xr.DataArray(values, dims=("step", "y", "x"))
-
-    out = da.coarsen(y=2, x=2, boundary="trim").reduce(_window_nanmean)
-
-    assert out.dtype == np.float32
-    with warnings.catch_warnings():  # np.nanmean warns for the all-NaN block, bottleneck does not
-        warnings.simplefilter("ignore", RuntimeWarning)
-        expected = np.nanmean(values.reshape(2, 2, 2, 2, 2), axis=(2, 4))
-    np.testing.assert_allclose(out.values, expected, rtol=1e-6)
-    assert out.values[0, 0, 0] == np.float32((0 + 4 + 5) / 3)
-    assert np.isnan(out.values[1, 1, 1])
-    assert np.isnan(out.values).sum() == 1
-
-    ints = xr.DataArray(np.arange(16, dtype=np.int16).reshape(4, 4), dims=("y", "x"))
-    np.testing.assert_array_equal(
-        ints.coarsen(y=2, x=2).reduce(_window_nanmean), ints.coarsen(y=2, x=2).reduce(np.mean)
+def _dst_grid_lv95() -> xr.Dataset:
+    return xr.Dataset(
+        coords={
+            "x": DST_X0 + DST_STEP * np.arange(DST_NX, dtype=np.float64),
+            "y": DST_Y0 + DST_STEP * np.arange(DST_NY, dtype=np.float64),
+        },
+        attrs={"crs": "EPSG:2056"},
     )
 
 
-def test_window_nanmean_large_window():
-    """Large float32 windows with NaN: close to the float64 mean (float32 sums), all-NaN blocks stay NaN"""
+def _fine_grid_lv95(dtype=np.float32) -> xr.Dataset:
+    """
+    Regular LV95 source grid (y, x) with 2 steps of a smooth field, some NaN (3 valid points in the cell (2, 3)),
+    an all-NaN cell (5, 6) at the first step, and a surface altitude
+    """
 
-    from grid_process.grid_interp import _window_nanmean  # pylint: disable=import-outside-toplevel
+    x = DST_X0 + DST_STEP * np.arange(-MARGIN, DST_NX + MARGIN).repeat(3) + SRC_STEP * np.tile([-1, 0, 1], DST_NX + 6)
+    y = DST_Y0 + DST_STEP * np.arange(-MARGIN, DST_NY + MARGIN).repeat(3) + SRC_STEP * np.tile([-1, 0, 1], DST_NY + 6)
+    x_2d, y_2d = np.meshgrid(x, y)
+    field = np.sin(x_2d / 7000) * 10 + np.cos(y_2d / 5000) * 5 + 280
+    values = np.stack([field, field + 1]).astype(dtype)
+    if np.issubdtype(dtype, np.floating):
 
-    rng = np.random.default_rng(0)
-    values = (rng.standard_normal((3, 2, 20, 30)) * 10 + 280).astype(np.float32)
-    values[rng.random(values.shape) < 0.3] = np.nan
-    values[0, 0, :10, :10] = np.nan  # an all-NaN block
-    da = xr.DataArray(values, dims=("step", "member", "y", "x"))
+        def cell(j, i):
+            return slice(3 * (j + MARGIN), 3 * (j + MARGIN) + 3), slice(3 * (i + MARGIN), 3 * (i + MARGIN) + 3)
 
-    out = da.coarsen(y=10, x=10).reduce(_window_nanmean)
+        values[0][cell(2, 3)].flat[[0, 2, 4, 5, 7, 8]] = np.nan
+        values[0][cell(5, 6)] = np.nan
+    return xr.Dataset(
+        {"var": (("step", "y", "x"), values)},
+        coords={"x": x, "y": y, "step": [0, 1], "surface_altitude": (("y", "x"), (x_2d - DST_X0) / 100.0)},
+        attrs={"crs": "EPSG:2056", "source": "test"},
+    )
 
+
+def _flat_shuffled(grid: xr.Dataset, seed: int = 0) -> xr.Dataset:
+    """Unstructured version of a (y, x) grid, in a random order of the points"""
+
+    flat = grid.stack(cell=("y", "x")).reset_index("cell")
+    order = np.random.default_rng(seed).permutation(flat.sizes["cell"])
+    return flat.isel(cell=order).transpose("cell", ...)
+
+
+def _cell_means(grid: xr.Dataset, name: str = "var") -> np.ndarray:
+    """nanmean per destination cell (j, i), including the cells beyond the destination grid"""
+
+    values = grid[name].transpose(..., "y", "x").values.astype(np.float64)
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore", RuntimeWarning)
-        expected = np.nanmean(values.astype(np.float64).reshape(3, 2, 2, 10, 3, 10), axis=(3, 5))
-    assert out.dtype == np.float32
+        warnings.simplefilter("ignore", RuntimeWarning)  # all-NaN cell
+        return np.nanmean(values.reshape(values.shape[:-2] + (DST_NY + 6, 3, DST_NX + 6, 3)), axis=(-3, -1))
+
+
+def _cell_index(coarse: xr.Dataset) -> tuple[np.ndarray, np.ndarray]:
+    """(j, i) of the destination cell of each point of a coarsened dataset, offset by MARGIN"""
+
+    return (
+        np.rint((coarse.y.values - DST_Y0) / DST_STEP).astype(int) + MARGIN,
+        np.rint((coarse.x.values - DST_X0) / DST_STEP).astype(int) + MARGIN,
+    )
+
+
+@pytest.mark.parametrize("structure", ["regular", "unstructured"])
+@pytest.mark.parametrize("method", ["nearest", "idw"])
+def test_slice_coarsen_cells(structure, method):
+    """
+    The source is averaged per destination cell ignoring NaN, with one point per occupied cell in (y, x) order, at
+    the destination node ('nearest', 'linear') or at the mean position of the points, in the same way for a regular
+    and an unstructured (shuffled) source
+    """
+
+    import grid_process.grid_interp as gri
+
+    fine = _fine_grid_lv95()
+    src = fine if structure == "regular" else _flat_shuffled(fine)
+    coarse = gri.slice_coarsen(src, _dst_grid_lv95(), method)
+    coarse["var"] = coarse["var"].transpose("step", "cell")
+
+    assert coarse["var"].dims == ("step", "cell")
+    assert coarse["var"].dtype == np.float32
+    assert coarse.attrs == {"crs": "EPSG:2056", "source": "test"}
+    assert set(coarse.coords) == {"x", "y", "step", "surface_altitude"}
+    j, i = _cell_index(coarse)
+    assert (np.diff(j * 100 + i) > 0).all()  # (y, x) order, one point per cell
+    # all the destination cells and some beyond (the slicing buffer)
+    inner = (j >= MARGIN) & (j < DST_NY + MARGIN) & (i >= MARGIN) & (i < DST_NX + MARGIN)
+    assert inner.sum() == DST_NX * DST_NY
+    assert (~inner).any()
+
+    expected = _cell_means(fine)[:, j, i]
+    np.testing.assert_allclose(coarse["var"].values[:, inner], expected[:, inner], rtol=1e-6)
+    np.testing.assert_allclose(
+        coarse.surface_altitude.values[inner], _cell_means(fine, "surface_altitude")[j, i][inner]
+    )
+    assert np.isnan(coarse["var"].values[0, inner]).sum() == 1  # the all-NaN cell only
+    cell_23 = (j == 2 + MARGIN) & (i == 3 + MARGIN)
+    np.testing.assert_allclose(
+        coarse["var"].values[0, cell_23], np.nanmean(fine["var"].values[0, 6 + 9 : 9 + 9, 9 + 9 : 12 + 9])
+    )
+
+    nodes_x, nodes_y = DST_X0 + (i - MARGIN) * DST_STEP, DST_Y0 + (j - MARGIN) * DST_STEP
+    if method == "nearest":
+        np.testing.assert_array_equal(coarse.x.values, nodes_x)
+        np.testing.assert_array_equal(coarse.y.values, nodes_y)
+    else:  # mean position of the 3 x 3 points: the node for full cells
+        np.testing.assert_allclose(coarse.x.values[inner], nodes_x[inner])
+        np.testing.assert_allclose(coarse.y.values[inner], nodes_y[inner])
+
+
+def test_slice_coarsen_same_cells_with_nan():
+    """The cells only depend on the positions of the source points, not on NaN (e.g. coarsened elevation and data)"""
+
+    import grid_process.grid_interp as gri
+
+    src = _flat_shuffled(_fine_grid_lv95())
+    coarse = gri.slice_coarsen(src, _dst_grid_lv95(), "idw")
+    coarse_nan = gri.slice_coarsen(src.where(src["var"] > 285), _dst_grid_lv95(), "idw")
+    xr.testing.assert_identical(coarse.x, coarse_nan.x)
+    xr.testing.assert_identical(coarse.y, coarse_nan.y)
+
+
+@pytest.mark.parametrize("dtype,expected", [(np.int16, np.float32), (np.int32, np.float64), (np.float64, np.float64)])
+def test_slice_coarsen_dtype(dtype, expected):
+    """Cell means are float32 for float32 and 8 or 16 bit integers, float64 otherwise"""
+
+    import grid_process.grid_interp as gri
+
+    coarse = gri.slice_coarsen(_fine_grid_lv95(dtype), _dst_grid_lv95(), "nearest")
+    assert coarse["var"].dtype == expected
+
+
+def test_slice_coarsen_dask():
+    """Dask arrays stay lazy and give the same cell means"""
+
+    import grid_process.grid_interp as gri
+
+    fine = _fine_grid_lv95()
+    expected = gri.slice_coarsen(fine, _dst_grid_lv95(), "nearest")
+    lazy = gri.slice_coarsen(fine.chunk(step=1, x=20), _dst_grid_lv95(), "nearest")
+    assert lazy["var"].chunks is not None
+    xr.testing.assert_allclose(lazy.compute(), expected)
+
+
+def test_slice_coarsen_not_finer(caplog):
+    """A source with about 1 point per destination cell (e.g. ICON-CH2 to 2 km) is only sliced, without warning"""
+
+    import grid_process.grid_interp as gri
+
+    rng = np.random.default_rng(1)
+    n = 200
+    src = xr.Dataset(
+        {"var": ("cell", rng.random(n))},
+        coords={
+            "x": ("cell", rng.uniform(DST_X0 - 6000, DST_X0 + 33000, n)),
+            "y": ("cell", rng.uniform(DST_Y0 - 6000, DST_Y0 + 27000, n)),
+        },
+        attrs={"crs": "EPSG:2056"},
+    )
+    with caplog.at_level("WARNING"):
+        sliced = gri.slice_coarsen(src, _dst_grid_lv95(), "idw")
+    xr.testing.assert_identical(sliced, gri.slice_grid(src, _dst_grid_lv95(), "idw"))
+    assert not caplog.records
+
+
+@pytest.mark.parametrize("structure", ["regular", "unstructured"])
+@pytest.mark.parametrize("method", ["nearest", "linear"])
+@pytest.mark.parametrize("try_reg", [True, False])
+def test_interp2grid_cell_means(structure, method, try_reg):
+    """'nearest' and 'linear' to a coarser grid give the cell means (NaN only for the all-NaN cell)"""
+
+    import grid_process.grid_interp as gri
+
+    fine = _fine_grid_lv95()
+    src = fine if structure == "regular" else _flat_shuffled(fine)
+    out = gri.interp2grid(src, _dst_grid_lv95(), method, try_reg=try_reg)
+    # dimensions of the source, the spatial ones replaced at their position
+    assert out["var"].dims == (("step", "y", "x") if structure == "regular" else ("y", "x", "step"))
+    out["var"] = out["var"].transpose("step", "y", "x")
+    assert out["var"].dtype == np.float32
+    xr.testing.assert_identical(out.x, _dst_grid_lv95().x)
+    expected = _cell_means(fine)[:, MARGIN:-MARGIN, MARGIN:-MARGIN]
+    np.testing.assert_allclose(out["var"].values, expected, rtol=1e-6)
+    assert np.isnan(out["var"].values).sum() == 1
+
+
+@pytest.mark.parametrize("method,kwargs", [("nearest", {}), ("linear", {}), ("idw", {"k": 4, "weight_power": 0.5})])
+@pytest.mark.parametrize("structure", ["regular", "unstructured"])
+def test_interp2grid_after_slice_coarsen(method, kwargs, structure):
+    """
+    Interpolating the output of slice_coarsen (with the same destination grid and method) gives the same result as
+    interpolating the source, including at the edges of the destination grid
+    """
+
+    import grid_process.grid_interp as gri
+
+    fine = _fine_grid_lv95()
+    src = fine if structure == "regular" else _flat_shuffled(fine)
+    dst = _dst_grid_lv95()
+    direct = gri.interp2grid(src, dst, method, try_reg=False, **kwargs)
+    two_steps = gri.interp2grid(gri.slice_coarsen(src, dst, method, **kwargs), dst, method, try_reg=False, **kwargs)
+    xr.testing.assert_allclose(two_steps.transpose(*direct["var"].dims), direct)
+
+
+@pytest.mark.parametrize("method", ["nearest", "linear"])
+def test_interp2grid_on_nodes(method):
+    """An unstructured source on the destination nodes gives its values"""
+
+    import grid_process.grid_interp as gri
+
+    dst = _dst_grid_lv95()
+    values = np.random.default_rng(2).random((DST_NY, DST_NX)).astype(np.float32)
+    src = _flat_shuffled(dst.assign(var=(("y", "x"), values)))
+    out = gri.interp2grid(src, dst, method)
+    np.testing.assert_array_equal(out["var"].transpose("y", "x").values, values)
+
+
+def test_slice_grid():
+    """slice_grid keeps the structure, coordinates and CRS of the source, and the points around the destination"""
+
+    import grid_process.grid_interp as gri
+
+    fine = _fine_grid_lv95()
+    for src in (fine, _flat_shuffled(fine)):
+        sliced = gri.slice_grid(src, _dst_grid_lv95(), "nearest")
+        assert sliced.attrs == src.attrs
+        assert set(sliced.dims) == set(src.dims)
+        assert set(sliced.coords) == set(src.coords)
+        x, y = sliced.x.values, sliced.y.values
+        # buffer of 1 destination step (the coarser grid) beyond the first source point inside, 1.5 steps for an
+        # unstructured source: the edge cells (1.5 km around the edge nodes) are complete
+        assert x.min() <= DST_X0 - 2000 and x.max() >= DST_X0 + 27000 + 2000
+        assert x.min() >= DST_X0 - 5500 and x.max() <= DST_X0 + 27000 + 5500
+        assert y.min() <= DST_Y0 - 2000 and y.max() >= DST_Y0 + 21000 + 2000
+
+
+def test_interp2grid_unstructured_sliced_unchanged():
+    """
+    Slicing an unstructured source does not change the interpolation: same result as an idw on all its points
+    """
+
+    import grid_process.grid_interp as gri
+
+    rng = np.random.default_rng(3)
+    n = 3000
+    x, y = rng.uniform(2_550_000, 2_700_000, n), rng.uniform(1_150_000, 1_280_000, n)
+    src = xr.Dataset(
+        {"var": ("cell", np.sin(x / 9000) + np.cos(y / 7000))},
+        coords={"x": ("cell", x), "y": ("cell", y)},
+        attrs={"crs": "EPSG:2056"},
+    )
+    dst = _dst_grid_lv95()
+    out = gri.interp2grid(src, dst, "idw", k=4)
+    x_dst, y_dst = np.meshgrid(dst.x.values, dst.y.values)
+    expected = gri.interp_idw(np.c_[x, y], src["var"].values[:, None], np.c_[x_dst.ravel(), y_dst.ravel()], k=4)
+    np.testing.assert_allclose(out["var"].transpose("y", "x").values.ravel(), expected[:, 0])
+
+
+def test_interp2grid_dst_2d_coords_not_coarsened(caplog):
+    """A destination with only 2D coordinates: the finer source is not averaged, with a warning"""
+
+    import grid_process.grid_interp as gri
+
+    from pyproj import Transformer
+
+    dst = _dst_grid_lv95()
+    x_dst, y_dst = np.meshgrid(dst.x.values, dst.y.values)
+    lon, lat = Transformer.from_crs("EPSG:2056", "EPSG:4326", always_xy=True).transform(x_dst, y_dst)
+    dst_2d = xr.Dataset(coords={"longitude": (("y", "x"), lon), "latitude": (("y", "x"), lat)})
+    with caplog.at_level("WARNING"):
+        out = gri.interp2grid(_fine_grid_lv95(), dst_2d, "nearest", try_reg=False)
+    assert "no regular 1D coordinates" in caplog.text
+    # nearest source point: the centre of each 3 x 3 block (no averaging)
+    np.testing.assert_allclose(
+        out["var"].transpose("step", "y", "x").values, _fine_grid_lv95()["var"].values[:, 10:-9:3, 10:-9:3], rtol=1e-6
+    )
+
+
+@pytest.mark.parametrize("try_reg", [True, False])
+@pytest.mark.parametrize("method", ["nearest", "linear"])
+def test_interp2grid_cell_means_global_seam(method, try_reg):
+    """
+    Global 0.25 degree source in 0..360 to a 1 degree destination in -180..180: the cells across the 360 degree
+    seam average the source points on both sides
+    """
+
+    import grid_process.grid_interp as gri
+
+    lon_src = 0.125 + 0.25 * np.arange(1440)
+    lat_src = 89.875 - 0.25 * np.arange(720)
+    src = xr.Dataset(
+        {"var": (("latitude", "longitude"), _sphere_field(*np.meshgrid(lon_src, lat_src)))},
+        coords={"latitude": lat_src, "longitude": lon_src},
+        attrs={"crs": "EPSG:4326"},
+    )
+    dst = xr.Dataset(
+        coords={"latitude": 89.5 - np.arange(180.0), "longitude": -180.0 + np.arange(360.0)}, attrs={"crs": "EPSG:4326"}
+    )
+    out = gri.interp2grid(src, dst, method, try_reg=try_reg)["var"].transpose("latitude", "longitude").values
+    # the cell of the longitude -180 spans 179.5..180.5: source points 179.625 to 180.375 (indices 718 to 721)
+    expected = np.roll(src["var"].values, -718, axis=1).reshape(180, 4, 360, 4).mean(axis=(1, 3))
+    np.testing.assert_allclose(out, expected, rtol=1e-12)
+
+
+def test_interp2grid_linear_cell_means_beyond_lv95():
+    """'linear' to a coarser grid beyond the LV95 range: cell means, no triangulation in ECEF coordinates"""
+
+    import grid_process.grid_interp as gri
+
+    grid = _latlon_grid(np.arange(55.25, 70.0, 0.5), np.arange(5.25, 25.0, 0.5))
+    dst_grid = _latlon_grid(np.arange(56.0, 69.1, 1.0), np.arange(6.0, 24.1, 1.0)).drop_vars("var")
+    out = gri.interp2grid(grid, dst_grid, "linear", try_reg=False)
+    lat, lon = grid.latitude.values, grid.longitude.values
+    expected = grid["var"].isel(latitude=slice(1, -1), longitude=slice(1, -1)).values
+    expected = expected.reshape(dst_grid.sizes["latitude"], 2, dst_grid.sizes["longitude"], 2).mean(axis=(1, 3))
+    assert lat[1] == 55.75 and lon[1] == 5.75
+    np.testing.assert_allclose(out["var"].values, expected)
+
+
+@pytest.mark.parametrize("method", ["nearest", "linear"])
+def test_interp2grid_cell_means_other_crs(method):
+    """
+    Destination in another CRS (LV03, about 1 m from LV95 here): the cells are not separable per axis (one matrix
+    for the flattened points), with the same cell means
+    """
+
+    import grid_process.grid_interp as gri
+
+    dst_lv03 = (
+        _dst_grid_lv95()
+        .assign_coords(x=_dst_grid_lv95().x - 2_000_000, y=_dst_grid_lv95().y - 1_000_000)
+        .assign_attrs(crs="EPSG:21781")
+    )
+    fine = _fine_grid_lv95()
+    assert fine["var"].dims[-2:] == ("y", "x")
+    out = gri.interp2grid(fine, dst_lv03, method)["var"].transpose("step", "y", "x")
+    expected = _cell_means(fine)[:, MARGIN:-MARGIN, MARGIN:-MARGIN]
     np.testing.assert_allclose(out.values, expected, rtol=1e-6)
-    assert np.isnan(out.values[0, 0, 0, 0])
     assert np.isnan(out.values).sum() == 1
