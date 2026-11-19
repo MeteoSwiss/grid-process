@@ -105,3 +105,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# local notes of coding agents (e.g. paths to internal data)
+CLAUDE.local.md
