@@ -1665,11 +1665,9 @@ def interp2grid(
       destination grid (on average at least 2.25 points per destination cell), it is then averaged per destination
       cell, ignoring NaN (see :func:`slice_coarsen`): a regular or unstructured source, if the destination grid has
       regular 1D coordinates in its CRS (otherwise with a warning). For 'nearest' and 'linear', the result is
-      directly the mean of the source points of each destination cell, NaN only if all of them are NaN or if it has
-      none, in float32 for float32 and 8 or 16 bit integer data, float64 otherwise, with the dimensions in the order
-      of the source (the spatial ones replaced at their position), whatever ``try_reg``. The other methods
-      interpolate from the mean position of the points of each cell. The same holds for a source averaged by
-      :func:`slice_coarsen` with the same destination grid and method.
+      directly the mean of the source points of each destination cell. The other methods interpolate from the mean
+      position of the points of each cell. The same holds for a source averaged by :func:`slice_coarsen` with the
+      same destination grid and method.
     - Outside of the regular grid interpolation, nearest neighbors are searched (and triangulations for 'linear',
       'linear_3D' and 'cubic' are done) with distances in meters, never in latitude/longitude degrees. The source
       grid uses its native coordinates if they are projected in meters (e.g. LV95, LV03, UTM), even if latitude and
