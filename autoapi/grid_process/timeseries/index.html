@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=be4fdb3b"></script>
+    <script src="../../../_static/documentation_options.js?v=a6cc946d"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/timeseries/index';</script>
@@ -482,16 +482,16 @@
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.timeseries.interptogranularity" title="grid_process.timeseries.interptogranularity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interptogranularity</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.timeseries.interptogranularity" title="grid_process.timeseries.interptogranularity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interptogranularity</span></code></a>(ds[, granularity, method]) → xarray.Dataset</p></td>
 <td><p>Interpolate the dataset to the specified time granularity. Where</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.timeseries.fill_na" title="grid_process.timeseries.fill_na"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fill_na</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.timeseries.fill_na" title="grid_process.timeseries.fill_na"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fill_na</span></code></a>(ds[, method]) → xarray.Dataset</p></td>
 <td><p>Fill NaNs in the temporal dimension. Wrapper for different NaN</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.timeseries.setindex_validtime" title="grid_process.timeseries.setindex_validtime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setindex_validtime</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.timeseries.setindex_validtime" title="grid_process.timeseries.setindex_validtime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setindex_validtime</span></code></a>(ds[, last_ref]) → xarray.Dataset</p></td>
 <td><p>Assign valid time dimension and coordinates (i.e. numpy.datetime64). The dataset</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.timeseries.smoothing" title="grid_process.timeseries.smoothing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">smoothing</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.timeseries.smoothing" title="grid_process.timeseries.smoothing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">smoothing</span></code></a>(ds, w) → xarray.Dataset</p></td>
 <td><p>Smooth timeseries by applying a moving weighted average.</p></td>
 </tr>
 </tbody>
@@ -788,7 +788,7 @@ continuous timeseries</p>
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-e271cda</div>
+grid-process, version: dev-733351f</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 23.11.2026.

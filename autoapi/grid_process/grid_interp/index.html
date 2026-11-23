@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=be4fdb3b"></script>
+    <script src="../../../_static/documentation_options.js?v=a6cc946d"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/grid_interp/index';</script>
@@ -524,52 +524,52 @@
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_temp" title="grid_process.grid_interp.interp_temp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_temp</span></code></a>(→ numpy.ndarray)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_temp" title="grid_process.grid_interp.interp_temp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_temp</span></code></a>(coords_flat, data_flat, pois_coords[, ...]) → numpy.ndarray</p></td>
 <td><p>Interpolation from grid to POIs for temperature data, based on local</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_temp_fixgrad" title="grid_process.grid_interp.interp_temp_fixgrad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_temp_fixgrad</span></code></a>(→ numpy.ndarray)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_temp_fixgrad" title="grid_process.grid_interp.interp_temp_fixgrad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_temp_fixgrad</span></code></a>(coords_flat, data_flat, pois_coords) → numpy.ndarray</p></td>
 <td><p>Interpolation from grid to POIs for temperature data by taking the</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_nearest_alt" title="grid_process.grid_interp.interp_nearest_alt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_nearest_alt</span></code></a>(→ numpy.ndarray)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_nearest_alt" title="grid_process.grid_interp.interp_nearest_alt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_nearest_alt</span></code></a>(coords_flat, data_flat, pois_coords) → numpy.ndarray</p></td>
 <td><p>Interpolation from grid to POIs for elevation dependent data. The method finds</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_idw" title="grid_process.grid_interp.interp_idw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_idw</span></code></a>(→ numpy.ndarray)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_idw" title="grid_process.grid_interp.interp_idw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_idw</span></code></a>(coords_flat, data_flat, pois_coords[, k, ...]) → numpy.ndarray</p></td>
 <td><p>Performs interpolations from grid to POIs using inverse distance</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_upscaled" title="grid_process.grid_interp.interp_upscaled"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_upscaled</span></code></a>(→ numpy.ndarray)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_upscaled" title="grid_process.grid_interp.interp_upscaled"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_upscaled</span></code></a>(coords_flat, data_flat, pois_coords[, ...]) → numpy.ndarray</p></td>
 <td><p>Perform interpolations from grid to POIs by computing a group statistic</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_nearest" title="grid_process.grid_interp.interp_nearest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_nearest</span></code></a>(→ numpy.ndarray)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_nearest" title="grid_process.grid_interp.interp_nearest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_nearest</span></code></a>(coords_flat, data_flat, pois_coords) → numpy.ndarray</p></td>
 <td><p>Performs nearest neighbor interpolation from grid to POIs.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_snowlim" title="grid_process.grid_interp.interp_snowlim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_snowlim</span></code></a>(→ numpy.ndarray)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp_snowlim" title="grid_process.grid_interp.interp_snowlim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp_snowlim</span></code></a>(coords_flat, data_flat, pois_coords[, ...]) → numpy.ndarray</p></td>
 <td><p>Special interpolation routine for snow limit. Snow limits below model</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp2poi" title="grid_process.grid_interp.interp2poi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp2poi</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp2poi" title="grid_process.grid_interp.interp2poi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp2poi</span></code></a>(data, poi_info, method[, try_reg]) → xarray.Dataset</p></td>
 <td><p>Interpolates gridded spatial data to a set of Points of Interest (POIs).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.nn_lookup" title="grid_process.grid_interp.nn_lookup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nn_lookup</span></code></a>(→ tuple[numpy.ndarray, numpy.ndarray])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.nn_lookup" title="grid_process.grid_interp.nn_lookup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nn_lookup</span></code></a>(grid_coords, points, k) → tuple[numpy.ndarray, numpy.ndarray]</p></td>
 <td><p>Find the k nearest grid points and corresponding distances for a set of</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.nn_lookup_cached" title="grid_process.grid_interp.nn_lookup_cached"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nn_lookup_cached</span></code></a>(…)</p></td>
 <td><p><a class="reference internal" href="#grid_process.grid_interp.nn_lookup" title="grid_process.grid_interp.nn_lookup"><code class="xref py py-func docutils literal notranslate"><span class="pre">nn_lookup()</span></code></a> with an in-memory cache of the results, keyed on the coordinates, <code class="docutils literal notranslate"><span class="pre">k</span></code> and <code class="docutils literal notranslate"><span class="pre">distances</span></code>. Its</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.nn_lookup_regular" title="grid_process.grid_interp.nn_lookup_regular"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nn_lookup_regular</span></code></a>(→ list[numpy.ndarray | xarray.DataArray])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.nn_lookup_regular" title="grid_process.grid_interp.nn_lookup_regular"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nn_lookup_regular</span></code></a>(grid_coords, grid_spacing, points) → list[numpy.ndarray | xarray.DataArray]</p></td>
 <td><p>Find the nearest grid point for a set of POIs when the source</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp2grid" title="grid_process.grid_interp.interp2grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp2grid</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.interp2grid" title="grid_process.grid_interp.interp2grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interp2grid</span></code></a>(data, dst_grid, method[, try_reg]) → xarray.Dataset</p></td>
 <td><p>Interpolates data from a source grid to a destination grid, supporting regular and unstructured grids.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.slice_boundingbox" title="grid_process.grid_interp.slice_boundingbox"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_boundingbox</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.slice_boundingbox" title="grid_process.grid_interp.slice_boundingbox"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_boundingbox</span></code></a>(data, poi_info, method[, spatial_dims]) → xarray.Dataset</p></td>
 <td><p>Slice input dataset spatial dimensions to the bounding box of the target POIs</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.slice_grid" title="grid_process.grid_interp.slice_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_grid</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.slice_grid" title="grid_process.grid_interp.slice_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_grid</span></code></a>(data, dst_grid, method[, spatial_dims, ...]) → xarray.Dataset</p></td>
 <td><p>Slice the source grid to the extent of the destination grid plus a buffer depending on the interpolation method</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.slice_coarsen" title="grid_process.grid_interp.slice_coarsen"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_coarsen</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.grid_interp.slice_coarsen" title="grid_process.grid_interp.slice_coarsen"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_coarsen</span></code></a>(data, dst_grid, method[, spatial_dims, ...]) → xarray.Dataset</p></td>
 <td><p>Slice the source grid to the destination grid (see <a class="reference internal" href="#grid_process.grid_interp.slice_grid" title="grid_process.grid_interp.slice_grid"><code class="xref py py-func docutils literal notranslate"><span class="pre">slice_grid()</span></code></a>) and average it per destination cell if</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.get_buffer" title="grid_process.grid_interp.get_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buffer</span></code></a>(→ int)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.grid_interp.get_buffer" title="grid_process.grid_interp.get_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buffer</span></code></a>(method, **kwargs) → int</p></td>
 <td><p>Buffer specific to the interpolation method to add when slicing the input dataset to the target grid or POIs</p></td>
 </tr>
 </tbody>
@@ -1488,7 +1488,7 @@ plus <code class="docutils literal notranslate"><span class="pre">ceil(r_search)
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-e271cda</div>
+grid-process, version: dev-733351f</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 23.11.2026.

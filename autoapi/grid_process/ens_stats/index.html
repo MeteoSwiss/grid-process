@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=be4fdb3b"></script>
+    <script src="../../../_static/documentation_options.js?v=a6cc946d"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/ens_stats/index';</script>
@@ -473,22 +473,22 @@
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.ens_stats.agg_prob" title="grid_process.ens_stats.agg_prob"><code class="xref py py-obj docutils literal notranslate"><span class="pre">agg_prob</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.ens_stats.agg_prob" title="grid_process.ens_stats.agg_prob"><code class="xref py py-obj docutils literal notranslate"><span class="pre">agg_prob</span></code></a>(ds, dict_prob, agg_func[, lt_duplicates, sign]) → xarray.Dataset</p></td>
 <td><p>Compute aggregated probabilities of exceedance. Temporal aggregation is</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.ens_stats.ens_prob" title="grid_process.ens_stats.ens_prob"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ens_prob</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.ens_stats.ens_prob" title="grid_process.ens_stats.ens_prob"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ens_prob</span></code></a>(ds, thresholds, prob_names[, sign]) → xarray.Dataset</p></td>
 <td><p>Compute probabilities of exceedance based on raw members.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.ens_stats.neighbor_stat" title="grid_process.ens_stats.neighbor_stat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">neighbor_stat</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.ens_stats.neighbor_stat" title="grid_process.ens_stats.neighbor_stat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">neighbor_stat</span></code></a>(ds, method[, w_size_xy, w_size_t]) → xarray.Dataset</p></td>
 <td><p>Compute a space x time neighborhood statistic.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.ens_stats.upscaled_prob" title="grid_process.ens_stats.upscaled_prob"><code class="xref py py-obj docutils literal notranslate"><span class="pre">upscaled_prob</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.ens_stats.upscaled_prob" title="grid_process.ens_stats.upscaled_prob"><code class="xref py py-obj docutils literal notranslate"><span class="pre">upscaled_prob</span></code></a>(ds, thresholds, prob_names[, w_size_xy, ...]) → xarray.Dataset</p></td>
 <td><p>Compute upscaled probabilities of exceedance. Upscaling is done in the</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.ens_stats.circular_mean" title="grid_process.ens_stats.circular_mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">circular_mean</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.ens_stats.circular_mean" title="grid_process.ens_stats.circular_mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">circular_mean</span></code></a>(ds[, dim]) → xarray.Dataset</p></td>
 <td><p>Compute the mean of circular data between 0 and 360 degrees along the</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.ens_stats.circular_quantile" title="grid_process.ens_stats.circular_quantile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">circular_quantile</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.ens_stats.circular_quantile" title="grid_process.ens_stats.circular_quantile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">circular_quantile</span></code></a>(ds, q[, method, dim, wrap_around]) → xarray.Dataset</p></td>
 <td><p>Compute the qth quantile(s) of circular data (0 to 360 degrees) along the</p></td>
 </tr>
 </tbody>
@@ -868,7 +868,7 @@ point for their ranking.</p>
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-e271cda</div>
+grid-process, version: dev-733351f</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 23.11.2026.

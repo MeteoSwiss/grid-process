@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=be4fdb3b"></script>
+    <script src="../../../_static/documentation_options.js?v=a6cc946d"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/data_model/index';</script>
@@ -486,70 +486,70 @@
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_t_dim" title="grid_process.data_model.get_t_dim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_t_dim</span></code></a>(→ str)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_t_dim" title="grid_process.data_model.get_t_dim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_t_dim</span></code></a>(ds) → str</p></td>
 <td><p>Returns name of temporal dimension according to the possible options defined</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_temporal_dims" title="grid_process.data_model.get_temporal_dims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_temporal_dims</span></code></a>(→ tuple[str | None, str | None, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_temporal_dims" title="grid_process.data_model.get_temporal_dims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_temporal_dims</span></code></a>(data) → tuple[str | None, str | None, str | None]</p></td>
 <td><p>Returns names of temporal dimensions according to the possible options defined</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_temporal_coords" title="grid_process.data_model.get_temporal_coords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_temporal_coords</span></code></a>(→ tuple[str | None, str | None, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_temporal_coords" title="grid_process.data_model.get_temporal_coords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_temporal_coords</span></code></a>(data) → tuple[str | None, str | None, str | None]</p></td>
 <td><p>Returns names of temporal coordinates according to the possible options defined</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_reftime" title="grid_process.data_model.get_reftime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reftime</span></code></a>(→ str | None)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_reftime" title="grid_process.data_model.get_reftime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reftime</span></code></a>(data[, kind]) → str | None</p></td>
 <td><p>Returns name of forecast reference time dimension or coordinate according to</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_validtime" title="grid_process.data_model.get_validtime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_validtime</span></code></a>(…)</p></td>
 <td><p>Returns name of valid time dimension or coordinate according to the possible</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_leadtime" title="grid_process.data_model.get_leadtime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_leadtime</span></code></a>(→ str | None)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_leadtime" title="grid_process.data_model.get_leadtime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_leadtime</span></code></a>(data[, kind]) → str | None</p></td>
 <td><p>Returns name of lead time dimension or coordinate according to the possible</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_ensemble_dim" title="grid_process.data_model.get_ensemble_dim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_ensemble_dim</span></code></a>(→ str)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_ensemble_dim" title="grid_process.data_model.get_ensemble_dim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_ensemble_dim</span></code></a>(data) → str</p></td>
 <td><p>Returns name of ensemble members dimension according to the possible options</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.set_grid_mapping" title="grid_process.data_model.set_grid_mapping"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_grid_mapping</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.set_grid_mapping" title="grid_process.data_model.set_grid_mapping"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_grid_mapping</span></code></a>(ds) → xarray.Dataset</p></td>
 <td><p>Set grid_mapping attribute according to internal conventions when the input</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_spatial_dims" title="grid_process.data_model.get_spatial_dims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_spatial_dims</span></code></a>(→ tuple[str, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_spatial_dims" title="grid_process.data_model.get_spatial_dims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_spatial_dims</span></code></a>(grid) → tuple[str, ...]</p></td>
 <td><p>Returns names of spatial dimensions according to the possible options defined</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_spatial_coords" title="grid_process.data_model.get_spatial_coords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_spatial_coords</span></code></a>(→ tuple[str, str])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_spatial_coords" title="grid_process.data_model.get_spatial_coords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_spatial_coords</span></code></a>(grid) → tuple[str, str]</p></td>
 <td><p>Returns names of non-dimension spatial coordinates according to the</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_spatial_coord_names" title="grid_process.data_model.get_spatial_coord_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_spatial_coord_names</span></code></a>(→ set[str])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_spatial_coord_names" title="grid_process.data_model.get_spatial_coord_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_spatial_coord_names</span></code></a>(grid[, spatial_dims]) → set[str]</p></td>
 <td><p>Names of all the coordinates giving horizontal positions: the spatial dimensions, the configured y/x pairs</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_flat_dim" title="grid_process.data_model.get_flat_dim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_flat_dim</span></code></a>(→ str | None)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_flat_dim" title="grid_process.data_model.get_flat_dim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_flat_dim</span></code></a>(grid) → str | None</p></td>
 <td><p>Returns spatial dimension name for an unstructured grid according to the</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_latlon_coords" title="grid_process.data_model.get_latlon_coords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_latlon_coords</span></code></a>(→ tuple[str, str] | None)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_latlon_coords" title="grid_process.data_model.get_latlon_coords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_latlon_coords</span></code></a>(grid[, nondim]) → tuple[str, str] | None</p></td>
 <td><p>Returns names of latitude and longitude coordinates if they exist according</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_latlon_dims" title="grid_process.data_model.get_latlon_dims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_latlon_dims</span></code></a>(→ tuple[str, str] | None)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_latlon_dims" title="grid_process.data_model.get_latlon_dims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_latlon_dims</span></code></a>(grid) → tuple[str, str] | None</p></td>
 <td><p>Returns names of latitude and longitude dimensions if they exist according</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_surf_alt" title="grid_process.data_model.get_surf_alt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_surf_alt</span></code></a>(→ str)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_surf_alt" title="grid_process.data_model.get_surf_alt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_surf_alt</span></code></a>(grid) → str</p></td>
 <td><p>Returns name of the surface altitude coordinate variable according to the</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_poi_alt" title="grid_process.data_model.get_poi_alt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_poi_alt</span></code></a>(→ numpy.typing.NDArray[numpy.float32])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_poi_alt" title="grid_process.data_model.get_poi_alt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_poi_alt</span></code></a>(poi_info) → numpy.typing.NDArray[numpy.float32]</p></td>
 <td><p>Returns POIs altitudes from <code class="docutils literal notranslate"><span class="pre">poi_info</span></code> according to the column names defined</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_grid_crs" title="grid_process.data_model.get_grid_crs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_grid_crs</span></code></a>(→ pyproj.CRS)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.get_grid_crs" title="grid_process.data_model.get_grid_crs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_grid_crs</span></code></a>(grid) → pyproj.CRS</p></td>
 <td><p>Get correct CRS according to supported conventions.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.parse_grid_mapping" title="grid_process.data_model.parse_grid_mapping"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_grid_mapping</span></code></a>(→ pyproj.CRS)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.parse_grid_mapping" title="grid_process.data_model.parse_grid_mapping"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_grid_mapping</span></code></a>(grid_mapping) → pyproj.CRS</p></td>
 <td><p>Parse internal grid database style &quot;grid_mapping&quot; attribute and decode it with Pyproj.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.is_metric_crs" title="grid_process.data_model.is_metric_crs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_metric_crs</span></code></a>(→ bool)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.is_metric_crs" title="grid_process.data_model.is_metric_crs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_metric_crs</span></code></a>(crs) → bool</p></td>
 <td><p>Whether <code class="docutils literal notranslate"><span class="pre">crs</span></code> is a projected CRS with all axes in meters (e.g. LV95, LV03 or UTM), i.e. in which euclidean</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_coords_name_crs" title="grid_process.data_model.get_coords_name_crs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_coords_name_crs</span></code></a>(→ tuple[str, str, pyproj.CRS])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.get_coords_name_crs" title="grid_process.data_model.get_coords_name_crs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_coords_name_crs</span></code></a>(grid[, spatial_dims, prefer_projected]) → tuple[str, str, pyproj.CRS]</p></td>
 <td><p>Get correct coordinate names and CRS according to supported conventions. When</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.is_decreasing1d" title="grid_process.data_model.is_decreasing1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_decreasing1d</span></code></a>(→ bool)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.data_model.is_decreasing1d" title="grid_process.data_model.is_decreasing1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_decreasing1d</span></code></a>(coords) → bool</p></td>
 <td><p>Whether 1 dimensional <code class="docutils literal notranslate"><span class="pre">coords</span></code> are in decreasing order.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.is_decreasing" title="grid_process.data_model.is_decreasing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_decreasing</span></code></a>(→ bool)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.data_model.is_decreasing" title="grid_process.data_model.is_decreasing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_decreasing</span></code></a>(coords, dim) → bool</p></td>
 <td><p>Checks whether <code class="docutils literal notranslate"><span class="pre">coords</span></code> are in decreasing order along dimension <code class="docutils literal notranslate"><span class="pre">dim</span></code>.</p></td>
 </tr>
 </tbody>
@@ -991,7 +991,7 @@ pole) still give the longitude and latitude coordinates when present. Default is
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-e271cda</div>
+grid-process, version: dev-733351f</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 23.11.2026.

@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=be4fdb3b"></script>
+    <script src="../../../_static/documentation_options.js?v=a6cc946d"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/units_conv/index';</script>
@@ -486,16 +486,16 @@
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.units_conv.da_to" title="grid_process.units_conv.da_to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">da_to</span></code></a>(→ xarray.DataArray)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.units_conv.da_to" title="grid_process.units_conv.da_to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">da_to</span></code></a>(da, dst_units) → xarray.DataArray</p></td>
 <td><p>Convert units in a xarray.DataArray.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.units_conv.ds_to" title="grid_process.units_conv.ds_to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ds_to</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.units_conv.ds_to" title="grid_process.units_conv.ds_to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ds_to</span></code></a>(ds, dst_units) → xarray.Dataset</p></td>
 <td><p>Convert units in a xarray.Dataset.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.units_conv.consistency_check" title="grid_process.units_conv.consistency_check"><code class="xref py py-obj docutils literal notranslate"><span class="pre">consistency_check</span></code></a>(→ dict[str, dict[str, str]])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.units_conv.consistency_check" title="grid_process.units_conv.consistency_check"><code class="xref py py-obj docutils literal notranslate"><span class="pre">consistency_check</span></code></a>(datasets[, check_vars]) → dict[str, dict[str, str]]</p></td>
 <td><p>Checks that the input datasets have same data variables and units. If it is</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.units_conv.units_check" title="grid_process.units_conv.units_check"><code class="xref py py-obj docutils literal notranslate"><span class="pre">units_check</span></code></a>(→ None)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.units_conv.units_check" title="grid_process.units_conv.units_check"><code class="xref py py-obj docutils literal notranslate"><span class="pre">units_check</span></code></a>(datasets) → None</p></td>
 <td><p>Check that the data variables in the datasets all have same single units.</p></td>
 </tr>
 </tbody>
@@ -724,7 +724,7 @@ If not, it raises an error.</p>
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-e271cda</div>
+grid-process, version: dev-733351f</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 23.11.2026.

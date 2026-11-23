@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=be4fdb3b"></script>
+    <script src="../../../_static/documentation_options.js?v=a6cc946d"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/sun/index';</script>
@@ -453,34 +453,34 @@
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.sun.zenith" title="grid_process.sun.zenith"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zenith</span></code></a>(→ xarray.DataArray)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.sun.zenith" title="grid_process.sun.zenith"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zenith</span></code></a>(times, lat, lon[, refrac_cor]) → xarray.DataArray</p></td>
 <td><p>Analytical expression of solar zenith angle based on spherical</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.sun.cos_zenith" title="grid_process.sun.cos_zenith"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cos_zenith</span></code></a>(→ xarray.DataArray)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.sun.cos_zenith" title="grid_process.sun.cos_zenith"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cos_zenith</span></code></a>(times, lat, lon) → xarray.DataArray</p></td>
 <td><p>Compute the cosine of the solar zenith angle. Atmospheric refraction is NOT</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.sun.params_zenith" title="grid_process.sun.params_zenith"><code class="xref py py-obj docutils literal notranslate"><span class="pre">params_zenith</span></code></a>(→ tuple[xarray.DataArray, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.sun.params_zenith" title="grid_process.sun.params_zenith"><code class="xref py py-obj docutils literal notranslate"><span class="pre">params_zenith</span></code></a>(times, lat, lon) → tuple[xarray.DataArray, xarray.DataArray, xarray.DataArray]</p></td>
 <td><p>get the different parameters to compute zenith angle</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.sun.hour_angle" title="grid_process.sun.hour_angle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hour_angle</span></code></a>(→ xarray.DataArray)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.sun.hour_angle" title="grid_process.sun.hour_angle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hour_angle</span></code></a>(times, lon) → xarray.DataArray</p></td>
 <td><p>Hour angle [radians] in local solar time. Zero at local solar noon.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.sun.elevation" title="grid_process.sun.elevation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">elevation</span></code></a>(→ xarray.DataArray)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.sun.elevation" title="grid_process.sun.elevation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">elevation</span></code></a>(times, lat, lon[, refrac_cor]) → xarray.DataArray</p></td>
 <td><p>Analytical expression of solar elevation angle based on spherical</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.sun.azim_elev" title="grid_process.sun.azim_elev"><code class="xref py py-obj docutils literal notranslate"><span class="pre">azim_elev</span></code></a>(→ tuple[xarray.DataArray, xarray.DataArray])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.sun.azim_elev" title="grid_process.sun.azim_elev"><code class="xref py py-obj docutils literal notranslate"><span class="pre">azim_elev</span></code></a>(times, lat, lon[, refrac_cor]) → tuple[xarray.DataArray, xarray.DataArray]</p></td>
 <td><p>Analytical expression of solar azimuth and elevation angles based on spherical</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.sun.rise_set" title="grid_process.sun.rise_set"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rise_set</span></code></a>(→ tuple[xarray.DataArray, xarray.DataArray])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.sun.rise_set" title="grid_process.sun.rise_set"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rise_set</span></code></a>(times, lat, lon[, refrac_cor]) → tuple[xarray.DataArray, xarray.DataArray]</p></td>
 <td><p>Geometric calculation of solar sunrise and sunset times</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.sun.daytime" title="grid_process.sun.daytime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">daytime</span></code></a>(→ xarray.DataArray)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.sun.daytime" title="grid_process.sun.daytime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">daytime</span></code></a>(times, lat, lon[, refrac_cor]) → xarray.DataArray</p></td>
 <td><p>Return a boolean xarray.DataArray specifying whether times are daytime for</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.sun.topo_rise_set" title="grid_process.sun.topo_rise_set"><code class="xref py py-obj docutils literal notranslate"><span class="pre">topo_rise_set</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.sun.topo_rise_set" title="grid_process.sun.topo_rise_set"><code class="xref py py-obj docutils literal notranslate"><span class="pre">topo_rise_set</span></code></a>(times, lat, lon, horizon) → xarray.Dataset</p></td>
 <td><p>Computes topographic sunrise and sunset based on horizon data. Sunrise / sunset</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.sun.topo_shading_cor" title="grid_process.sun.topo_shading_cor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">topo_shading_cor</span></code></a>(→ xarray.DataArray)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.sun.topo_shading_cor" title="grid_process.sun.topo_shading_cor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">topo_shading_cor</span></code></a>(times, lat, lon, horizon[, sampling_freq]) → xarray.DataArray</p></td>
 <td><p>Computes topographic shading correction factor for variables</p></td>
 </tr>
 </tbody>
@@ -856,7 +856,7 @@ of the input <code class="docutils literal notranslate"><span class="pre">times<
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-e271cda</div>
+grid-process, version: dev-733351f</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 23.11.2026.

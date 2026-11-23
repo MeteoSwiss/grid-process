@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=be4fdb3b"></script>
+    <script src="_static/documentation_options.js?v=a6cc946d"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'changelog';</script>
@@ -432,6 +432,7 @@ float32 for 8 or 16 bit integer and boolean data (<code class="docutils literal 
 </ul>
 <p><strong>Changes</strong></p>
 <ul class="simple">
+<li><p>added the support of Python 3.14</p></li>
 <li><p>changed <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> to no longer copy a dataset with a single data variable before
 interpolation (new <code class="docutils literal notranslate"><span class="pre">copy</span></code> parameter of <code class="docutils literal notranslate"><span class="pre">ds_utils.ds_to_da</span></code>, default <code class="docutils literal notranslate"><span class="pre">True</span></code>). For the operational grids
 (with cached neighbors), POIs are interpolated up to about 1.5 times faster (e.g. ICON-CH2 <code class="docutils literal notranslate"><span class="pre">nearest</span></code> 0.18 s →
@@ -655,7 +656,7 @@ interpolation method and its arguments, e.g. to slice the input data with <code 
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-e271cda</div>
+grid-process, version: dev-733351f</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 23.11.2026.

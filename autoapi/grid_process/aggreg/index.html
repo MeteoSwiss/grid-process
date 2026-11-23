@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=be4fdb3b"></script>
+    <script src="../../../_static/documentation_options.js?v=a6cc946d"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/grid_process/aggreg/index';</script>
@@ -467,22 +467,22 @@
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.aggreg.reshape4intervals_wtst" title="grid_process.aggreg.reshape4intervals_wtst"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reshape4intervals_wtst</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.aggreg.reshape4intervals_wtst" title="grid_process.aggreg.reshape4intervals_wtst"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reshape4intervals_wtst</span></code></a>(ds, granularity, interval[, offset]) → xarray.Dataset</p></td>
 <td><p>Wrapper for <a class="reference internal" href="#grid_process.aggreg.reshape4intervals" title="grid_process.aggreg.reshape4intervals"><code class="xref py py-func docutils literal notranslate"><span class="pre">reshape4intervals()</span></code></a> to reshape a dataset into intervals,</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.aggreg.reshape4intervals" title="grid_process.aggreg.reshape4intervals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reshape4intervals</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.aggreg.reshape4intervals" title="grid_process.aggreg.reshape4intervals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reshape4intervals</span></code></a>(ds, granularity, interval[, offset]) → xarray.Dataset</p></td>
 <td><p>Reshape a dataset into time intervals. The intervals are represented by</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.aggreg.split_by_timeres" title="grid_process.aggreg.split_by_timeres"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_by_timeres</span></code></a>(→ list[xarray.Dataset])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.aggreg.split_by_timeres" title="grid_process.aggreg.split_by_timeres"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_by_timeres</span></code></a>(ds) → list[xarray.Dataset]</p></td>
 <td><p>Split a dataset where the time granularity changes. In case several</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.aggreg.interval_stat" title="grid_process.aggreg.interval_stat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interval_stat</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.aggreg.interval_stat" title="grid_process.aggreg.interval_stat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interval_stat</span></code></a>(ds, granularity, interval, offset, agg_func) → xarray.Dataset</p></td>
 <td><p>Aggregate values in time over a moving window defined by a time</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.aggreg.mode" title="grid_process.aggreg.mode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mode</span></code></a>(→ xarray.Dataset)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#grid_process.aggreg.mode" title="grid_process.aggreg.mode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mode</span></code></a>(reshaped_ds[, ordered_mode]) → xarray.Dataset</p></td>
 <td><p>Take the most frequent category (mode) among categorical variables along</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.aggreg.count" title="grid_process.aggreg.count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">count</span></code></a>(→ dict[Any, xarray.DataArray])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#grid_process.aggreg.count" title="grid_process.aggreg.count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">count</span></code></a>(reshaped_da[, categ]) → dict[Any, xarray.DataArray]</p></td>
 <td><p>Count the number of occurences along the <cite>window</cite> dimension for each</p></td>
 </tr>
 </tbody>
@@ -799,7 +799,7 @@ respective count</p>
     <div class="footer-items__start">
       
         <div class="footer-item"><!-- This will display the version of the docs -->
-grid-process, version: dev-e271cda</div>
+grid-process, version: dev-733351f</div>
       
         <div class="footer-item"><p class="last-updated">
   Last updated on 23.11.2026.
