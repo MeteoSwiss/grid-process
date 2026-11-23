@@ -2,8 +2,8 @@
 Changelog
 =========
 
-Unreleased
-----------
+1.2.0 (2026-11-23)
+------------------
 
 **Changes of results** (compared to 1.1.0, see the entries below for details)
 
