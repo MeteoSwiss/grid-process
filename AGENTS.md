@@ -124,7 +124,7 @@ on it (see below). Shapes are y × x unless stated.
 | ICON-CH2-EPS lake-masked temperature (grid database) | rotated lat/lon, 0.02° | 127 × 188 | 21 members × 121 steps, float32, lake points all NaN (2 %) |
 | ICON-CH2-EPS LV95 (grid database) | LV95 (EPSG:2056), 2 km | 320 × 355 | 21 members × 121 steps, float32 |
 | INCA (grid database, analysis and nowcasting) | LV95, 1 km | 640 × 710 | 18 reference times × 1 step, 3 variables, float32 |
-| ICON-CH1-EPS native, Swiss cut-out (possible future) | unstructured lat/lon, dimension `values` | about 113 000 | as the grid database ICON-CH1-EPS, `HSURF` |
+| ICON-CH1-EPS native, Swiss cut-out (possible future) | unstructured lat/lon, dimension `values` | about 113 000 | as the grid database ICON-CH1-EPS, `HSURF` (radiation without NaN, as the open data) |
 | ICON-CH2-EPS native, Swiss cut-out (possible future) | unstructured lat/lon, dimension `values` | about 28 200 | as the grid database ICON-CH2-EPS, `HSURF` |
 | ICON-CH1-EPS native, whole domain (upper bound, not operational) | unstructured lat/lon, dimension `values` | 1 147 980 | 11 members × 34 steps, float32 |
 | ICON-CH2-EPS native, whole domain (upper bound, not operational) | unstructured lat/lon, dimension `values` | 283 876 | 21 members × 121 steps, float32 |
@@ -162,7 +162,9 @@ NaN cases to keep correct:
   fields. data4web masks lakes before interpolating to the POIs, `ds.where(ds.land_area_fraction >= 0.5)
   .drop_vars("land_area_fraction")`, so that a POI near a lake takes its value from land points only.
   `interp2grid` keeps such points (NaN propagates to the destination), so masking before it would not have this
-  effect; the seamless weather provider does not mask.
+  effect; the seamless weather provider does not mask. This difference is intended, do not align it: POIs are on
+  the ground, sometimes near a shore, where lake values (with different properties) would be wrong, whereas lakes
+  are still in a destination grid and keep the lake values.
 
 Benchmark a change that can affect runtime, memory or results against `main`, on the same machine (otherwise idle),
 with `benchmarks/operational_cases.py`. It runs the operational calls (data4web to the POIs, seamless weather
@@ -181,6 +183,12 @@ Select cases with `--case` (shell patterns), keep the outputs to quantify their 
 and use the real data with `--data-dir` when available. Report the identical outputs, or quantify the differences in
 the CHANGELOG. A full run takes about 12 minutes. Keep the outputs outside the repository. Add a case when a new
 operational use appears.
+
+`run` never downloads: it uses the synthetic data or the files of `--data-dir`, so that both sides of a comparison
+use the same data. Real native ICON comes from the open data of MeteoSwiss: `fetch-native --out DIR` downloads a
+run (all members and lead times; runs are available for about a day; needs the network and
+`poetry install --with example`) once, then `run --data-dir DIR` uses it. A native case on a real file with fewer
+members or lead times than the operational ones is noted in the results.
 
 The example notebooks (`doc/examples/*.ipynb`) also time the methods (first and repeated calls), on open data
 (ICON-CH2 native, IFS, ERA5, GFS) and with other grids and settings. They are examples for users, not the

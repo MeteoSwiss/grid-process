@@ -51,6 +51,12 @@ Compare a branch with main::
 
 Select cases with shell patterns (``--case 'grid_icon_ch1*' static_horizon_poi``) and keep the outputs to quantify
 their differences (``--save-outputs``).
+
+Download a run of native ICON-CH1/CH2-EPS from the open data of MeteoSwiss (all members and lead times, about a
+day available; needs ``poetry install --with example``) once, then use its files as real data in the runs::
+
+    python benchmarks/operational_cases.py fetch-native --out /data/native
+    python benchmarks/operational_cases.py run --case '*native*' --data-dir /data/native --out /tmp/bench/real
 """
 
 # pylint: disable=too-many-lines
@@ -58,8 +64,10 @@ their differences (``--save-outputs``).
 from __future__ import annotations
 
 import argparse
+import contextlib
 import fnmatch
 import hashlib
+import io
 import json
 import os
 import platform
@@ -67,6 +75,7 @@ import subprocess
 import sys
 import time
 import tracemalloc
+import urllib.request
 import warnings
 import zlib
 from collections.abc import Callable
@@ -210,7 +219,7 @@ NATIVE_SOURCES = {
     "icon_ch1_native_t2m": ("icon_ch1_native.nc", "icon_ch1", "T_2M", True),
     "icon_ch2_native": ("icon_ch2_native.nc", "icon_ch2", "ASWDIFD_S", True),
     "icon_ch2_native_t2m": ("icon_ch2_native.nc", "icon_ch2", "T_2M", True),
-    "icon_ch2_native_lake": ("icon_ch2_native_lake_masked.nc", "icon_ch2", "T_2M", True),
+    "icon_ch2_native_lake": ("icon_ch2_native.nc", "icon_ch2", "T_2M", True),  # masked with land_area_fraction
     "icon_ch1_native_domain": ("icon_ch1_native.nc", "icon_ch1", "T_2M", False),
     "icon_ch2_native_domain": ("icon_ch2_native.nc", "icon_ch2", "T_2M", False),
 }
@@ -272,7 +281,9 @@ def _lake_mask(east: np.ndarray, north: np.ndarray) -> np.ndarray:
     return mask
 
 
-def _field(variable: str, shape: tuple[int, ...], alt: np.ndarray, rng: np.random.Generator) -> np.ndarray:
+def _field(
+    variable: str, shape: tuple[int, ...], alt: np.ndarray, rng: np.random.Generator, native: bool = False
+) -> np.ndarray:
     """
     float32 values of ``variable`` of shape ``shape`` (spatial dimensions last, as those of ``alt``, lead time
     second), allocated once (filled in place) to keep the memory of the data building at the size of the data.
@@ -288,7 +299,8 @@ def _field(variable: str, shape: tuple[int, ...], alt: np.ndarray, rng: np.rando
         values *= 30.0
         values += 150.0
         np.maximum(values, 0.0, out=values)
-        values[:, 0] = np.nan  # as the operational data: no radiation at the first lead time
+        if not native:  # as the grid database (not the native open data): no radiation at the first lead time
+            values[:, 0] = np.nan
     elif variable == "snow_limit":
         # NaN where the snow limit is below the orography: levels between the 62nd and 76th percentiles of the
         # altitude, i.e. about 31 % of NaN values and 24 % of points NaN for all lead times and members
@@ -357,8 +369,8 @@ def icon_native(source: str, scale: float = 1.0) -> xr.Dataset:  # pylint: disab
     """
     Synthetic native ICON forecast ``source`` (see ``NATIVE_SOURCES``): points (dimension ``values``) on a jittered
     lattice covering the native domain, or its Swiss cut-out, with all members and lead times, and the surface
-    altitude ``HSURF``. NaN patterns as the grid database: radiation NaN at the first lead time, snow limit NaN below
-    the orography, lakes NaN in the lake-masked temperature.
+    altitude ``HSURF``. NaN patterns: snow limit NaN below the orography, lakes NaN in the lake-masked temperature
+    (the radiation of the open data has no NaN, unlike the grid database).
     """
 
     _, grid_name, variable, cut = NATIVE_SOURCES[source]
@@ -380,7 +392,7 @@ def icon_native(source: str, scale: float = 1.0) -> xr.Dataset:  # pylint: disab
     alt = orography(east, north).astype(np.float32)
 
     sizes = {dim: _scaled(size, scale, 2 if dim == "step" else 1) for dim, size in grid.sizes.items()}
-    values = _field(NATIVE_KINDS[variable], tuple(sizes.values()) + alt.shape, alt, rng)
+    values = _field(NATIVE_KINDS[variable], tuple(sizes.values()) + alt.shape, alt, rng, native=True)
     if source == "icon_ch2_native_lake":
         values[..., _lake_mask(east, north)] = np.nan
     return xr.Dataset(
@@ -536,10 +548,15 @@ def _real_native(name: str, path: Path, scale: float) -> tuple[xr.Dataset, bool]
     """Native source ``name`` from the file ``path``, cut out if the source is, or synthetic without its variable."""
 
     variable, cut = NATIVE_SOURCES[name][2:]
+    lake = name == "icon_ch2_native_lake"
     with xr.open_dataset(path) as ds:
-        if variable not in ds:
+        if variable not in ds or (lake and "land_area_fraction" not in ds.coords):
             return icon_native(name, scale), False
         ds = ds[[variable]].load()
+    if lake:  # as the grid database: lakes masked by data4web
+        ds = ds.where(ds.land_area_fraction >= 0.5).drop_vars("land_area_fraction")
+    elif "land_area_fraction" in ds.coords:
+        ds = ds.drop_vars("land_area_fraction")
     if cut:
         rlon, rlat = Transformer.from_crs("EPSG:4326", CRS.from_cf(ROTATED), always_xy=True).transform(
             ds.longitude.values, ds.latitude.values
@@ -822,6 +839,15 @@ def _environment(grid_process: Any) -> dict[str, Any]:
     }
 
 
+def _native_sizes_note(source_name: str, source: xr.Dataset) -> str:
+    """Differences of the sizes of a real native source from the operational ones (e.g. a control run file)."""
+
+    expected = NATIVE_GRIDS[NATIVE_SOURCES[source_name][1]].sizes
+    diffs = [f"{source.sizes.get(dim, 1)} {dim} instead of {size}" for dim, size in expected.items()
+             if source.sizes.get(dim, 1) != size]  # fmt: skip
+    return "real data with " + ", ".join(diffs) if diffs else ""
+
+
 def worker(args: argparse.Namespace) -> None:
     """Run one case in this process (``mode`` time or memory) and write its results as JSON."""
 
@@ -838,6 +864,8 @@ def worker(args: argparse.Namespace) -> None:
         return case.call(gri, source, target)
 
     result: dict[str, Any] = {"case": case.name, "real_data": real}
+    if case.source in NATIVE_SOURCES and real[case.source]:
+        result["note"] = _native_sizes_note(case.source, source)
     if hasattr(os, "getloadavg"):
         result[f"load_average_{args.mode}"] = os.getloadavg()[0]
     if args.mode == "time":
@@ -858,6 +886,140 @@ def worker(args: argparse.Namespace) -> None:
         result["traced_repeat_gb"] = _traced(call)
         tracemalloc.stop()
     (args.out / "cases" / f"{case.name}.{args.mode}.json").write_text(json.dumps(result, indent=1))
+
+
+# ----------------------------------------------------------------------------------------------------------------
+# real native ICON from the open data of MeteoSwiss (OGD)
+# ----------------------------------------------------------------------------------------------------------------
+
+OGD_STAC = "https://data.geo.admin.ch/api/stac/v1/search"
+OGD_VARIABLES = {"icon_ch1": ("T_2M", "ASWDIFD_S", "SNOWLMT"), "icon_ch2": ("T_2M", "ASWDIFD_S")}
+
+
+def _ogd_collection(model: str) -> str:
+    return f"ogd-forecasting-{model.replace('_', '-')}"
+
+
+def _ogd_latest_run(model: str) -> str:
+    """Newest run of ``model`` whose last lead time is available with the perturbed members, for all variables."""
+
+    last = NATIVE_GRIDS[model].sizes["step"] - 1
+    runs: set[str] | None = None
+    for variable in OGD_VARIABLES[model]:
+        query = {
+            "collections": [f"ch.meteoschweiz.{_ogd_collection(model)}"],
+            "forecast:variable": variable,
+            "forecast:perturbed": True,
+            "forecast:horizon": f"P{last // 24}DT{last % 24:02d}H00M00S",
+            "limit": 20,
+        }
+        request = urllib.request.Request(
+            OGD_STAC, json.dumps(query).encode(), headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(request, timeout=60) as response:
+            found = {item["properties"]["forecast:reference_datetime"] for item in json.load(response)["features"]}
+        runs = found if runs is None else runs & found
+    if not runs:
+        raise RuntimeError(f"No complete {model} run on the open data portal")
+    return max(runs)
+
+
+def _normalize_ogd(ds: xr.Dataset, constants: dict[str, np.ndarray]) -> xr.Dataset:
+    """
+    Dataset of earthkit (dimensions member, forecast_reference_time, step, level, level_type, values, float64) to
+    the structure of the native sources: dimensions (forecast_reference_time, step, realization, values), float32,
+    with the surface altitude ``HSURF`` and the ``land_area_fraction`` (FR_LAND) as coordinates.
+    """
+
+    ds = ds.squeeze([dim for dim in ("level", "level_type") if dim in ds.dims], drop=True)
+    ds = ds.assign_coords(member=ds.member.astype(np.float64)).sortby("member").rename(member="realization")
+    ds = ds.transpose("forecast_reference_time", "step", "realization", "values").astype(np.float32)
+    return ds.assign_coords(
+        HSURF=("values", constants["HSURF"].astype(np.float32)),
+        land_area_fraction=("values", constants["FR_LAND"].astype(np.float32)),
+    )
+
+
+def _ogd_variable(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+    ekd: Any, collection: str, variable: str, ref_time: str, grid: NativeGrid, constants: dict[str, np.ndarray]
+) -> xr.Dataset:
+    """
+    All members and lead times of ``variable`` in a run of the open data, requested by blocks of lead times and
+    filled into one float32 array: earthkit loads each request as float64, so the memory stays at about the size of
+    the result.
+    """
+
+    n_steps, n_members, block = grid.sizes["step"], grid.sizes["realization"], 8
+    values, filled, ds = None, np.zeros((n_steps, n_members), dtype=bool), None
+    for perturbed in (False, True):
+        for start in range(0, n_steps, block):
+            hours = range(start, min(start + block, n_steps))
+            # hide the download progress bars of earthkit on stderr: they show the signed download URLs
+            with contextlib.redirect_stderr(io.StringIO()):
+                source = ekd.from_source(
+                    "meteoswiss-opendata", collection=collection, variable=variable, ref_time=ref_time,
+                    perturbed=perturbed, lead_time=[f"P0DT{hour}H" for hour in hours],
+                )  # fmt: skip
+                part = source.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
+            ds = _normalize_ogd(part[[variable]], constants)
+            if not np.array_equal(ds.step.values, np.array(hours) * np.timedelta64(1, "h")):
+                raise RuntimeError(f"{variable}: lead times {ds.step.values} instead of the hours {list(hours)}")
+            if values is None:
+                values = np.empty((1, n_steps, n_members, ds.sizes["values"]), dtype=np.float32)
+            members = ds.realization.values.astype(int)
+            values[:, hours.start : hours.stop][:, :, members] = ds[variable].values
+            filled[hours.start : hours.stop][:, members] = True
+    if values is None or ds is None or not filled.all():
+        raise RuntimeError(f"{variable}: missing members or lead times in the run {ref_time}")
+    coords: dict[str, Any] = {name: ds[name] for name in ("latitude", "longitude", "HSURF", "land_area_fraction")}
+    coords |= {
+        "forecast_reference_time": ds.forecast_reference_time.values,
+        "step": np.arange(n_steps) * np.timedelta64(1, "h").astype("m8[ns]"),
+        "realization": np.arange(n_members, dtype=np.float64),
+    }
+    dims = ("forecast_reference_time", "step", "realization", "values")
+    return xr.Dataset({variable: (dims, values)}, coords=coords)
+
+
+def fetch_native(args: argparse.Namespace) -> None:
+    """
+    Download a run of native ICON-CH1/CH2-EPS (all members and lead times) from the open data of MeteoSwiss and
+    write it as the files of ``NATIVE_SOURCES`` in ``--out``, for ``run --data-dir``. Needs the network and the
+    example dependencies (``poetry install --with example``). The runs are available for about a day.
+    """
+
+    # pylint: disable=import-outside-toplevel,unused-import,too-many-locals
+    try:
+        import eccodes_cosmo_resources
+        import pyproj  # noqa: F401  # before earthkit.data, see the example notebooks
+
+        os.environ["ECCODES_DEFINITION_PATH"] = str(eccodes_cosmo_resources.get_definitions_path())
+        os.environ["ECCODES_VERSION_CHECK_OFF"] = "1"
+        import earthkit.data as ekd
+    except ImportError as error:
+        raise SystemExit(f"{error}: install the example dependencies (poetry install --with example)") from error
+
+    args.out.mkdir(parents=True, exist_ok=True)
+    for model in args.model:
+        collection, grid = _ogd_collection(model), NATIVE_GRIDS[model]
+        ref_time = args.ref_time or _ogd_latest_run(model)
+        path = args.out / f"{model}_native.nc"
+        print(f"{model}: run {ref_time} -> {path}", flush=True)
+        # hide the download progress bars of earthkit on stderr: they show the signed download URLs
+        with contextlib.redirect_stderr(io.StringIO()):
+            fields = ekd.from_source("meteoswiss-opendata-constants", collection=collection, asset="horizontal")
+            fields = fields.to_fieldlist()
+            constants = {name: fields.sel({"parameter.variable": name})[0].to_numpy() for name in ("HSURF", "FR_LAND")}
+        for i, variable in enumerate(OGD_VARIABLES[model]):
+            start = time.perf_counter()
+            ds = _ogd_variable(ekd, collection, variable, ref_time, grid, constants)
+            ds.attrs = {"source": f"MeteoSwiss open data {collection}, run {ref_time}"}
+            ds.to_netcdf(path, mode="w" if i == 0 else "a")
+            sizes = {dim: ds.sizes[dim] for dim in ("values", *grid.sizes)}
+            expected = {"values": grid.n_points, **grid.sizes}
+            check = "" if sizes == expected else f", EXPECTED {expected}"
+            print(f"  {variable}: {sizes}{check}, {time.perf_counter() - start:.0f} s", flush=True)
+            del ds
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -905,6 +1067,7 @@ def _case_line(name: str, result: dict[str, Any]) -> str:
     repeat = min(result["repeat_s"]) if result["repeat_s"] else float("nan")
     memory = f"{result['traced_first_gb']:6.2f} GB" if "traced_first_gb" in result else ""
     real = " (real data)" if any(result["real_data"].values()) else ""
+    real += f" ({result['note']})" if result.get("note") else ""
     return f"{name:38s} first {result['first_s']:7.2f} s  repeat {repeat:7.2f} s  traced peak {memory}{real}"
 
 
@@ -929,7 +1092,9 @@ def compare(args: argparse.Namespace) -> None:
             _ratio(res_a.get("traced_first_gb"), res_b.get("traced_first_gb")),
             _ratio(res_a.get("rss_first_gb"), res_b.get("rss_first_gb")),
         ]
-        print(f"{name:38s} {' '.join(columns)}  {_output_diff(name, res_a, res_b, args.a, args.b)}")
+        notes = [f"{label}: {res['note']}" for label, res in zip("AB", (res_a, res_b)) if res.get("note")]
+        notes_text = f" [{'; '.join(notes)}]" if notes else ""
+        print(f"{name:38s} {' '.join(columns)}  {_output_diff(name, res_a, res_b, args.a, args.b)}{notes_text}")
 
 
 def _ratio(a: float | None, b: float | None) -> str:
@@ -989,6 +1154,11 @@ def main(argv: list[str] | None = None) -> None:
     compare_parser.add_argument("a", type=Path, help="output directory of the reference run")
     compare_parser.add_argument("b", type=Path, help="output directory of the run to compare")
 
+    fetch_parser = commands.add_parser("fetch-native", help="download real native ICON from the open data (OGD)")
+    fetch_parser.add_argument("--out", type=Path, required=True, help="directory of the files (for --data-dir)")
+    fetch_parser.add_argument("--ref-time", help="reference time of the run (default: the latest complete run)")
+    fetch_parser.add_argument("--model", nargs="+", choices=tuple(NATIVE_GRIDS), default=list(NATIVE_GRIDS))
+
     args = parser.parse_args(argv)
     if args.command == "list":
         for case in CASES:
@@ -997,6 +1167,8 @@ def main(argv: list[str] | None = None) -> None:
         run(args)
     elif args.command == "_worker":
         worker(args)
+    elif args.command == "fetch-native":
+        fetch_native(args)
     else:
         compare(args)
 
