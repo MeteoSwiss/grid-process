@@ -12,6 +12,11 @@ weather provider (``slice_coarsen`` then ``interp2grid`` to a Swiss 2 km grid), 
 the interpolation of static fields (25 m and 50 m grids, lazy with dask). The data is synthetic, with the structure,
 names, CRS attributes, sizes, dtypes and NaN patterns of the operational data, or the real data with ``--data-dir``.
 
+The applications may switch from the ICON fields of the grid database to native ICON (e.g. a Swiss cut-out from
+polytope): the ``*_native_*`` cases are the counterparts of the grid database ICON cases on the native points within
+the area of the grid database grids. The ``*_native_domain_*`` cases, on a whole native domain, are upper bounds, not
+operational uses.
+
 Each case runs in fresh processes of this script: the first call has cold caches (as in the operational cron jobs),
 the next ones warm caches (several interpolations within a job). The results are for comparing two versions of
 grid-process on the same machine, not absolute numbers. On a shared machine, the runtimes vary by up to about 30 %
@@ -47,6 +52,8 @@ Compare a branch with main::
 Select cases with shell patterns (``--case 'grid_icon_ch1*' static_horizon_poi``) and keep the outputs to quantify
 their differences (``--save-outputs``).
 """
+
+# pylint: disable=too-many-lines
 
 from __future__ import annotations
 
@@ -171,8 +178,45 @@ GRID_SOURCES = {
     "icon_ch2_lv95": ("icon_ch2_lv95_gridefix.nc", "icon_ch2_lv95", "air_temperature"),
     "inca": ("inca_gridefix.nc", "inca", "cloud_area_fraction_in_low_troposphere"),
 }
+
+
+@dataclass(frozen=True)
+class NativeGrid:
+    """
+    Native (unstructured) ICON grid: number of points of the whole domain, its extent in rotated coordinates
+    (x min, x max, y min, y max) and the sizes of the other dimensions of the fields, in order before ``values``.
+    """
+
+    n_points: int
+    extent: tuple[float, float, float, float]
+    sizes: dict[str, int]
+
+
+NATIVE_GRIDS = {
+    "icon_ch1": NativeGrid(
+        1147980, (-6.96, 4.94, -4.56, 3.50), {"forecast_reference_time": 1, "step": 34, "realization": 11}
+    ),
+    "icon_ch2": NativeGrid(
+        283876, (-6.94, 4.92, -4.54, 3.48), {"forecast_reference_time": 1, "step": 121, "realization": 21}
+    ),
+}
+# Swiss cut-out of the native grids (e.g. by polytope), as the area of the grid database grids in rotated
+# coordinates: about 113 000 points of ICON-CH1, 28 200 points of ICON-CH2
+CUT_OUT = (-3.15, 0.60, -1.42, 1.10)
+# source name: (file name in --data-dir, native grid, variable, cut out to CUT_OUT)
+NATIVE_SOURCES = {
+    "icon_ch1_native": ("icon_ch1_native.nc", "icon_ch1", "ASWDIFD_S", True),
+    "icon_ch1_native_snow": ("icon_ch1_native.nc", "icon_ch1", "SNOWLMT", True),
+    "icon_ch1_native_t2m": ("icon_ch1_native.nc", "icon_ch1", "T_2M", True),
+    "icon_ch2_native": ("icon_ch2_native.nc", "icon_ch2", "ASWDIFD_S", True),
+    "icon_ch2_native_t2m": ("icon_ch2_native.nc", "icon_ch2", "T_2M", True),
+    "icon_ch2_native_lake": ("icon_ch2_native_lake_masked.nc", "icon_ch2", "T_2M", True),
+    "icon_ch1_native_domain": ("icon_ch1_native.nc", "icon_ch1", "T_2M", False),
+    "icon_ch2_native_domain": ("icon_ch2_native.nc", "icon_ch2", "T_2M", False),
+}
+NATIVE_KINDS = {"T_2M": "air_temperature", "ASWDIFD_S": "surface_diffuse_downwelling_shortwave_flux_in_air"}
+NATIVE_KINDS["SNOWLMT"] = "snow_limit"
 OTHER_FILES = {
-    "icon_ch1_native": "icon_ch1_native.nc",
     "pois": "pois.geojson",
     "dst": "seamless_2km.nc",
     "horizon": "swiss_25/horizon_HORIZON.zarr",
@@ -230,8 +274,8 @@ def _lake_mask(east: np.ndarray, north: np.ndarray) -> np.ndarray:
 
 def _field(variable: str, shape: tuple[int, ...], alt: np.ndarray, rng: np.random.Generator) -> np.ndarray:
     """
-    float32 values of ``variable`` of shape ``shape`` (spatial dimensions last, lead time second), allocated once
-    (filled in place) to keep the memory of the data building at the size of the data.
+    float32 values of ``variable`` of shape ``shape`` (spatial dimensions last, as those of ``alt``, lead time
+    second), allocated once (filled in place) to keep the memory of the data building at the size of the data.
     """
 
     if variable == "cloud_area_fraction_in_low_troposphere":
@@ -249,7 +293,7 @@ def _field(variable: str, shape: tuple[int, ...], alt: np.ndarray, rng: np.rando
         # NaN where the snow limit is below the orography: levels between the 62nd and 76th percentiles of the
         # altitude, i.e. about 31 % of NaN values and 24 % of points NaN for all lead times and members
         low, high = np.percentile(alt, (62, 76))
-        levels = rng.uniform(low, high, shape[:-2] + (1, 1)).astype(np.float32)
+        levels = rng.uniform(low, high, shape[: -alt.ndim] + (1,) * alt.ndim).astype(np.float32)
         values *= 20.0
         values += levels
         np.minimum(values, high, out=values)
@@ -304,31 +348,47 @@ def grid_database(source: str, scale: float = 1.0) -> xr.Dataset:  # pylint: dis
     )
 
 
-def icon_native(scale: float = 1.0) -> xr.Dataset:  # pylint: disable=too-many-locals
+def _in_cut_out(rlon: np.ndarray, rlat: np.ndarray) -> np.ndarray:
+    x_min, x_max, y_min, y_max = CUT_OUT
+    return (rlon >= x_min) & (rlon <= x_max) & (rlat >= y_min) & (rlat <= y_max)
+
+
+def icon_native(source: str, scale: float = 1.0) -> xr.Dataset:  # pylint: disable=too-many-locals
     """
-    Synthetic native ICON-CH1 forecast (control member): 1 147 980 points (dimension ``values``) on a jittered
-    lattice covering the native domain, with the 2 m temperature at 34 lead times and the surface altitude ``HSURF``.
+    Synthetic native ICON forecast ``source`` (see ``NATIVE_SOURCES``): points (dimension ``values``) on a jittered
+    lattice covering the native domain, or its Swiss cut-out, with all members and lead times, and the surface
+    altitude ``HSURF``. NaN patterns as the grid database: radiation NaN at the first lead time, snow limit NaN below
+    the orography, lakes NaN in the lake-masked temperature.
     """
 
-    rng = _rng("icon_ch1_native")
-    n_points = _scaled(1147980, scale**2, 256)
-    x_min, x_max, y_min, y_max = -6.96, 4.94, -4.56, 3.50  # extent of the native domain in rotated coordinates
+    _, grid_name, variable, cut = NATIVE_SOURCES[source]
+    grid = NATIVE_GRIDS[grid_name]
+    rng = _rng(source)
+    n_points = _scaled(grid.n_points, scale**2, 4096)
+    x_min, x_max, y_min, y_max = grid.extent
     nx = round(np.sqrt(n_points * (x_max - x_min) / (y_max - y_min)))
     ny = -(-n_points // nx)
     step = (x_max - x_min) / nx
     yy, xx = np.divmod(np.arange(n_points), nx)
     rlon = x_min + (xx + 0.5 + rng.uniform(-0.3, 0.3, n_points)) * step
     rlat = y_min + (yy + 0.5 + rng.uniform(-0.3, 0.3, n_points)) * (y_max - y_min) / ny
+    if cut:
+        inside = _in_cut_out(rlon, rlat)
+        rlon, rlat = rlon[inside], rlat[inside]
     lon, lat = Transformer.from_crs(CRS.from_cf(ROTATED), "EPSG:4326", always_xy=True).transform(rlon, rlat)
     east, north = Transformer.from_crs("EPSG:4326", LV95, always_xy=True).transform(lon, lat)
     alt = orography(east, north).astype(np.float32)
-    n_steps = _scaled(34, scale, 2)
-    values = _field("air_temperature", (1, n_steps, n_points), alt, rng)
+
+    sizes = {dim: _scaled(size, scale, 2 if dim == "step" else 1) for dim, size in grid.sizes.items()}
+    values = _field(NATIVE_KINDS[variable], tuple(sizes.values()) + alt.shape, alt, rng)
+    if source == "icon_ch2_native_lake":
+        values[..., _lake_mask(east, north)] = np.nan
     return xr.Dataset(
-        {"T_2M": (("forecast_reference_time", "step", "values"), values)},
+        {variable: (tuple(sizes) + ("values",), values)},
         coords={
             "forecast_reference_time": [np.datetime64("2026-11-19T00:00", "ns")],
-            "step": np.arange(n_steps) * np.timedelta64(1, "h").astype("m8[ns]"),
+            "step": np.arange(sizes["step"]) * np.timedelta64(1, "h").astype("m8[ns]"),
+            "realization": np.arange(sizes["realization"], dtype=np.float64),
             "latitude": ("values", lat),
             "longitude": ("values", lon),
             "HSURF": ("values", alt),
@@ -445,11 +505,15 @@ def horizon(scale: float = 1.0) -> xr.Dataset:
 
 def load_input(name: str, scale: float = 1.0, data_dir: Path | None = None) -> tuple[Any, bool]:
     """
-    Input ``name`` (a key of ``GRID_SOURCES`` or ``OTHER_FILES``), from ``data_dir`` if its file is there (real
-    data), otherwise synthetic. Returns the input and whether it is real.
+    Input ``name`` (a key of ``GRID_SOURCES``, ``NATIVE_SOURCES`` or ``OTHER_FILES``), from ``data_dir`` if its file
+    is there (real data; for native sources, if the file has the variable, cut out as the source), otherwise
+    synthetic. Returns the input and whether it is real.
     """
 
-    file_name = GRID_SOURCES[name][0] if name in GRID_SOURCES else OTHER_FILES[name]
+    if name in GRID_SOURCES:
+        file_name = GRID_SOURCES[name][0]
+    else:
+        file_name = NATIVE_SOURCES[name][0] if name in NATIVE_SOURCES else OTHER_FILES[name]
     path = None if data_dir is None else data_dir / file_name
     if path is None or not path.exists():
         return _synthetic(name, scale), False
@@ -457,9 +521,8 @@ def load_input(name: str, scale: float = 1.0, data_dir: Path | None = None) -> t
         variable = GRID_SOURCES[name][2]
         with xr.open_dataset(path) as ds:
             return ds[[variable]].load(), True
-    if name == "icon_ch1_native":
-        with xr.open_dataset(path) as ds:
-            return ds[["T_2M"]].load(), True
+    if name in NATIVE_SOURCES:
+        return _real_native(name, path, scale)
     if name == "pois":
         return gpd.read_file(path), True
     if name == "dst":
@@ -469,11 +532,28 @@ def load_input(name: str, scale: float = 1.0, data_dir: Path | None = None) -> t
     return xr.open_zarr(path), True
 
 
+def _real_native(name: str, path: Path, scale: float) -> tuple[xr.Dataset, bool]:
+    """Native source ``name`` from the file ``path``, cut out if the source is, or synthetic without its variable."""
+
+    variable, cut = NATIVE_SOURCES[name][2:]
+    with xr.open_dataset(path) as ds:
+        if variable not in ds:
+            return icon_native(name, scale), False
+        ds = ds[[variable]].load()
+    if cut:
+        rlon, rlat = Transformer.from_crs("EPSG:4326", CRS.from_cf(ROTATED), always_xy=True).transform(
+            ds.longitude.values, ds.latitude.values
+        )
+        ds = ds.isel(values=_in_cut_out(rlon, rlat))
+    return ds, True
+
+
 def _synthetic(name: str, scale: float) -> Any:
     if name in GRID_SOURCES:
         return grid_database(name, scale)
+    if name in NATIVE_SOURCES:
+        return icon_native(name, scale)
     builders: dict[str, Callable[[float], Any]] = {
-        "icon_ch1_native": icon_native,
         "pois": pois,
         "dst": dst_grid,
         "horizon": horizon,
@@ -518,19 +598,15 @@ def _to_pois(method: str, **kwargs: Any) -> Callable[[Any, Any, Any], xr.Dataset
     return call
 
 
-def _to_grid(method: str, **kwargs: Any) -> Callable[[Any, Any, Any], xr.Dataset]:
+def _to_grid(method: str, native: bool = False, **kwargs: Any) -> Callable[[Any, Any, Any], xr.Dataset]:
     """Seamless weather provider: slice (and average) to the destination grid, then interpolation."""
 
     def call(gri: Any, source: xr.Dataset, target: xr.Dataset) -> xr.Dataset:
-        dims = ("y", "x")
-        sliced = gri.slice_coarsen(source, target, method, spatial_dims=dims, dst_spatial_dims=dims, **kwargs)
+        dims = ("values",) if native else ("y", "x")
+        sliced = gri.slice_coarsen(source, target, method, spatial_dims=dims, dst_spatial_dims=("y", "x"), **kwargs)
         return gri.interp2grid(sliced, target, method, try_reg=False, **kwargs).load()
 
     return call
-
-
-def _native_to_grid(gri: Any, source: xr.Dataset, target: xr.Dataset) -> xr.Dataset:
-    return gri.interp2grid(source, target, "idw", try_reg=False, k=4, weight_power=0.5).load()
 
 
 def _horizon_to_pois(gri: Any, source: xr.Dataset, target: gpd.GeoDataFrame) -> xr.Dataset:
@@ -554,6 +630,8 @@ def _dem_to_grid(gri: Any, source: xr.Dataset, target: xr.Dataset) -> xr.Dataset
 
 SNOWLIM_CH1 = {"k": 100, "d_max": 40000}
 TEMP = {"k": 50, "weight_power": 0.75, "z_fact": 15}
+NATIVE = "native cut-out (possible future)"
+UPPER = "upper bound, whole native domain (not operational)"
 CASES = [
     Case("poi_icon_ch1_nearest_alt", "icon_ch1", "pois", "", _to_pois("nearest_alt", r_search=1.8)),
     Case("poi_icon_ch1_idw_k49", "icon_ch1", "pois", "", _to_pois("idw", k=49, weight_power=0.125)),
@@ -565,8 +643,6 @@ CASES = [
     Case("poi_ifs_temp", "ifs", "pois", "", _to_pois("temp", **TEMP)),
     Case("poi_inca_idw_k38", "inca", "pois", "", _to_pois("idw", k=38, weight_power=0.125)),
     Case("poi_inca_temp", "inca", "pois", "", _to_pois("temp", k=36, weight_power=0.5, z_fact=4)),
-    Case("poi_icon_ch1_native_idw", "icon_ch1_native", "pois", "", _to_pois("idw", k=4, weight_power=0.5)),
-    Case("poi_icon_ch1_native_upscaled", "icon_ch1_native", "pois", "LPI (planned)", _to_pois("upscaled", k=289)),
     Case("grid_icon_ch1_temp_fixgrad", "icon_ch1", "dst", "", _to_grid("temp_fixgrad", r_search=1.7)),
     Case("grid_icon_ch1_nearest_alt", "icon_ch1", "dst", "", _to_grid("nearest_alt", r_search=1.7)),
     Case("grid_icon_ch1_idw", "icon_ch1", "dst", "", _to_grid("idw", k=4, weight_power=0.5)),
@@ -575,17 +651,58 @@ CASES = [
         _to_grid("nearest_alt", r_search=1.7),
     ),
     Case("grid_icon_ch2_nearest_alt", "icon_ch2", "dst", "", _to_grid("nearest_alt", r_search=1.7)),
-    Case(
-        "grid_icon_ch2_lake_temp_fixgrad", "icon_ch2_lake", "dst", "lakes masked",
-        _to_grid("temp_fixgrad", r_search=1.7),
-    ),
     Case("grid_icon_ch2_lv95_temp_fixgrad", "icon_ch2_lv95", "dst", "", _to_grid("temp_fixgrad", r_search=1.7)),
     Case("grid_icon_ch2_lv95_nearest_alt", "icon_ch2_lv95", "dst", "", _to_grid("nearest_alt", r_search=1.7)),
     Case("grid_ifs_temp_fixgrad", "ifs", "dst", "", _to_grid("temp_fixgrad", r_search=2)),
     Case("grid_ifs_idw", "ifs", "dst", "", _to_grid("idw", k=4, weight_power=1)),
     Case("grid_inca_idw", "inca", "dst", "", _to_grid("idw", k=4, weight_power=2)),
     Case("grid_inca_nearest_alt", "inca", "dst", "", _to_grid("nearest_alt", r_search=1.2)),
-    Case("grid_icon_ch1_native_idw", "icon_ch1_native", "dst", "interp2grid only", _native_to_grid),
+    # native ICON (possible future, e.g. polytope): counterparts of the grid database ICON cases on a Swiss cut-out
+    Case("poi_icon_ch1_native_nearest_alt", "icon_ch1_native", "pois", NATIVE, _to_pois("nearest_alt", r_search=1.8)),
+    Case("poi_icon_ch1_native_idw_k49", "icon_ch1_native", "pois", NATIVE, _to_pois("idw", k=49, weight_power=0.125)),
+    Case("poi_icon_ch1_native_nearest", "icon_ch1_native", "pois", NATIVE, _to_pois("nearest")),
+    Case(
+        "poi_icon_ch1_native_snowlim", "icon_ch1_native_snow", "pois", f"{NATIVE}, snow limit with NaN",
+        _to_pois("snowlim", **SNOWLIM_CH1),
+    ),
+    Case(
+        "poi_icon_ch1_native_upscaled", "icon_ch1_native_t2m", "pois", f"{NATIVE}, LPI (planned)",
+        _to_pois("upscaled", k=289),
+    ),
+    Case("poi_icon_ch2_native_idw_k4", "icon_ch2_native", "pois", NATIVE, _to_pois("idw", k=4, weight_power=0.5)),
+    Case(
+        "poi_icon_ch2_native_lake_temp", "icon_ch2_native_lake", "pois", f"{NATIVE}, lakes masked",
+        _to_pois("temp", **TEMP),
+    ),
+    Case(
+        "grid_icon_ch1_native_temp_fixgrad", "icon_ch1_native", "dst", NATIVE,
+        _to_grid("temp_fixgrad", native=True, r_search=1.7),
+    ),
+    Case(
+        "grid_icon_ch1_native_nearest_alt", "icon_ch1_native", "dst", NATIVE,
+        _to_grid("nearest_alt", native=True, r_search=1.7),
+    ),
+    Case(
+        "grid_icon_ch1_native_idw", "icon_ch1_native", "dst", NATIVE,
+        _to_grid("idw", native=True, k=4, weight_power=0.5),
+    ),
+    Case(
+        "grid_icon_ch1_native_snow_nearest_alt", "icon_ch1_native_snow", "dst", f"{NATIVE}, snow limit with NaN",
+        _to_grid("nearest_alt", native=True, r_search=1.7),
+    ),
+    Case(
+        "grid_icon_ch2_native_nearest_alt", "icon_ch2_native", "dst", NATIVE,
+        _to_grid("nearest_alt", native=True, r_search=1.7),
+    ),
+    Case(
+        "grid_icon_ch2_native_temp_fixgrad", "icon_ch2_native_t2m", "dst", f"{NATIVE}, as ICON-CH2 LV95",
+        _to_grid("temp_fixgrad", native=True, r_search=1.7),
+    ),
+    Case(
+        "poi_icon_ch1_native_domain_upscaled", "icon_ch1_native_domain", "pois", f"{UPPER}, LPI",
+        _to_pois("upscaled", k=289),
+    ),
+    Case("poi_icon_ch2_native_domain_temp", "icon_ch2_native_domain", "pois", UPPER, _to_pois("temp", **TEMP)),
     Case("static_horizon_poi", "horizon", "pois", "data4web process_horizon, regular path", _horizon_to_pois),
     Case("static_topo_poi_linear", "static50", "pois", "mosmix descriptors, regular path", _static_to_pois),
     Case("static_dem_grid_linear", "static50", "dst", "seamless elevation, regular path", _dem_to_grid),
@@ -784,11 +901,11 @@ def run(args: argparse.Namespace) -> None:
 
 def _case_line(name: str, result: dict[str, Any]) -> str:
     if "first_s" not in result:
-        return f"{name:34s} FAILED {result.get('errors')}"
+        return f"{name:38s} FAILED {result.get('errors')}"
     repeat = min(result["repeat_s"]) if result["repeat_s"] else float("nan")
     memory = f"{result['traced_first_gb']:6.2f} GB" if "traced_first_gb" in result else ""
     real = " (real data)" if any(result["real_data"].values()) else ""
-    return f"{name:34s} first {result['first_s']:7.2f} s  repeat {repeat:7.2f} s  traced peak {memory}{real}"
+    return f"{name:38s} first {result['first_s']:7.2f} s  repeat {repeat:7.2f} s  traced peak {memory}{real}"
 
 
 def compare(args: argparse.Namespace) -> None:
@@ -800,7 +917,7 @@ def compare(args: argparse.Namespace) -> None:
         loads = [case.get("load_average_time", 0.0) for case in result["cases"].values()]
         print(f"{label}: {path}, grid_process {env.get('grid_process')} {env.get('git')}, {env.get('cpus')} CPUs,")
         print(f"   load average at the start of the cases up to {max(loads, default=0.0):.1f}")
-    header = f"{'case':34s} {'first [s]':>17s} {'repeat [s]':>17s} {'traced peak [GB]':>17s} {'rss peak [GB]':>17s}"
+    header = f"{'case':38s} {'first [s]':>17s} {'repeat [s]':>17s} {'traced peak [GB]':>17s} {'rss peak [GB]':>17s}"
     print(f"{header}  outputs")
     for name, res_a in runs[0]["cases"].items():
         res_b = runs[1]["cases"].get(name)
@@ -812,7 +929,7 @@ def compare(args: argparse.Namespace) -> None:
             _ratio(res_a.get("traced_first_gb"), res_b.get("traced_first_gb")),
             _ratio(res_a.get("rss_first_gb"), res_b.get("rss_first_gb")),
         ]
-        print(f"{name:34s} {' '.join(columns)}  {_output_diff(name, res_a, res_b, args.a, args.b)}")
+        print(f"{name:38s} {' '.join(columns)}  {_output_diff(name, res_a, res_b, args.a, args.b)}")
 
 
 def _ratio(a: float | None, b: float | None) -> str:
@@ -875,7 +992,7 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
     if args.command == "list":
         for case in CASES:
-            print(f"{case.name:34s} {case.source:16s} -> {case.target:5s} {case.description}")
+            print(f"{case.name:38s} {case.source:22s} -> {case.target:5s} {case.description}")
     elif args.command == "run":
         run(args)
     elif args.command == "_worker":

@@ -48,6 +48,22 @@ def test_synthetic_nan():
     assert radiation.isel(lead_time=0).isnull().all() and radiation.isel(lead_time=slice(1, None)).notnull().all()
 
 
+def test_synthetic_native():
+    """
+    The native ICON cut-outs have the NaN patterns of the grid database and fewer points than the whole domain
+    """
+
+    snow = oc.icon_native("icon_ch1_native_snow", scale=0.3).SNOWLMT.isnull()
+    assert 0.25 < float(snow.mean()) < 0.35
+    assert 0.2 < float(snow.all(["forecast_reference_time", "step", "realization"]).mean()) < 0.28
+    radiation = oc.icon_native("icon_ch1_native", scale=0.3).ASWDIFD_S
+    assert radiation.isel(step=0).isnull().all() and radiation.isel(step=slice(1, None)).notnull().all()
+    lake = oc.icon_native("icon_ch2_native_lake", scale=0.3).T_2M.isnull().all(["step", "realization"])
+    assert 0.01 < float(lake.mean()) < 0.03
+    domain = oc.icon_native("icon_ch2_native_domain", scale=0.3)
+    assert 0.08 < lake.sizes["values"] / domain.sizes["values"] < 0.12
+
+
 def test_run_and_compare(tmp_path):
     """
     The command line runs a case in worker processes and compares two runs
