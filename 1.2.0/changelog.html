@@ -1,0 +1,702 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Changelog &#8212; grid-process</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="_static/documentation_options.js?v=6e1b36b2"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'changelog';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = '../_static/switcher_config.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '1.2.0';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="autoapi/index.html" />
+    <link rel="prev" title="Regridding: ERA5 2 m temperature on the global IFS 0.1° grid" href="examples/06_interp2grid_era5_global_temperature.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="1.2.0" />
+    <meta name="docbuild:last-update" content="23.11.2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-light" alt=""/>
+    <img src="_static/app-icon_meteoswiss_rounded_rgb.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">grid-process</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="autoapi/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="readme.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="usage.html">
+    Usage
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Changelog
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="autoapi/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Changelog</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="changelog">
+<h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">#</a></h1>
+<section id="id1">
+<h2>1.2.0 (2026-11-23)<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<p><strong>Changes of results</strong> (compared to 1.1.0, see the entries below for details)</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> averages a source grid finer than the destination grid per destination cell, instead of per
+window of source grid points aligned on the source grid. The results change most where the windows were offset
+from the destination cells: the 50 m DEM of the seamless weather provider to the seamless 2 km grid
+(<code class="docutils literal notranslate"><span class="pre">linear</span></code>) by 61.6 m RMSE (380 m max), as the windows were 1 km off the cells in x and <code class="docutils literal notranslate"><span class="pre">linear</span></code> averaged two
+of them (a 4 x 2 km box); gridefix ICON-CH1 to the seamless 2 km grid by 2 W m-2 (<code class="docutils literal notranslate"><span class="pre">idw</span></code>) to 6 W m-2
+(<code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code>) RMSE for the diffuse radiation, INCA by less</p></li>
+<li><p>NaN are ignored in the averaging: a cell is NaN only if all its source values are NaN (e.g. for the snow limit,
+NaN below the orography). Destination cells at the edge of the source are no longer NaN (e.g. 314 cells for the
+DEM above with <code class="docutils literal notranslate"><span class="pre">try_reg=False</span></code>, a row for ERA5 to a global 1 degree grid)</p></li>
+<li><p>unstructured source grids are averaged too: native ICON-CH1 to the seamless 2 km grid changes by 0.25 to 0.5 K
+RMSE for the 2 m temperature, and gets closer to gridefix ICON-CH1 (surface altitude RMSE 108 m → 56 m with
+<code class="docutils literal notranslate"><span class="pre">idw</span></code>, 91 m → 71 m with <code class="docutils literal notranslate"><span class="pre">linear</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nearest</span></code> and <code class="docutils literal notranslate"><span class="pre">linear</span></code> to a coarser destination grid give the mean of the source points of each destination
+cell, whatever <code class="docutils literal notranslate"><span class="pre">try_reg</span></code>, instead of interpolating between the averaged windows; the other methods interpolate
+from the mean position of the points of each cell. The averaged values are float32 for float32 and 8 or 16 bit
+integer data, float64 otherwise (<code class="docutils literal notranslate"><span class="pre">try_reg=True</span></code> returned the source dtype, e.g. truncated int16 means), and the
+dimensions are in the order of the source</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">slice_coarsen</span></code> returns an unstructured dataset (dimension <code class="docutils literal notranslate"><span class="pre">cell</span></code> by default, coordinates in the destination
+CRS) when it averages the source grid</p></li>
+<li><p>the slicing buffer of <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code>, <code class="docutils literal notranslate"><span class="pre">slice_coarsen</span></code> and <code class="docutils literal notranslate"><span class="pre">slice_boundingbox</span></code> counts grid steps of the
+coarser of the source and destination grids, and the grid step of unstructured sources is estimated from the
+area per point (more robust, e.g. for ICON triangles)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ens_stats.neighbor_stat</span></code> with <code class="docutils literal notranslate"><span class="pre">mean</span></code> and NaN: the mean of the valid values over the whole space x time
+window, instead of the mean of the means along each dimension. Without NaN, and for <code class="docutils literal notranslate"><span class="pre">sum</span></code>, <code class="docutils literal notranslate"><span class="pre">min</span></code> and <code class="docutils literal notranslate"><span class="pre">max</span></code>,
+the results are unchanged (<code class="docutils literal notranslate"><span class="pre">min</span></code>/<code class="docutils literal notranslate"><span class="pre">max</span></code> identical, <code class="docutils literal notranslate"><span class="pre">sum</span></code>/<code class="docutils literal notranslate"><span class="pre">mean</span></code> within float32 rounding). The result is
+float32 for 8 or 16 bit integer and boolean data (<code class="docutils literal notranslate"><span class="pre">mean</span></code>/<code class="docutils literal notranslate"><span class="pre">sum</span></code> were float64, <code class="docutils literal notranslate"><span class="pre">max</span></code> of booleans too)</p></li>
+</ul>
+<p><strong>Changes</strong></p>
+<ul class="simple">
+<li><p>added the support of Python 3.14</p></li>
+<li><p>changed <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> to no longer copy a dataset with a single data variable before
+interpolation (new <code class="docutils literal notranslate"><span class="pre">copy</span></code> parameter of <code class="docutils literal notranslate"><span class="pre">ds_utils.ds_to_da</span></code>, default <code class="docutils literal notranslate"><span class="pre">True</span></code>). For the operational grids
+(with cached neighbors), POIs are interpolated up to about 1.5 times faster (e.g. ICON-CH2 <code class="docutils literal notranslate"><span class="pre">nearest</span></code> 0.18 s →
+0.12 s) with 0.1 to 0.2 GB less memory for ICON, and IFS to the seamless 2 km grid with <code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code> 0.39 s →
+0.24 s. A sliced source that is not contiguous in memory is now copied into contiguous rows per grid point, which
+is slower for large sources: ICON-CH2 in LV95 to the seamless 2 km grid with <code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code> or <code class="docutils literal notranslate"><span class="pre">temp_fixgrad</span></code>
+0.23 s → 0.29 s and 0.34 s → 0.39 s</p></li>
+<li><p>changed the averaging of a source grid finer than the destination grid by <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> (and
+<code class="docutils literal notranslate"><span class="pre">slice_coarsen</span></code>): the mean of the source points of each destination cell (the cell of their nearest destination
+node along x and y), with a sparse matrix product, for regular and unstructured sources (unstructured sources
+were not averaged, with a warning), if the destination grid has regular 1D coordinates in its CRS (otherwise
+with a warning). For the seamless 2 km grid (with cached neighbors): gridefix ICON-CH1 <code class="docutils literal notranslate"><span class="pre">idw</span></code> 0.43 s → 0.27 s,
+<code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code> 0.31 s → 0.16 s, <code class="docutils literal notranslate"><span class="pre">linear</span></code> 0.54 s → 0.13 s, with up to 0.13 GB more peak memory (copy of the
+sliced source into contiguous rows per grid point, e.g. <code class="docutils literal notranslate"><span class="pre">nearest_alt</span></code> 0.07 GB → 0.20 GB); the 50 m DEM
+<code class="docutils literal notranslate"><span class="pre">linear</span></code> 0.13 s → 0.07 s; native ICON-CH1 <code class="docutils literal notranslate"><span class="pre">linear</span></code> 0.03 s instead of 1.05 s without averaging.
+<code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> on the output of <code class="docutils literal notranslate"><span class="pre">slice_coarsen</span></code> (with the same destination grid and method) gives the same
+result as on the source grid</p></li>
+<li><p>added <code class="docutils literal notranslate"><span class="pre">slice_grid</span></code>: slices a source grid to a destination grid, keeping its structure and CRS (the grid
+counterpart of <code class="docutils literal notranslate"><span class="pre">slice_boundingbox</span></code>)</p></li>
+<li><p>added the support of unstructured grids to <code class="docutils literal notranslate"><span class="pre">ens_stats.neighbor_stat</span></code> and <code class="docutils literal notranslate"><span class="pre">upscaled_prob</span></code>: the neighborhood
+of each point is its <code class="docutils literal notranslate"><span class="pre">w_size_xy**2</span></code> nearest points (the window of a square grid for 3 and 5), with the nearest
+neighbors searched in meters and cached, ignoring NaN. Native ICON-CH1 (34 fields, 1.15 M points, window 5):
+<code class="docutils literal notranslate"><span class="pre">mean</span></code>/<code class="docutils literal notranslate"><span class="pre">sum</span></code> 0.5 s, <code class="docutils literal notranslate"><span class="pre">min</span></code>/<code class="docutils literal notranslate"><span class="pre">max</span></code> 0.8 s, plus 1.8 s for the first neighbor search (<code class="docutils literal notranslate"><span class="pre">rolling</span></code> on a
+regular grid of the same size: 2.4 to 4.3 s)</p></li>
+<li><p>changed <code class="docutils literal notranslate"><span class="pre">ens_stats.neighbor_stat</span></code> (and <code class="docutils literal notranslate"><span class="pre">upscaled_prob</span></code>) on regular grids and along time to
+<code class="docutils literal notranslate"><span class="pre">scipy.ndimage</span></code> filters, applied to all the dimensions of the window at once (dask: one chunk along them).
+ICON-CH1-EPS gridefix (34 x 11 x 252 x 376) <code class="docutils literal notranslate"><span class="pre">max</span></code> with windows 17 and 3 (data4web-pipelines): 3.8 s → 1.1 s,
+peak memory 1.07 GB → 0.32 GB; a regular grid of 34 x 1072 x 1072 with window 5: <code class="docutils literal notranslate"><span class="pre">mean</span></code> 4.3 s → 0.6 s, <code class="docutils literal notranslate"><span class="pre">sum</span></code>
+2.4 s → 0.5 s, <code class="docutils literal notranslate"><span class="pre">max</span></code> 3.6 s → 1.0 s; native ICON-CH1 with windows 5 and 3: <code class="docutils literal notranslate"><span class="pre">mean</span></code>/<code class="docutils literal notranslate"><span class="pre">max</span></code> 3.4 s → 1.1 s</p></li>
+<li><p>changed the slicing of unstructured grids opened lazily from a file (e.g. <code class="docutils literal notranslate"><span class="pre">xarray.open_dataset</span></code> of a netCDF
+file, without dask) by <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code>, <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code>, <code class="docutils literal notranslate"><span class="pre">slice_boundingbox</span></code>, <code class="docutils literal notranslate"><span class="pre">slice_grid</span></code> and
+<code class="docutils literal notranslate"><span class="pre">slice_coarsen</span></code>: the variables on the unstructured dimension are read by chunks of 16 MB, each with one slice
+(only the chunks with selected points), and loaded, instead of reading the selected points one by one. Native
+ICON-CH1 netCDF to the seamless 2 km grid: <code class="docutils literal notranslate"><span class="pre">slice_grid</span></code> and loading 50 s → 1.4 s. Sources in memory, dask
+arrays and regular grids are unchanged</p></li>
+<li><p>changed <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> with <code class="docutils literal notranslate"><span class="pre">upscaled</span></code>: the statistic is computed by blocks of POIs, without
+gathering the <code class="docutils literal notranslate"><span class="pre">k</span></code> neighbors of all the POIs at once, and with <code class="docutils literal notranslate"><span class="pre">idw</span></code>: a product with the sparse matrix of the
+weights, same results. Native ICON-CH1-EPS (10 members x 34 steps) to the 5,622 production POIs of
+data4web-pipelines with <code class="docutils literal notranslate"><span class="pre">upscaled</span></code> and <code class="docutils literal notranslate"><span class="pre">k=289</span></code>: 1.19 s → 0.39 s, peak memory +2.5 GB → +0.3 GB (first call
+1.41 s → 0.55 s); gridefix ICON-CH1-EPS (3 variables) to the seamless 2 km grid with <code class="docutils literal notranslate"><span class="pre">idw</span></code>: 0.78 s → 0.43 s,
+peak memory +0.92 GB → +0.31 GB</p></li>
+<li><p>changed <code class="docutils literal notranslate"><span class="pre">nn_lookup_cached</span></code>: new <code class="docutils literal notranslate"><span class="pre">distances</span></code> parameter (in the cache key), the distances are None if
+<code class="docutils literal notranslate"><span class="pre">False</span></code>, and the indices are int32: the cache of the methods without distances (<code class="docutils literal notranslate"><span class="pre">nearest</span></code>, <code class="docutils literal notranslate"><span class="pre">upscaled</span></code>,
+<code class="docutils literal notranslate"><span class="pre">neighbor_stat</span></code> on unstructured grids) takes 4 times less memory (native ICON-CH1 <code class="docutils literal notranslate"><span class="pre">neighbor_stat</span></code> with
+<code class="docutils literal notranslate"><span class="pre">w_size_xy=17</span></code>: 1.3 GB instead of 5.3 GB)</p></li>
+<li><p>added <code class="docutils literal notranslate"><span class="pre">data_model.get_spatial_coord_names</span></code>: the names of all the coordinates giving horizontal positions
+(spatial dimensions, configured y/x pairs, CF <code class="docutils literal notranslate"><span class="pre">axis</span></code> X/Y, horizontal <code class="docutils literal notranslate"><span class="pre">standard_name</span></code> or <code class="docutils literal notranslate"><span class="pre">long_name</span></code>). Used
+by the averaging of <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> and <code class="docutils literal notranslate"><span class="pre">slice_coarsen</span></code> to not average them, also the CF ones next to other
+positions (e.g. rotated coordinates of an unstructured grid that also has latitude and longitude)</p></li>
+<li><p>added <code class="docutils literal notranslate"><span class="pre">values</span></code> to the default names of the unstructured grid dimension
+(<code class="docutils literal notranslate"><span class="pre">GRID_PROCESS__data_model__grid__unstructured_dim</span></code>): the dimension of non-regular GRIB grids read with cfgrib or
+earthkit-data, e.g. ICON open data, no longer needs to be renamed</p></li>
+</ul>
+</section>
+<section id="id2">
+<h2>1.1.0 (2026-11-12)<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<p><strong>Changes of results</strong> (compared to 1.0.0, see the entries below for details)</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> (outside of the regular grid interpolation) search nearest neighbors and
+triangulate in meters instead of latitude/longitude degrees: neighbors, IDW weights and <code class="docutils literal notranslate"><span class="pre">linear</span></code>/<code class="docutils literal notranslate"><span class="pre">cubic</span></code>
+results change slightly for grids that were searched in degrees, including native LV95 grids with
+latitude/longitude coordinates</p></li>
+<li><p>grids in rotated pole or latitude/longitude on a sphere without datum (e.g. a CF grid mapping with
+<code class="docutils literal notranslate"><span class="pre">earth_radius</span></code>) now get the datum shift to Swiss coordinates (about 180 m)</p></li>
+<li><p>wrong values or NaN are fixed for grids with integer coordinates and for latitude/longitude grids whose longitude
+convention (0..360 or -180..180) differs from the one of the POIs or destination grid</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">create_dst_grid</span></code> (with <code class="docutils literal notranslate"><span class="pre">topright</span></code> and <code class="docutils literal notranslate"><span class="pre">resolution</span></code>) and <code class="docutils literal notranslate"><span class="pre">create_dst_grid_from_src</span></code> return different
+destination grids: exact resolution, and the extent of the source domain reprojected in the destination CRS</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">grid_interp._get_buffer</span></code> is renamed to <code class="docutils literal notranslate"><span class="pre">get_buffer</span></code> (now public)</p></li>
+</ul>
+<p><strong>Changes</strong></p>
+<ul class="simple">
+<li><p>added a <code class="docutils literal notranslate"><span class="pre">py.typed</span></code> marker so that type checkers use the inline type hints of <code class="docutils literal notranslate"><span class="pre">grid-process</span></code> (PEP 561)</p></li>
+<li><p>added example notebooks to the documentation illustrating <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> with open data, with
+their dependencies in the optional <code class="docutils literal notranslate"><span class="pre">example</span></code> dependency group. Two of them are global: GFS 2 m temperature to
+stations worldwide (compared with GHCN-hourly observations) and ERA5 2 m temperature to the IFS 0.1° grid</p></li>
+<li><p>fixed <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> truncating reprojected coordinates when the grid coordinates are
+integers (e.g. an LV95 destination grid built with <code class="docutils literal notranslate"><span class="pre">np.arange</span></code>), which gave wrong values or NaN</p></li>
+<li><p>fixed <code class="docutils literal notranslate"><span class="pre">create_dst_grid</span></code> with <code class="docutils literal notranslate"><span class="pre">topright</span></code> and <code class="docutils literal notranslate"><span class="pre">resolution</span></code>: the resolution is now exact and <code class="docutils literal notranslate"><span class="pre">topright</span></code>
+a closed upper bound, instead of the grid spacing being stretched to end exactly on <code class="docutils literal notranslate"><span class="pre">topright</span></code></p></li>
+<li><p>fixed <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> (outside of the regular grid interpolation) searching nearest neighbors
+and triangulating (<code class="docutils literal notranslate"><span class="pre">linear</span></code>, <code class="docutils literal notranslate"><span class="pre">cubic</span></code>) in latitude/longitude degrees, where a degree of longitude is shorter
+than a degree of latitude (about 0.68 times in Switzerland). Distances are now always in meters: native
+coordinates projected in meters are used even if latitude/longitude coordinates are present (e.g. LV95 grids),
+and latitude/longitude grids are converted to Swiss LV95, or to earth-centered earth-fixed coordinates (ECEF) far
+from Switzerland. Neighbors, IDW weights and <code class="docutils literal notranslate"><span class="pre">linear</span></code>/<code class="docutils literal notranslate"><span class="pre">cubic</span></code> results change slightly for grids that were
+searched in latitude/longitude, including native LV95 grids with latitude/longitude coordinates</p></li>
+<li><p>fixed the reprojection of grids in rotated pole (or latitude/longitude) on a sphere without datum, e.g. from a CF
+grid mapping with <code class="docutils literal notranslate"><span class="pre">earth_radius</span></code>: their latitudes and longitudes are now considered as WGS84 ones, as their
+latitude/longitude coordinates usually are. The datum shift to Swiss coordinates (about 180 m) was left out.
+<code class="docutils literal notranslate"><span class="pre">parse_grid_mapping</span></code> (and <code class="docutils literal notranslate"><span class="pre">get_grid_crs</span></code>) now return such CF mappings directly on WGS84, without
+<code class="docutils literal notranslate"><span class="pre">pyproj.CRS.from_cf</span></code>, which took about 0.3 s for a rotated pole; other mappings parsed by <code class="docutils literal notranslate"><span class="pre">from_cf</span></code> are cached</p></li>
+<li><p>added the support of global and other non-Swiss latitude/longitude grids by <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code>
+(except <code class="docutils literal notranslate"><span class="pre">linear</span></code>, <code class="docutils literal notranslate"><span class="pre">linear_3D</span></code> and <code class="docutils literal notranslate"><span class="pre">cubic</span></code>, which raise an error), with nearest neighbor searches in ECEF
+coordinates. The maximum distance of the destination to the LV95 central northing for using LV95 is set by the
+new setting <code class="docutils literal notranslate"><span class="pre">lv95_max_offset</span></code> (environment variable <code class="docutils literal notranslate"><span class="pre">GRID_PROCESS__lv95_max_offset</span></code>, default 700 km)</p></li>
+<li><p>changed the methods with altitude, which no longer reproject to Swiss coordinates when the source grid or the
+destination has another CRS projected in meters (e.g. UTM)</p></li>
+<li><p>added an explicit error when the destination grid of <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> is unstructured, which is not supported</p></li>
+<li><p>fixed <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> with latitude/longitude source grids whose longitude convention
+(0..360 or -180..180) differs from the one of the POIs or destination grid: the source was sliced to the
+wrong longitudes (wrong values in the generic path, e.g. for a global destination grid) and the regular grid
+interpolation (<code class="docutils literal notranslate"><span class="pre">try_reg=True</span></code>) returned NaN. Global latitude/longitude grids are also interpolated across
+their 360 degree seam. When slicing a latitude/longitude source grid, the longitude buffer is widened by
+1 / cos(latitude) (as nearest neighbors are now searched in meters) and all longitudes are kept close to the
+poles</p></li>
+<li><p>changed the <code class="docutils literal notranslate"><span class="pre">temp</span></code> method of <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code>: POIs whose nearest grid points all have the same altitude (e.g.
+close to the poles of a latitude/longitude grid, whose pole rows repeat the same point, or on flat orography)
+use the fixed lapse rate fallback (as POIs far above or below their neighborhood) instead of raising an error</p></li>
+<li><p>fixed <code class="docutils literal notranslate"><span class="pre">create_dst_grid_from_src</span></code>: the destination grid now spans exactly the bounding box of the source domain
+reprojected in the destination CRS (from native coordinates projected in meters when available), instead of the
+reprojected corners of its latitude/longitude bounding box, which could be much larger (e.g. +80 km for ICON-CH2
+in LV95) or miss parts of the domain (e.g. 28 km for IFS in LV95)</p></li>
+<li><p>fixed <code class="docutils literal notranslate"><span class="pre">set_grid_mapping</span></code> with CF grid mappings holding numpy arrays or non-float64 numpy values (e.g. a
+<code class="docutils literal notranslate"><span class="pre">standard_parallel</span></code> array read from a netCDF file), which raised a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code></p></li>
+<li><p>changed <code class="docutils literal notranslate"><span class="pre">memoize</span></code>: the least recently used result is evicted (instead of the oldest one), the cache key can be
+computed by an optional <code class="docutils literal notranslate"><span class="pre">key</span></code> function (only when caching is active), a cache size of 0 deactivates caching
+without overhead, and the cache is safe to use from several threads, also when the process forks (the fork waits
+until no thread is using the cache). The <code class="docutils literal notranslate"><span class="pre">hkey</span></code> keyword argument still works</p></li>
+<li><p>fixed the in-memory caches of the POI and grid reprojections, whose keys left out the source CRS, and the cache
+of the regular grid nearest interpolation, which failed with a POI dimension name other than <code class="docutils literal notranslate"><span class="pre">poi</span></code>
+(<code class="docutils literal notranslate"><span class="pre">GRID_PROCESS__data_model__poi__dim</span></code>)</p></li>
+<li><p>documented the in-memory caches of <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> and how to set their sizes or deactivate
+them with the environment variables <code class="docutils literal notranslate"><span class="pre">GRID_PROCESS__cache_size__&lt;name&gt;</span></code> (Usage page)</p></li>
+<li><p>changed <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> and <code class="docutils literal notranslate"><span class="pre">interp2grid</span></code> outside of the regular grid interpolation to flatten structured
+grids with numpy instead of <code class="docutils literal notranslate"><span class="pre">xarray.stack</span></code>, and <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> to look for the grid points with NaN in all
+fields (excluded, as before) only among those with NaN in the middle field. Later calls with cached neighbors are
+faster on large grids (e.g. 0.13 s to 0.05 s for a global 0.25 degree grid to 33 POIs, 1.6 s to 0.5 s from this
+grid to a global 0.1 degree grid), with identical results</p></li>
+<li><p>fixed <code class="docutils literal notranslate"><span class="pre">interp2poi</span></code> raising an <code class="docutils literal notranslate"><span class="pre">IndexError</span></code> when all POIs are outside an unstructured grid (no grid point left
+after slicing): they now get NaN, as outside of the regular grid interpolation</p></li>
+<li><p>made <code class="docutils literal notranslate"><span class="pre">grid_interp.get_buffer</span></code> public (renamed from <code class="docutils literal notranslate"><span class="pre">_get_buffer</span></code>): the slicing buffer in grid points of an
+interpolation method and its arguments, e.g. to slice the input data with <code class="docutils literal notranslate"><span class="pre">slice_boundingbox</span></code> beforehand</p></li>
+</ul>
+</section>
+<section id="id3">
+<h2>1.0.0<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<p>First open-source release of <code class="docutils literal notranslate"><span class="pre">grid-process</span></code>, the continuation of the internal MeteoSwiss library
+<code class="docutils literal notranslate"><span class="pre">gridefix-process</span></code> (last internal version: 6.1.0).</p>
+<p><strong>Breaking Change</strong> (compared to <code class="docutils literal notranslate"><span class="pre">gridefix-process</span></code> 6.1.0)</p>
+<ul class="simple">
+<li><p>renamed the package from <code class="docutils literal notranslate"><span class="pre">gridefix-process</span></code> to <code class="docutils literal notranslate"><span class="pre">grid-process</span></code> (import name <code class="docutils literal notranslate"><span class="pre">grid_process</span></code>)</p></li>
+<li><p>renamed the environment variable prefix from <code class="docutils literal notranslate"><span class="pre">GRIDEFIX_PROCESS__</span></code> to <code class="docutils literal notranslate"><span class="pre">GRID_PROCESS__</span></code></p></li>
+<li><p>versioning restarts at <code class="docutils literal notranslate"><span class="pre">1.0.0</span></code></p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="examples/06_interp2grid_era5_global_temperature.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Regridding: ERA5 2 m temperature on the global IFS 0.1° grid</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="autoapi/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">API Reference</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">1.2.0 (2026-11-23)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">1.1.0 (2026-11-12)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">1.0.0</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item"><!-- This will display the version of the docs -->
+grid-process, version: 1.2.0-a4659a3</div>
+      
+        <div class="footer-item"><p class="last-updated">
+  Last updated on 23.11.2026.
+  <br/>
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, MeteoSwiss.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

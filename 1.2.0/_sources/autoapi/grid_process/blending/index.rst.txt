@@ -1,0 +1,100 @@
+grid_process.blending
+=====================
+
+.. py:module:: grid_process.blending
+
+.. autoapi-nested-parse::
+
+   Module for blending datasets together
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   grid_process.blending.logger
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   grid_process.blending.combine_models
+   grid_process.blending.cleaver
+   grid_process.blending.blend_src_attr
+
+
+Module Contents
+---------------
+
+.. py:data:: logger
+
+.. py:function:: combine_models(datasets: collections.abc.Sequence[xarray.Dataset], strict_start: bool = True) -> xarray.Dataset
+
+   Combine datasets in valid time dimension. The new coordinates follow the normal
+   broadcasting and alignment rules of ``join='outer'``. Vacant cells in the
+   expanded coordinates are filled with numpy.nan .
+
+   :Parameters: * **datasets** (*sequence of xarray.Dataset*) -- Datasets with valid time or lead time dimension to be combined. The sequence
+                  must reflect priority order, so where several datasets overlap in time, the
+                  data of the first one is kept
+                  Typical temporal dimensions names are supported, and can be extended via environment variables:
+
+                    - Valid time: export GRID_PROCESS__data_model__validtime (e.g., '["time", "valid_time", "dummy_time"]')
+                    - Lead time: export GRID_PROCESS__data_model__leadtime (e.g., '["lead_time", "step", "dummy_leadtime"]')
+                    - When the temporal coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can
+                      be used directly.
+                * **strict_start** (*bool, optional*) -- If True (default), the resulting timeseries strictly starts with the
+                  dataset having highest priority (i.e. no older timestamps from lower
+                  priority datasets can be prepended)
+
+   :returns: **combined_ds** -- contains the full timeseries resulting from the datasets combination.
+             Valid time dimension is labelled by numpy.datetime64 although
+             inputs could have lead time dimension (numpy.timedelta64)
+   :rtype: xarray.Dataset
+
+   .. seealso:: :py:obj:`xarray.Dataset.combine_first`, :func:`~grid_process.timeseries.setindex_validtime`
+
+   .. note::
+
+      This function is not aimed to combine models that do not have the same grid
+      and members, but to combine them after regridding/interpolation and ensemble
+      statistic computations (quantiles, probabilities). A typical use case for this
+      function could be to combine past deterministic analyses to all members of a NWP
+      model as it will automatically broadcast it to the ensemble members dimension and
+      pioritize analyses over the NWP forecast for common timestamps in both datasets.
+
+
+.. py:function:: cleaver(ds_tail: xarray.Dataset, ds_head: xarray.Dataset, h: int = 6, interp_method: grid_process.timeseries.InterpMethods = 'cubic') -> xarray.Dataset
+
+   Combine two timeseries by applying a linear seamless transition from the
+   last values of the tail to the remaining of the head.
+
+   :Parameters: * **ds_tail** (*xarray.Dataset*) -- dataset with a valid time or lead time dimension. Contains the tail of
+                  the newly produced timeseries
+                * **ds_head** (*xarray.Dataset*) -- dataset with a valid time or lead time dimension. Contains the head of
+                  the newly produced timeseries
+                * **h** (*int, optional*) -- number of hours over which the seamless transition is done. Default is
+                  6
+                * **interp_method** (*str*) -- arg passed directly to
+                  :func:`~grid_process.timeseries.interptogranularity` in case the
+                  tail and the head do not overlap. Default is 'cubic'
+
+   :returns: **seamless_ds** -- newly produced seamless timeseries from the two input datasets. Has a
+             valid time dimension labelled by numpy.datetime64 although inputs could
+             have a lead time dimension (numpy.timedelta64)
+   :rtype: xarray.Dataset
+
+   .. seealso:: :func:`~grid_process.timeseries.interptogranularity`, :func:`~grid_process.timeseries.setindex_validtime`
+
+
+.. py:function:: blend_src_attr(datasets: collections.abc.Sequence[xarray.Dataset]) -> dict[str, str]
+
+   Returns a dict with keys being the sources of the input datasets and
+   values the corresponding reftimes. This dict can become the output
+   ``source`` attribute when blending datasets together.
+
+

@@ -1,0 +1,168 @@
+grid_process.timeseries
+=======================
+
+.. py:module:: grid_process.timeseries
+
+.. autoapi-nested-parse::
+
+   Module for operations on timeseries data
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   grid_process.timeseries.logger
+   grid_process.timeseries.dataset_accessor
+   grid_process.timeseries.SunInterpOptions
+   grid_process.timeseries.ReindexOptions
+   grid_process.timeseries.InterpMethods
+   grid_process.timeseries.FillnaMethods
+   grid_process.timeseries.XR_INTERP_METHODS
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   grid_process.timeseries.Timeseries
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   grid_process.timeseries.interptogranularity
+   grid_process.timeseries.fill_na
+   grid_process.timeseries.setindex_validtime
+   grid_process.timeseries.smoothing
+
+
+Module Contents
+---------------
+
+.. py:data:: logger
+
+.. py:class:: Timeseries(ds: xarray.Dataset)
+
+   Xarray accessors class for operations on timeseries
+
+
+.. py:data:: dataset_accessor
+
+.. py:data:: SunInterpOptions
+
+.. py:data:: ReindexOptions
+
+.. py:data:: InterpMethods
+
+.. py:data:: FillnaMethods
+
+.. py:data:: XR_INTERP_METHODS
+
+.. py:function:: interptogranularity(ds: xarray.Dataset, granularity: str = '1h', method: InterpMethods = 'linear', **kwargs: Any) -> xarray.Dataset
+
+   Interpolate the dataset to the specified time granularity. Where
+   the dataset granularity is smaller than the specified one, the dataset
+   granularity remains (no aggregation is performed).
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- Must have a temporal dimension expressed as numpy.datetime64 (valid time) or numpy.timedelta64 (lead time).
+                  Typical temporal dimensions names are supported, and can be extended via environment variables:
+
+                    - Valid time: export GRID_PROCESS__data_model__validtime (e.g., '["time", "valid_time", "dummy_time"]')
+                    - Lead time: export GRID_PROCESS__data_model__leadtime (e.g., '["lead_time", "step", "dummy_leadtime"]')
+                    - Forecast reference time: export GRID_PROCESS__data_model__reftime (e.g., '["forecast_reference_time",
+                      "ref_time", "reftime", "dummy_reftime"]')
+                    - When the temporal coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can
+                      be used directly.
+                * **granularity** (*str, optional*) -- (maximum) granularity of the resulting time series. Must be one of the
+                  pandas.date_range ``freq`` options. Default is '1h'
+                * **method** (*str, optional*) -- interpolation method for filling the time series. One of {'nearest', 'bfill',
+                  'ffill', 'bcum', 'fillval', 'sundur', 'sunrad', 'linear', 'zero', 'slinear',
+                  'quadratic', 'cubic', 'polynomial', 'barycentric', 'krogh', 'pchip', 'spline',
+                  'akima'}. Default is 'linear'
+                * **\*\*kwargs** (*any*) -- keyword arguments passed to the respective interpolation sub-function defined
+                  by the ``method``
+
+   :returns: **ds_out** -- contains the full time series resulting from the time interpolation at
+             the specified granularity
+   :rtype: xarray.Dataset
+
+   .. seealso:: :func:`fill_na`, :py:obj:`xarray.Dataset.reindex`, :py:obj:`xarray.Dataset.interp`
+
+   .. note::
+
+      Consider using 'slinear' instead of 'linear' for similar results with possibly
+      faster computations and lower memory footprint.
+
+
+.. py:function:: fill_na(ds: xarray.Dataset, method: FillnaMethods = 'linear', **kwargs: Any) -> xarray.Dataset
+
+   Fill NaNs in the temporal dimension. Wrapper for different NaN
+   interpolation routines.
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- Must have a temporal dimension expressed as numpy.datetime64 (valid time) or numpy.timedelta64 (lead time).
+                  Typical temporal dimensions names are supported, and can be extended via environment variables:
+
+                    - Valid time: export GRID_PROCESS__data_model__validtime (e.g., '["time", "valid_time", "dummy_time"]')
+                    - Lead time: export GRID_PROCESS__data_model__leadtime (e.g., '["lead_time", "step", "dummy_leadtime"]')
+                    - When the temporal coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can
+                      be used directly.
+                * **method** (*str*) -- interpolation method for filling the time series. One of {'bfill', 'ffill',
+                  'fillval', 'linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic',
+                  'polynomial', 'barycentric', 'krogh', 'pchip', 'spline', 'akima'}.
+                  Default is 'linear'
+                * **\*\*kwargs** (*any*) -- arguments passed to the respective NaN interpolation sub-function defined
+                  by the ``method``
+
+   :returns: **ds_out** -- with NaNs filled. No extrapolation is performed, so NaNs on the side of
+             the first and last real values remain NaNs
+   :rtype: xarray.Dataset
+
+   .. seealso:: :func:`interptogranularity`, :py:obj:`xarray.Dataset.interpolate_na`, :py:obj:`xarray.Dataset.bfill`, :py:obj:`xarray.Dataset.ffill`, :py:obj:`xarray.Dataset.fillna`
+
+
+.. py:function:: setindex_validtime(ds: xarray.Dataset, last_ref: bool = True) -> xarray.Dataset
+
+   Assign valid time dimension and coordinates (i.e. numpy.datetime64). The dataset
+   can have zero, one or several forecast reference time and one or several
+   lead time. In case several ref time and lead time are present, the function
+   combines the different model runs by selecting from the most recent one where
+   timestamps overlap.
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- Must have a forecast reference time dimension and/or a lead time one
+                  Typical temporal dimensions names are supported, and can be extended via environment variables:
+
+                    - Lead time: export GRID_PROCESS__data_model__leadtime (e.g., '["lead_time", "step", "dummy_leadtime"]')
+                    - Forecast reference time: export GRID_PROCESS__data_model__reftime (e.g., '["forecast_reference_time",
+                      "ref_time", "reftime", "dummy_reftime"]')
+                    - When the temporal coordinates variables have a CF compliant `standard_name` attribute, arbitrary names can
+                      be used directly.
+                * **last_ref** (*bool*) -- whether to add the last forecast reference time. Used only if dimensions
+                  forecast reference time and lead time both exists and have length greater
+                  than 1. Default is True.
+
+   :returns: **ds_out** -- with a valid time dimension labelled as numpy.datetime64.
+   :rtype: xarray.Dataset
+
+   .. note::
+
+      This function can be used to combine many runs of the same model into a
+      continuous timeseries
+
+
+.. py:function:: smoothing(ds: xarray.Dataset, w: collections.abc.Sequence[float]) -> xarray.Dataset
+
+   Smooth timeseries by applying a moving weighted average.
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- Must have a valid time or lead time dimension
+                * **w** (*sequence of floats*) -- weights of the moving window
+
+   :returns: **ds** -- contains the smoothed timeseries
+   :rtype: xarray.Dataset
+
+

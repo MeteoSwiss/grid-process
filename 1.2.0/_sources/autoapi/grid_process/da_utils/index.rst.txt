@@ -1,0 +1,86 @@
+grid_process.da_utils
+=====================
+
+.. py:module:: grid_process.da_utils
+
+.. autoapi-nested-parse::
+
+   Module with general utility functions that operate on xarray.DataArray
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   grid_process.da_utils.logger
+   grid_process.da_utils.dataarray_accessor
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   grid_process.da_utils.DaUtils
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   grid_process.da_utils.da_to_ds
+   grid_process.da_utils.bin_to_class
+
+
+Module Contents
+---------------
+
+.. py:data:: logger
+
+.. py:class:: DaUtils(da: xarray.DataArray)
+
+   Xarray accessors class for general utility functions on DataArray
+
+
+.. py:data:: dataarray_accessor
+
+.. py:function:: da_to_ds(da: xarray.DataArray, vars_attrs: dict[collections.abc.Hashable, dict[collections.abc.Hashable, Any]]) -> xarray.Dataset
+
+   Transform a dataarray, containing model data and one or several
+   variables specified by the `variable` dimension, to a dataset. The function
+   also reassign the attributes of the data variables saved in ``vars_attrs``.
+
+   :Parameters: * **da** (*xarray.DataArray*) -- contains one or more variables specified in the `variable` dimension
+                * **vars_attrs** (*dict*) -- contains the attributes of each variables found along the `variable`
+                  dimension
+
+   :returns: **ds** -- the dataset is composed of the data variables of the input DataArray
+   :rtype: xarray.Dataset
+
+   .. seealso:: :func:`~grid_process.ds_utils.ds_to_da`
+
+
+.. py:function:: bin_to_class(da: xarray.DataArray, bins: collections.abc.Sequence[float], bins_label: collections.abc.Sequence[str | int], da_name: str | None = None) -> xarray.DataArray
+
+   Convert numerical values into classes as defined by ``bins`` and
+   ``bins_label``.
+
+   Parameters:
+   -----------
+   da : xarray.DataArray
+       array with numerical values
+   bins : sequence of floats
+       defines the boudaries for the classes
+   bins_label : sequence of str or int
+       class labels. len(``bin_labels``) = len(``bins``) + 1
+   da_name : str, optional
+       used to rename the output DataArray. By default no renaming is done.
+
+   :returns: **class_da** -- same as input array but with data converted from numerical values to
+             classes
+   :rtype: xarray.DataArray
+
+

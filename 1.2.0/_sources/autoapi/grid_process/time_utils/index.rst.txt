@@ -1,0 +1,87 @@
+grid_process.time_utils
+=======================
+
+.. py:module:: grid_process.time_utils
+
+.. autoapi-nested-parse::
+
+   Module to wrap some time utility functions
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   grid_process.time_utils.logger
+   grid_process.time_utils.dataset_accessor
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   grid_process.time_utils.TimeUtils
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   grid_process.time_utils.to_datetime_tzaware
+   grid_process.time_utils.set_daily
+
+
+Module Contents
+---------------
+
+.. py:data:: logger
+
+.. py:class:: TimeUtils(ds: xarray.Dataset)
+
+   Xarray accessors class for time utility methods
+
+
+.. py:data:: dataset_accessor
+
+.. py:function:: to_datetime_tzaware(timestamps: numpy.ndarray) -> pandas.DatetimeIndex
+
+   Converts an array of numpy.datetime64 objects to a timezone-aware
+   pandas.DatetimeIndex representing time in UTC.
+
+   :Parameters: **timestamps** (*array of naive numpy.datetime64*) -- assumed to be in UTC time
+
+   :returns: **out** -- UTC timezone aware
+   :rtype: pandas.DatetimeIndex
+
+
+.. py:function:: set_daily(ds: xarray.Dataset, lt_duplicates: bool = True, lt_hr: int = 0) -> xarray.Dataset
+
+   Sets timestamps of daily aggregations at the start of the day (i.e. 00:00).
+   Daily parameters are stored in the DWH following this convention. If
+   ``lt_duplicates=True``, selects correct validtimes between summer and
+   winter local time duplicates first, otherwise assume daily aggregation are
+   for UTC periods.
+
+   :Parameters: * **ds** (*xarray.Dataset*) -- with a valid time dimension (numpy.datetime64). When ``lt_duplicates=True``,
+                  duplicated timestamps corresponding to summer (UTC+2) and winter
+                  (UTC+1) localtime periods are expected as for a dataset returned by
+                  :func:`~grid_process.aggreg.interval_stat` with arg ``lt_duplicates``
+                  set to True
+                * **lt_duplicates** (*bool*) -- whether the dataset contains duplicated timestamps corresponding
+                  to summer (UTC+2) and winter (UTC+1) localtime periods. Default is True
+                * **lt_hr** (*int*) -- hour of the day representing the end of the daily period in localtime.
+                  Only used when ``lt_duplicates=True``. Default is 0, meaning the end
+                  of the period is 00:00 J+1 LT
+
+   :returns: **ds_out** -- dataset where daily timestamps are set to 00:00 of the respective
+             day. Optionally, selection of correct timestamps between summer/winter
+             duplicates based on day of year is done
+   :rtype: xarray.Dataset
+
+   .. seealso:: :func:`~grid_process.aggreg.interval_stat`
+
+
