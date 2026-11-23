@@ -49,7 +49,7 @@ Feature suggestions are welcome! Please create an issue using our *feature reque
 
 ### Prerequisites
 
-- Python 3.11 or higher (up to 3.13)
+- Python 3.11 or higher (up to 3.14)
 - Poetry (for dependency management)
 - Git
 

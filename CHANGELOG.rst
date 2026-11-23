@@ -36,6 +36,7 @@ Unreleased
 
 **Changes**
 
+* added the support of Python 3.14
 * changed ``interp2poi`` and ``interp2grid`` to no longer copy a dataset with a single data variable before
   interpolation (new ``copy`` parameter of ``ds_utils.ds_to_da``, default ``True``). For the operational grids
   (with cached neighbors), POIs are interpolated up to about 1.5 times faster (e.g. ICON-CH2 ``nearest`` 0.18 s →

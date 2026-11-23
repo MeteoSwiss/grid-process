@@ -38,7 +38,7 @@ So:
 ## Commands
 
 ```console
-poetry install                        # Python 3.11 to 3.13
+poetry install                        # Python 3.11 to 3.14
 poetry run pytest                     # CI: pytest -s --cov=grid_process --cov-fail-under=80
 poetry run ruff format --check        # line length 120
 poetry run ruff check
