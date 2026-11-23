@@ -19,6 +19,10 @@ sun utilities.
 - both interpolate static fields (DEM, topographic descriptors, sky view factor, horizon) from 25 m and 50 m LV95
   grids opened lazily from zarr (dask), with `linear` or `nearest` (int8 horizon) and the default `try_reg=True`.
 
+Both applications may switch from the ICON-CH1/CH2 fields of the grid database (structured rotated grids) to native
+ICON (unstructured, most likely a Swiss cut-out from polytope) for all their uses: the unstructured path must handle
+every operational case.
+
 So:
 
 - **Results are a contract.** Any change of the numbers must be intended, measured on the operational cases (below)
@@ -60,7 +64,10 @@ poetry run sphinx-build doc doc/_build
   `helpers` (also `reproject`). Many public functions are also `xarray` accessors (`ds.interp2poi(...)`).
 - `test/`: one test module per module; `test/conftest.py` builds small synthetic grids (regular lat/lon, rotated,
   LV95, unstructured) and POIs.
-- `doc/examples/*.ipynb`: interpolation examples on open data, with runtime comparisons of the methods.
+- `doc/examples/*.ipynb`: interpolation examples on open data, with runtime comparisons of the methods (examples,
+  not the operational cases, see below).
+- `benchmarks/operational_cases.py`: benchmark of the operational cases (see below), smoke-tested by
+  `test/test_benchmarks.py`.
 
 ## How the interpolation works
 
@@ -73,8 +80,8 @@ poetry run sphinx-build doc doc/_build
    static fields (25 m and 50 m dask grids) use this regular path.
 3. Otherwise: slice to the POIs plus a method-dependent buffer (`slice_boundingbox`, `get_buffer`), view the dataset
    as one array with the spatial dimensions first (`ds_to_da(copy=False)`), and flatten it into points
-   (`_flatten_concat`). Points that are NaN in all fields are dropped, which allows masking
-   (`ds.where(land).interp2poi(...)`).
+   (`_flatten_concat`). Points that are NaN in all fields are dropped (`_valid_points`, except for `snowlim`), which
+   allows masking (`ds.where(land).interp2poi(...)`).
 4. Coordinates are in meters, never degrees (`_choose_kdtree_crs`): the native CRS if it is projected in meters
    (e.g. LV95), else the metric CRS of the other side, else LV95 near Switzerland (`lv95_max_offset`), else ECEF
    (global grids; no triangulation methods). Methods with altitude add it as a third coordinate.
@@ -86,6 +93,9 @@ poetry run sphinx-build doc doc/_build
 source is finer (at least 2.25 points per destination cell, `COARSEN_MIN_DENSITY`), it averages it per destination
 cell with a sparse 0/1 matrix, ignoring NaN (`slice_coarsen`, `_sparse_mean_ds`). For `nearest` and `linear`, those
 cell means are the result. The other methods interpolate from the mean position of the points of each cell.
+Unlike `interp2poi`, `interp2grid` keeps the points that are NaN in all fields (`_flatten_concat_grids`): a NaN
+source point can give NaN at the destination. Only the averaging per destination cell ignores NaN (a cell is NaN only
+if all its source points are).
 
 Things to keep in mind:
 
@@ -101,9 +111,9 @@ Things to keep in mind:
 
 ## Operational cases (benchmark on data of these shapes)
 
-The operational data (internal grid database, native ICON files) is not public. To benchmark, build synthetic data
-with the same structure, CRS, sizes and dtypes (random float32 fields with some NaN, surface altitude of realistic
-range for altitude methods). Shapes are y × x unless stated.
+The operational data (internal grid database, native ICON files) is not public. `benchmarks/operational_cases.py`
+builds synthetic data with the same structure, CRS, sizes, dtypes and NaN patterns, and runs the operational calls
+on it (see below). Shapes are y × x unless stated.
 
 | Case | Grid | Points | Fields |
 |---|---|---|---|
@@ -114,7 +124,10 @@ range for altitude methods). Shapes are y × x unless stated.
 | ICON-CH2-EPS lake-masked temperature (grid database) | rotated lat/lon, 0.02° | 127 × 188 | 21 members × 121 steps, float32, lake points all NaN (2 %) |
 | ICON-CH2-EPS LV95 (grid database) | LV95 (EPSG:2056), 2 km | 320 × 355 | 21 members × 121 steps, float32 |
 | INCA (grid database, analysis and nowcasting) | LV95, 1 km | 640 × 710 | 18 reference times × 1 step, 3 variables, float32 |
-| ICON-CH1 native | unstructured lat/lon, dimension `values` | 1 147 980 | 34 steps, 2 variables, float32, `HSURF` |
+| ICON-CH1-EPS native, Swiss cut-out (possible future) | unstructured lat/lon, dimension `values` | about 113 000 | as the grid database ICON-CH1-EPS, `HSURF` (radiation without NaN, as the open data) |
+| ICON-CH2-EPS native, Swiss cut-out (possible future) | unstructured lat/lon, dimension `values` | about 28 200 | as the grid database ICON-CH2-EPS, `HSURF` |
+| ICON-CH1-EPS native, whole domain (upper bound, not operational) | unstructured lat/lon, dimension `values` | 1 147 980 | 11 members × 34 steps, float32 |
+| ICON-CH2-EPS native, whole domain (upper bound, not operational) | unstructured lat/lon, dimension `values` | 283 876 | 21 members × 121 steps, float32 |
 | Static fields (DEM, topographic descriptors) | LV95, 25 m and 50 m, zarr (dask) | 10 121 × 15 601 (25 m), 12 800 × 14 200 (50 m) | float32 |
 | Horizon (data4web) | LV95, 25 m, zarr (dask, chunks 500 × 500 × 45) | 10 121 × 15 601 | int8 × 360 azimuths (270 used) |
 | Seamless destination grid | LV95, 2 km | 125 × 190 | surface altitude (`dem`) |
@@ -123,6 +136,11 @@ range for altitude methods). Shapes are y × x unless stated.
 The grid database files carry `latitude`/`longitude`, `surface_altitude` and a `grid_mapping` JSON attribute
 (e.g. `{"grid_mapping_name": "rotated_latitude_longitude", "grid_north_pole_latitude": 43.0,
 "grid_north_pole_longitude": 190.0, "earth_radius": 6371229.0}`).
+
+The native cut-out cases are the counterparts of the grid database ICON cases (same members, steps, variables,
+methods and NaN patterns), on the native points within the area of the grid database grids. The whole domain cases
+(one ICON-CH1, one ICON-CH2) are upper bounds, not operational uses: they show the cost of slicing a whole native
+domain, if the applications ever got it.
 
 Performance-critical case: **the horizon to the production POIs** (data4web `process_horizon`) used to be one of the
 longest operational interpolations. Keep its runtime and memory:
@@ -140,18 +158,42 @@ NaN cases to keep correct:
   NaN for all members and steps. data4web interpolates it with `snowlim` (`interp2poi`). The seamless weather
   provider will regrid it to the 2 km grid: the averaging of ICON-CH1 per destination cell must give NaN only where
   all the source points of the cell are NaN.
-- **Masked points.** Points NaN in all fields are excluded from the interpolation, e.g. lakes masked with
-  `ds.where(ds.land_area_fraction >= 0.5).drop_vars("land_area_fraction")`: outside of the regular grid path, a POI
-  or cell near a lake takes its value from land points only.
+- **Masked points.** `interp2poi` (outside of the regular grid path) excludes the points that are NaN in all
+  fields. data4web masks lakes before interpolating to the POIs, `ds.where(ds.land_area_fraction >= 0.5)
+  .drop_vars("land_area_fraction")`, so that a POI near a lake takes its value from land points only.
+  `interp2grid` keeps such points (NaN propagates to the destination), so masking before it would not have this
+  effect; the seamless weather provider does not mask. This difference is intended, do not align it: POIs are on
+  the ground, sometimes near a shore, where lake values (with different properties) would be wrong, whereas lakes
+  are still in a destination grid and keep the lake values.
 
-Benchmark protocol for a change that can affect runtime, memory or results:
+Benchmark a change that can affect runtime, memory or results against `main`, on the same machine (otherwise idle),
+with `benchmarks/operational_cases.py`. It runs the operational calls (data4web to the POIs, seamless weather
+provider to the 2 km grid, static fields) with their operational settings, each case in fresh processes: runtime of
+the first call (cold caches) and of the repeated calls (warm caches), peak memory, and checksums of the outputs.
 
-- compare against `main` (e.g. a `git worktree`) in the same environment, same process setup;
-- time the first call and the repeated call (warm caches), several repetitions, and measure the peak memory;
-- cover the generic path (`try_reg=False`), a sliced (non-contiguous) source, and lazy or dask inputs when relevant
-  (e.g. the horizon case above for the regular path);
-- compare the outputs with `main`: identical, or quantify the difference for the CHANGELOG;
-- keep benchmark scripts and outputs outside the repository.
+```console
+git worktree add ../grid-process-main main
+poetry run python benchmarks/operational_cases.py list
+poetry run python benchmarks/operational_cases.py run --grid-process ../grid-process-main --out /tmp/bench/main
+poetry run python benchmarks/operational_cases.py run --out /tmp/bench/branch
+poetry run python benchmarks/operational_cases.py compare /tmp/bench/main /tmp/bench/branch
+```
+
+Select cases with `--case` (shell patterns), keep the outputs to quantify their differences with `--save-outputs`,
+and use the real data with `--data-dir` when available. Report the identical outputs, or quantify the differences in
+the CHANGELOG. A full run takes about 12 minutes. Keep the outputs outside the repository. Add a case when a new
+operational use appears.
+
+`run` never downloads: it uses the synthetic data or the files of `--data-dir`, so that both sides of a comparison
+use the same data. Real native ICON comes from the open data of MeteoSwiss: `fetch-native --out DIR` downloads a
+run (all members and lead times; runs are available for about a day; needs the network and
+`poetry install --with example`) once, then `run --data-dir DIR` uses it. A native case on a real file with fewer
+members or lead times than the operational ones is noted in the results.
+
+The example notebooks (`doc/examples/*.ipynb`) also time the methods (first and repeated calls), on open data
+(ICON-CH2 native, IFS, ERA5, GFS) and with other grids and settings. They are examples for users, not the
+operational cases: do not use them as the reference for a performance change, but rerun the affected notebooks when
+a change alters their results or timings noticeably.
 
 ## Conventions
 
